@@ -1,0 +1,11 @@
+{
+  "binding_version": 14,
+  "build": {
+    "channel": "stable",
+    "crate_types": ["cdylib"],
+    "substitutions": {}
+  },
+  "metadata": {
+    "version": "0.1.0"
+  }
+}
