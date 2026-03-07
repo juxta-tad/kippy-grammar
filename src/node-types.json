@@ -571,6 +571,29 @@
     }
   },
   {
+    "type": "function_type_params",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_non_function",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "if_expression",
     "named": true,
     "fields": {
@@ -2088,6 +2111,10 @@
         },
         {
           "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "function_type_params",
           "named": true
         },
         {

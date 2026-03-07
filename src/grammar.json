@@ -3470,7 +3470,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "type_non_function"
+                "name": "function_type_params"
               },
               {
                 "type": "SYMBOL",
@@ -3537,6 +3537,54 @@
           }
         ]
       }
+    },
+    "function_type_params": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "type_non_function"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "type_non_function"
+            },
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    }
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "comma"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    }
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "type_non_function"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     "constraint_clause": {
       "type": "SEQ",

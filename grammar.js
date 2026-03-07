@@ -431,7 +431,7 @@ implementation: $ => seq(
     ),
 
     // Function expression: fn params: body
-    // Parameters can be space-separated (fn x y z:) or comma-separated (fn x, y, z:)
+    // Parameters are comma-separated (fn x, y, z:)
     // Body supports same-line or natural indentation (no 'with' keyword required)
     lambda_expression: $ => seq(
       $.kw_fn,
@@ -460,9 +460,21 @@ implementation: $ => seq(
     ),
 
 type_expression: $ => prec.right(choice(
-      seq($.type_non_function, $.arrow_op, same_line_or_with_block($, $.type_expression)),
-      $.type_non_function,  // atom or tuple (for multi-arg: use (A, B) -> C syntax)
+      seq($.function_type_params, $.arrow_op, same_line_or_with_block($, $.type_expression)),
+      $.type_non_function,
     )),
+
+    // Function type params: either single type or comma-separated types (only on LHS of ->)
+    // a -> b -> c      (curried: each param is single type, chained arrows)
+    // a, b -> c        (multi-param: comma-separated on LHS of arrow)
+    // Inside parens: (a, b) is always a tuple, never a param list
+    function_type_params: $ => choice(
+      $.type_non_function,
+      seq(
+        $.type_non_function,
+        repeat1(seq(repeat($.newline), $.comma, repeat($.newline), $.type_non_function))
+      ),
+    ),
 
     constraint_clause: $ => seq(
       $.kw_where,

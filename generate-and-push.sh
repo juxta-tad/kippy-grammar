@@ -8,6 +8,10 @@ set -e
 
 COMMIT_MESSAGE="${1:-Regenerate parser}"
 
+# Change to the grammar directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
 echo "🔨 Regenerating Tree-sitter parser..."
 tree-sitter generate
 
