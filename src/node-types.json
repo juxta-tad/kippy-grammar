@@ -1306,10 +1306,6 @@
         {
           "type": "postfix_atom",
           "named": true
-        },
-        {
-          "type": "space_application_expression",
-          "named": true
         }
       ]
     }
@@ -1663,40 +1659,6 @@
         },
         {
           "type": "newline",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "space_application_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "postfix_atom",
-          "named": true
-        },
-        {
-          "type": "space_sep_arg",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "space_sep_arg",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "postfix_atom",
           "named": true
         }
       ]

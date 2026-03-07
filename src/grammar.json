@@ -1180,39 +1180,6 @@
       }
     },
     "postfix_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "space_application_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "postfix_atom"
-        }
-      ]
-    },
-    "space_application_expression": {
-      "type": "PREC_LEFT",
-      "value": 10,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "postfix_atom"
-          },
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SYMBOL",
-              "name": "space_sep_arg"
-            }
-          }
-        ]
-      }
-    },
-    "space_sep_arg": {
       "type": "SYMBOL",
       "name": "postfix_atom"
     },

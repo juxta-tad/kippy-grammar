@@ -1,5 +1,5 @@
-
 const PREC = {
+  // Lowest to highest precedence
   PIPE: 1,
   OR: 2,
   AND: 3,
@@ -15,24 +15,28 @@ const PREC = {
 module.exports = grammar({
   name: "kippy",
 
+  // tree-sitter uses this for keyword extraction and error recovery.
   word: $ => $.identifier,
 
+  // layout-sensitive tokens are provided externally by the scanner.
   externals: $ => [
     $.newline,
     $.indent,
     $.dedent,
   ],
 
+  // whitespace and comments are ignored everywhere unless explicitly required.
   extras: $ => [
     /[ \t\r\f]+/,
     $.doc_comment,
     $.line_comment,
     $.block_comment,
   ],
+
   rules: {
-    // Enforce newline boundaries between module items (no two items on same line)
-    // Leading newlines allowed, then repeat: item + one-or-more-newlines
-    // Trailing newlines at EOF are optional
+    //
+    // A source file is a newline-separated list of module items.
+    // Leading blank lines are allowed. Multiple items cannot share one line.
     source_file: $ => seq(
       repeat($.newline),
       repeat(seq(
@@ -41,6 +45,7 @@ module.exports = grammar({
       )),
     ),
 
+    // top-level declarations supported by the module.
     module_item: $ => choice(
       $.use_statement,
       $.module_declaration,
@@ -52,11 +57,17 @@ module.exports = grammar({
       $.ability_declaration,
     ),
 
+    // import/reference another module path.
     use_statement: $ => seq(
       $.kw_use,
       $.long_identifier,
     ),
 
+    //
+    // Nested module declaration with an indented body.
+    // Example:
+    //   module Foo with
+    //     let x = 1
     module_declaration: $ => seq(
       $.kw_module,
       field("name", $.type_name),
@@ -69,6 +80,9 @@ module.exports = grammar({
       $.dedent,
     ),
 
+    //
+    // Type alias / type declaration.
+    // Parameters are bare identifiers after the type name.
     type_declaration: $ => seq(
       $.kw_type,
       field("name", $.type_name),
@@ -77,6 +91,9 @@ module.exports = grammar({
       field("value", $.type_expression),
     ),
 
+    //
+    // Standalone annotation node used by ability method declarations.
+    // Supports leading attributes and same-line or indented type bodies.
     annotation: $ => seq(
       repeat(seq($.attribute, optional($.newline))),
       field("name", $.assignment_lhs),
@@ -85,6 +102,7 @@ module.exports = grammar({
       optional(field("constraints", $.constraint_clause)),
     ),
 
+    // top-level signature declaration.
     signature: $ => seq(
       $.kw_sig,
       field("name", $.identifier),
@@ -93,6 +111,12 @@ module.exports = grammar({
       optional(field("constraints", $.constraint_clause)),
     ),
 
+    //
+    // Value definitions support:
+    //   let name : Type
+    //   let name = expr
+    //   let name : Type = expr
+    // Also supports attributes, pub, and cert modifiers.
     value_definition: $ => seq(
       repeat(seq($.attribute, optional($.newline))),
       optional($.kw_pub),
@@ -100,13 +124,11 @@ module.exports = grammar({
       optional($.kw_cert),
       field("name", $.assignment_lhs),
       choice(
-        // Signature-only: let name : Type (where ...)?
         seq(
           ":",
           field("type", same_line_or_indent_block($, $.type_expression)),
           optional(field("constraints", $.constraint_clause)),
         ),
-        // Definition: let name (: Type)? = expr
         seq(
           optional(seq(
             ":",
@@ -118,22 +140,27 @@ module.exports = grammar({
       ),
     ),
 
-    // Attributes use function-call syntax: @name or @name(args)
-    // Reuses call_suffix and arg_list from function call grammar
-    // Supports qualified names: @intrinsic.dispatch(), @config.option()
+    //
+    // Attributes use call-like syntax:
+    //   @name
+    //   @name(args)
+    //   @qualified.name(args)
     attribute: $ => seq(
       "@",
       $.long_identifier,
       optional($.call_suffix),
     ),
 
-implementation: $ => seq(
+    // implement an ability for a concrete type.
+    implementation: $ => seq(
       $.kw_implement,
       field("ability", $.type_name),
       $.kw_for,
       field("type", $.type_name),
     ),
 
+    //
+    // Ability declaration with optional indented method annotations.
     ability_declaration: $ => seq(
       repeat(seq($.attribute, optional($.newline))),
       $.kw_ability,
@@ -151,90 +178,92 @@ implementation: $ => seq(
       )),
     ),
 
+    // assertion/expectation form.
     expect_statement: $ => seq($.kw_expect, field("value", $.expression)),
 
-    // Value binders must be lowercase to avoid ambiguity with type constructors
-    // let <lowercase_name> = ... (value definition)
-    // vs Let Foo = ... (would suggest type/constructor)
+    //
+    // Assignment LHS is limited to lowercase-style identifiers and dotted paths.
+    // This avoids ambiguity with constructor/type names.
     assignment_lhs: $ => prec(1, seq(
       $.identifier,
       repeat(seq(token.immediate("."), $.identifier)),
     )),
 
+    // expression entry point.
     expression: $ => $.pipe_expression,
 
+    // pipeline is lowest-precedence expression form.
     pipe_expression: $ => prec.right(PREC.PIPE, seq(
       $.or_expression,
       repeat(seq($.pipe, $.or_expression)),
     )),
 
+    // logical OR chains left-associatively.
     or_expression: $ => prec.left(PREC.OR, seq(
       $.and_expression,
       repeat(seq($.or_op, $.and_expression)),
     )),
 
+    // logical AND chains left-associatively.
     and_expression: $ => prec.left(PREC.AND, seq(
       $.compare_expression,
       repeat(seq($.and_op, $.compare_expression)),
     )),
 
+    //
+    // Comparison allows at most one comparator per node.
+    // Chained comparisons like a < b < c are not parsed as a single expression here.
     compare_expression: $ => prec.left(PREC.COMPARE, seq(
       $.add_expression,
       optional(seq(choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op), $.add_expression)),
     )),
 
+    // additive operators.
     add_expression: $ => prec.left(PREC.ADD, seq(
       $.mul_expression,
       repeat(seq(choice($.plus, $.minus), $.mul_expression)),
     )),
 
+    // multiplicative operators.
     mul_expression: $ => prec.left(PREC.MUL, seq(
       $.unary_expression,
       repeat(seq(choice($.star, $.slash, $.double_slash, $.percent), $.unary_expression)),
     )),
 
+    // unary negation and logical not bind tighter than binary operators.
     unary_expression: $ => choice(
       prec.right(PREC.UNARY, seq(choice($.minus, $.not_kw), $.unary_expression)),
       $.postfix_expression,
     ),
 
-    // Unified postfix chain: call, field, and try all at same level
-    // Allows: f()?, f?.(), f?().x, getValue?()(x).baz?
-    // This single chain handles all combinations without ordering constraints
+    //
+    // Unified postfix chain:
+    //   f()
+    //   value.field
+    //   value?
+    //   get?().x?(y)
+    // This avoids separate precedence layers for each postfix form.
     postfix_atom: $ => prec.left(PREC.POSTFIX_FIELD, seq(
       $.primary_expression,
       repeat(choice($.call_suffix, $.field_suffix, $.try_op)),
     )),
 
-    // Postfix hierarchy (tightest to loosest): space_app > postfix_atom
-    // This binding order means: f g.x is (f g).x, not f (g.x)
-    postfix_expression: $ => choice(
-      $.space_application_expression,
-      $.postfix_atom,
-    ),
+    // alias for postfix_atom kept as the expression-level postfix rule.
+    postfix_expression: $ => $.postfix_atom,
 
-    // Space application: postfix_atom followed by one or more space-separated args
-    // The 'let' keyword on value_definition eliminates shift-reduce conflicts:
-    // Module items cannot start with a bare identifier (must start with 'let')
-    // Therefore no ambiguity between "continue space_application" and "new module_item"
-    // This allows all forms: f x y, f (x) (y), f x (y), f g(x), f 1 2
-    space_application_expression: $ => prec.left(PREC.POSTFIX_SPACE_APP, seq(
-      $.postfix_atom,
-      repeat1($.space_sep_arg),  // One or more args (repeat1, not space_sep_arg + repeat)
-    )),
-
-    // Space-separated argument: postfix_atom allows calls, field access, and try
-    space_sep_arg: $ => $.postfix_atom,
-
+    // function call suffix requires immediate "(" with no whitespace.
     call_suffix: $ => prec(2, arg_list($, $.expression)),
 
+    // field projection or tuple/index access via dot syntax.
     field_suffix: $ => seq(
       $.dot,
       field("field", choice($.identifier, $.int_index)),
     ),
 
+    // numeric dot-field like .0, .1.
     int_index: $ => token(/[0-9]+/),
 
+    // primary expressions are the irreducible expression forms.
     primary_expression: $ => choice(
       $.when_expression,
       $.if_expression,
@@ -250,43 +279,62 @@ implementation: $ => seq(
       $.block_expression,
     ),
 
+    // list literal with single-line or layout-sensitive multiline support.
     list_expression: $ => layoutBracket($, $.lbracket, $.rbracket, $.expression),
 
-    // Record expression: { field: value, field: value } or { field: value, ..base }
+    //
+    // Record literal:
+    //   { a: 1, b: 2 }
+    //   { a: 1, ..base }
+    //   { ..base }
     record_expression: $ => choice(
       singleLineRecordExpression($, $.record_field),
       multiLineRecordExpression($, $.record_field),
     ),
 
-    // Record builder: applicative composition for parsers, decoders, validators
-    // Syntax: build builder_fn { field1: comp1, field2: comp2, ... }
+    //
+    // Record builder for applicative composition patterns.
+    // Example:
+    //   build decoder { x: dx, y: dy }
     record_builder: $ => seq(
       $.kw_build,
       field("builder", $.long_identifier),
       layoutBracket($, $.lbrace, $.rbrace, $.record_field),
     ),
 
-    // Record field naming: name/value pattern for consistent downstream tooling
-    // Every record field uses field("name", ...) and field("value", ...)
-    record_field: $ => seq(field("name", $.identifier), $.colon, field("value", same_line_or_indent_block($, $.expression))),
+    // standardised field naming for downstream tooling.
+    record_field: $ => seq(
+      field("name", $.identifier),
+      $.colon,
+      field("value", same_line_or_indent_block($, $.expression))
+    ),
 
+    // tuple literal parser shared with type tuples.
     tuple_expression: $ => tuple_like($, $.expression),
 
+    // grouping expression, not tuple.
     parenthesized_expression: $ => seq(
       $.lparen,
       field("value", $.expression),
       $.rparen,
     ),
 
+    //
+    // Block expression:
+    // (
+    //   let x = 1
+    //   in x + 1
+    // )
+    // or value-only:
+    // (
+    //   expr
+    // )
     block_expression: $ => seq(
       $.lparen,
       repeat1($.newline),
       $.indent,
       choice(
-        // Value-only block: no definitions, just expression with leading newlines
         field("value", withLeadingNewlines($, $.expression)),
-        // Block with definitions: defs (zero-or-more), blank lines, 'in' keyword, value
-        // Policy: the final expression consumes its own leading newlines
         seq(
           repeat(seq($.value_definition, repeat($.newline))),
           $.kw_in,
@@ -298,12 +346,13 @@ implementation: $ => seq(
       $.rparen,
     ),
 
+    //
+    // Pattern matching expression with an indented arm list.
     when_expression: $ => seq(
       $.kw_when,
       field("subject", $.expression),
       $.kw_is,
       $.newline,
-
       $.indent,
       field("arms", seq(
         repeat(seq($.when_arm, $.newline)),
@@ -313,43 +362,42 @@ implementation: $ => seq(
       $.dedent,
     ),
 
-    // Pattern matching in when expressions
-    // Top level: pattern with optional guard
+    // full pattern plus optional guard.
     pattern: $ => seq(
       $.or_pattern,
       optional(seq($.kw_if, field("guard", $.expression)))
     ),
 
-    // Or-patterns: p1 | p2 | p3
+    // alternation patterns.
     or_pattern: $ => prec.left(seq(
       $.as_pattern,
       repeat(seq($.pipe_bar, $.as_pattern))
     )),
 
-    // As-patterns: p as binding
+    // binding the matched value after a successful subpattern match.
     as_pattern: $ => choice(
       seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)),
       $.atomic_pattern
     ),
 
-    // Atomic pattern types (cannot be extended with `as` or `|`)
+    // atomic patterns are the non-extendable pattern forms.
     atomic_pattern: $ => choice(
       $.literal,
       $.wildcard_pattern,
-      $.identifier,  // binding pattern
+      $.identifier,
       $.tag_pattern,
       $.list_pattern,
       $.tuple_pattern,
       $.record_pattern,
-      seq($.lparen, $.pattern, $.rparen)  // parenthesized pattern
+      seq($.lparen, $.pattern, $.rparen)
     ),
 
+    // wildcard pattern.
     wildcard_pattern: $ => "_",
 
-    // Non-parenthesized atomic patterns (for space-applied tag arguments)
-    // Excludes all forms starting with ( to avoid ambiguity with Tag(x) syntax:
-    // - seq(lparen, pattern, rparen) [parenthesized pattern]
-    // - tuple_pattern [starts with lparen]
+    //
+    // Non-parenthesised patterns allowed as bare tag arguments.
+    // Deliberately excludes tuple/parenthesised forms to avoid Tag(x) ambiguity.
     non_paren_atomic_pattern: $ => choice(
       $.literal,
       $.wildcard_pattern,
@@ -359,7 +407,11 @@ implementation: $ => seq(
       $.record_pattern,
     ),
 
-    // Tag pattern: Tag or Tag(...args) or Tag arg
+    //
+    // Constructor/tag patterns:
+    //   Tag
+    //   Tag(x, y)
+    //   Tag x
     tag_pattern: $ => seq(
       $.tag_name,
       optional(choice(
@@ -372,8 +424,12 @@ implementation: $ => seq(
       ))
     ),
 
-    // List pattern: [] or [x, y] or [x, ..rest]
-    // Allows full patterns inside: [x as y], [A | B], etc.
+    //
+    // List patterns:
+    //   []
+    //   [x, y]
+    //   [x, ..rest]
+    //   [..rest]
     list_pattern: $ => seq(
       $.lbracket,
       optional(choice(
@@ -387,14 +443,14 @@ implementation: $ => seq(
       $.rbracket
     ),
 
-    // Rest pattern: ..identifier
+    // list tail binding.
     rest_pattern: $ => seq(
       "..",
       field("binding", $.identifier)
     ),
 
-    // Tuple pattern: (x,) or (x, y) - requires at least one comma to distinguish from parenthesized pattern
-    // Allows full patterns inside: (x as y, z), (A | B, C), etc.
+    //
+    // Tuple pattern must contain a comma so it cannot be confused with grouping.
     tuple_pattern: $ => seq(
       $.lparen,
       $.pattern,
@@ -403,7 +459,12 @@ implementation: $ => seq(
       $.rparen
     ),
 
-    // Record pattern: { age, name: _ } or { age, .. }
+    //
+    // Record patterns:
+    //   { age }
+    //   { age: x }
+    //   { age, .. }
+    //   { .. }
     record_pattern: $ => seq(
       $.lbrace,
       optional(choice(
@@ -417,30 +478,38 @@ implementation: $ => seq(
       $.rbrace
     ),
 
-    // Record pattern field: age or age: pattern or name: _
-    // Allows full patterns: { field: A | B }, { age: x as y }, etc.
+    // shorthand field or explicit field pattern.
     record_pattern_field: $ => choice(
       seq($.identifier, ":", $.pattern),
-      $.identifier  // shorthand: { age } equivalent to { age: age }
+      $.identifier
     ),
 
+    // one match arm and its result expression.
     when_arm: $ => seq(
       field("pattern", $.pattern),
       $.arrow_op,
       field("value", same_line_or_indent_block($, $.expression)),
     ),
 
-    // Function expression: fn params: body
-    // Parameters are comma-separated (fn x, y, z:)
-    // Body supports same-line or natural indentation (no 'with' keyword required)
+    //
+    // Lambda syntax:
+    //   fn x:
+    //   fn x, y, z:
+    // Body may be same-line or indented.
     lambda_expression: $ => seq(
       $.kw_fn,
       field("param", $.identifier),
-      repeat(seq(optional(repeat($.newline)), $.comma, optional(repeat($.newline)), field("param", $.identifier))),
+      repeat(seq(
+        optional(repeat($.newline)),
+        $.comma,
+        optional(repeat($.newline)),
+        field("param", $.identifier)
+      )),
       $.colon,
       field("body", same_line_or_indent_block($, $.expression)),
     ),
 
+    // expression-level if/then/else.
     if_expression: $ => seq(
       $.kw_if,
       field("condition", $.expression),
@@ -450,15 +519,20 @@ implementation: $ => seq(
       field("else_value", $.expression),
     ),
 
-type_expression: $ => prec.right(choice(
+    //
+    // Function types are right-associative.
+    // Supports:
+    //   a -> b
+    //   a, b -> c
+    //   a -> b -> c
+    type_expression: $ => prec.right(choice(
       seq($.function_type_params, $.arrow_op, same_line_or_indent_block($, $.type_expression)),
       $.type_non_function,
     )),
 
-    // Function type params: either single type or comma-separated types (only on LHS of ->)
-    // a -> b -> c      (curried: each param is single type, chained arrows)
-    // a, b -> c        (multi-param: comma-separated on LHS of arrow)
-    // Inside parens: (a, b) is always a tuple, never a param list
+    //
+    // Only the left-hand side of an arrow may use comma-separated parameters.
+    // Parenthesised comma lists remain tuples, not parameter groups.
     function_type_params: $ => choice(
       $.type_non_function,
       seq(
@@ -467,6 +541,7 @@ type_expression: $ => prec.right(choice(
       ),
     ),
 
+    // simple where-clause constraint.
     constraint_clause: $ => seq(
       $.kw_where,
       field("type_var", $.identifier),
@@ -474,6 +549,7 @@ type_expression: $ => prec.right(choice(
       field("constraint", $.type_non_function),
     ),
 
+    // non-arrow type forms.
     type_non_function: $ => choice(
       $.type_atom,
       $.type_tuple,
@@ -482,17 +558,23 @@ type_expression: $ => prec.right(choice(
       $.type_application,
     ),
 
+    //
+    // Type application is left-associative:
+    //   Result String Error
+    //   Map k v
     type_application: $ => prec.left(1, seq(
       field("head", choice($.type_application, $.type_atom)),
       field("arg", $.type_arg),
     )),
 
+    // valid type application arguments.
     type_arg: $ => choice(
-      $.identifier,           // type variables: a, b, c
-      $.tag_name,             // concrete types: U8, String, List
+      $.identifier,
+      $.tag_name,
       alias("_", $.type_wildcard),
     ),
 
+    // atomic type forms.
     type_atom: $ => choice(
       $.type_name,
       alias("_", $.type_wildcard),
@@ -500,8 +582,18 @@ type_expression: $ => prec.right(choice(
       $.parenthesized_type,
     ),
 
-    type_name: $ => seq($.name, repeat(seq(token.immediate("."), $.name)), optional($.type_args)),
-    // Type arguments use first/rest field pattern for consistency with call and tuple lists
+    //
+    // Qualified type name with optional explicit type arguments.
+    // Example:
+    //   Foo
+    //   Mod.Foo(a, b)
+    type_name: $ => seq(
+      $.name,
+      repeat(seq(token.immediate("."), $.name)),
+      optional($.type_args)
+    ),
+
+    // explicit parenthesised type argument list.
     type_args: $ => seq(
       token.immediate("("),
       optional(seq(
@@ -512,16 +604,27 @@ type_expression: $ => prec.right(choice(
       $.rparen,
     ),
 
+    // record type field.
     type_field: $ => seq($.identifier, ":", same_line_or_indent_block($, $.type_expression)),
 
+    //
+    // Tag union type:
+    //   [Some(a), None]
     type_tag_union: $ => layoutBracket($, $.lbracket, $.rbracket, $.tag_type),
 
-    tag_type: $ => seq($.tag_name, optional(seq($.lparen, commaSep1Trail($, $.type_expression, $.comma, $.newline), $.rparen))),
+    // one tag constructor inside a tag union type.
+    tag_type: $ => seq(
+      $.tag_name,
+      optional(seq($.lparen, commaSep1Trail($, $.type_expression, $.comma, $.newline), $.rparen))
+    ),
 
+    // tuple type.
     type_tuple: $ => tuple_like($, $.type_expression),
 
+    // grouped type expression.
     parenthesized_type: $ => seq($.lparen, $.type_expression, $.rparen),
 
+    // literal forms available in both expressions and patterns.
     literal: $ => choice(
       $.int_literal,
       $.float_literal,
@@ -531,6 +634,7 @@ type_expression: $ => prec.right(choice(
       alias("false", $.bool_literal),
     ),
 
+    // decimal/scientific floating-point formats with optional f32/f64 suffix.
     float_literal: $ => token(choice(
       /[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
       /[0-9][0-9_]*\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
@@ -538,6 +642,7 @@ type_expression: $ => prec.right(choice(
       /[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?/,
     )),
 
+    // integer literal formats with optional signed/unsigned width suffixes.
     int_literal: $ => token(choice(
       /0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
       /0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
@@ -545,6 +650,9 @@ type_expression: $ => prec.right(choice(
       /[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
     )),
 
+    //
+    // Normal string with escapes and interpolation.
+    // Interpolation starts with \( and ends at the matching parser-level ).
     string: $ => seq(
       '"',
       repeat(choice(
@@ -555,6 +663,8 @@ type_expression: $ => prec.right(choice(
       '"',
     ),
 
+    //
+    // Triple-quoted multiline string with interpolation and controlled quote tokenisation.
     multiline_string: $ => seq(
       '"""',
       repeat(choice(
@@ -567,30 +677,31 @@ type_expression: $ => prec.right(choice(
       '"""',
     ),
 
+    // embedded expression interpolation in strings.
     interpolation: $ => seq(
       $.interpolation_start,
       $.expression,
       ")",
     ),
 
+    // token for the start of interpolation.
     interpolation_start: $ => token(/\\\(/),
 
+    // plain single-line string content excluding quotes, backslashes, and newlines.
     string_text: $ => token(/[^"\\\n]+/),
 
-    // Multiline string content tokens: guaranteed safe because:
-    // - multiline_text: /[^\\"]+/ cannot match any quote chars, so it stops before " sequences
-    // - multiline_quote: /"[^"]/ matches " + non-", so never matches "" or """
-    // - multiline_double_quote: /""[^"]/ matches "" + non-", so never matches """
-    // This design ensures: any quote sequence of 3+ is preserved as the closing """ delimiter
+    //
+    // Multiline quote token design deliberately avoids consuming the closing """ delimiter.
     multiline_text: $ => token(/[^\\"]+/),
     multiline_quote: $ => token(/"[^"]/),
     multiline_double_quote: $ => token(/""[^"]/),
 
+    // supported escape sequences.
     escape_sequence: $ => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
+    // comment forms, all treated as extras.
     doc_comment: $ => token(prec(-1, /##[^\n]*/)),
     line_comment: $ => token(prec(-2, /#[^\n]*/)),
-
     block_comment: $ => token(prec(-3,
       seq(
         "<#",
@@ -602,15 +713,26 @@ type_expression: $ => prec.right(choice(
       ),
     )),
 
+    // name may be lowercase identifier or uppercase tag/type name.
     name: $ => choice($.identifier, $.tag_name),
 
+    //
+    // Lowercase-style identifiers, optionally prefixed by underscores and optionally ending in !.
     identifier: $ => token(prec(1, /(_*[a-z][a-zA-Z0-9_]*!?)/)),
+
+    // constructor/type/tag names are uppercase-initial.
     tag_name: $ => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
 
-    long_identifier: $ => prec.left(seq($.name, repeat(seq(token.immediate("."), $.name)))),
+    // dotted qualified identifier/type path.
+    long_identifier: $ => prec.left(seq(
+      $.name,
+      repeat(seq(token.immediate("."), $.name))
+    )),
 
+    // placeholder expression token.
     placeholder: $ => token("__"),
 
+    // keywords get token precedence to reduce conflicts with identifiers.
     kw_pub: $ => token(prec(2, "pub")),
     kw_let: $ => token(prec(2, "let")),
     kw_cert: $ => token(prec(2, "cert")),
@@ -637,6 +759,7 @@ type_expression: $ => prec.right(choice(
     kw_not: $ => token(prec(2, "not")),
     kw_as: $ => token(prec(2, "as")),
 
+    // punctuation and operator tokens.
     lparen: $ => "(",
     rparen: $ => ")",
     lbracket: $ => "[",
@@ -647,38 +770,46 @@ type_expression: $ => prec.right(choice(
     colon: $ => ":",
     equals: $ => token(prec(2, "=")),
     dot: $ => ".",
-    // Pipe operator with explicit tokenization priority to avoid conflicts
-    // |> must match before | to prevent partial tokenization
+
+    //
+    // |> must tokenise before plain | to avoid partial matches.
     pipe: $ => token("|>"),
     pipe_bar: $ => token("|"),
+
     or_op: $ => $.kw_or,
     and_op: $ => $.kw_and,
     not_kw: $ => $.kw_not,
+
     plus: $ => "+",
     minus: $ => "-",
     star: $ => "*",
     slash: $ => "/",
     double_slash: $ => "//",
     percent: $ => "%",
-    // Comparison operators: longer tokens get higher precedence to prevent ambiguity
-    // E.g., "<=" must match before "<", ">=" must match before ">"
+
+    //
+    // Longer comparison operators are given higher precedence to avoid ambiguity.
     eq_op: $ => token(prec(3, "==")),
     ne_op: $ => token(prec(3, "!=")),
     le_op: $ => token(prec(4, "<=")),
     ge_op: $ => token(prec(4, ">=")),
     lt_op: $ => token(prec(3, "<")),
     gt_op: $ => token(prec(3, ">")),
+
     arrow_op: $ => "->",
     try_op: $ => "?",
 
+    // record type literal syntax.
     type_record: $ => layoutBracket($, "{", "}", $.type_field),
 
+    // wildcard and star type atoms.
     type_wildcard: $ => "_",
     type_star: $ => "*",
   },
 });
 
-
+//
+// Generic single-line delimited list helper with optional trailing comma.
 function singleLineBracket(open, commaToken, item, close) {
   return seq(
     open,
@@ -691,31 +822,33 @@ function singleLineBracket(open, commaToken, item, close) {
   );
 }
 
-// Helper: apply leading newlines to a rule (without creating a conflicting nonterminal)
+//
+// Attach any leading newlines directly to the rule.
+// Used to keep layout ownership local to the consuming construct.
 function withLeadingNewlines($, rule) {
   return seq(repeat($.newline), rule);
 }
 
-// Helper: indented block (newline + indent + rule), without requiring `with` keyword
-// Strict: requires exactly one newline (no blank lines) between = and indented expression
+//
+// Strict indented block form.
+// Requires a newline immediately before the indented body.
 function indent_block($, rule) {
   return seq($.newline, $.indent, withLeadingNewlines($, rule), repeat($.newline), $.dedent);
 }
 
-// Helper: same-line form OR indented-block form (choice between them)
-// Unified layout policy: all multiline bodies allow natural indentation (no `with` keyword)
-// Supports both same-line and next-line indented forms:
-//   same-line: name = expr
-//   indented: name =\n  expr
+//
+// Unified body helper:
+// - same line: = expr
+// - indented:  =\n  expr
 function same_line_or_indent_block($, rule) {
   return choice(
-    rule,  // same line: name = expr
-    indent_block($, rule),  // next line: name =\n  expr
+    rule,
+    indent_block($, rule),
   );
 }
 
-// Helper: comma-separated list items with optional newlines (for use in arg_list, tuple_list, etc.)
-// Policy: first item consumes leading newlines; rest items consume leading newlines before commas
+//
+// Generic comma-list helper where items may own leading newlines.
 function list_items($, itemRule) {
   return seq(
     withLeadingNewlines($, itemRule),
@@ -728,14 +861,11 @@ function list_items($, itemRule) {
   );
 }
 
-// Helper: tuple or type-tuple - single-line or multi-line with proper newline/comma/field handling
-// Field naming convention for list-like structures (tuples, calls, type-args):
-// - Uses field("first", ...) for the initial element
-// - Uses field("rest", ...) for remaining elements as a sequence
-// This provides consistent structure for downstream tools processing list-like expressions
+//
+// Shared tuple parser for expression tuples and type tuples.
+// Uses first/rest field naming for downstream consistency.
 function tuple_like($, itemRule) {
   return choice(
-    // Single-line: (item, item, ...)
     seq(
       $.lparen,
       field("first", itemRule),
@@ -743,8 +873,6 @@ function tuple_like($, itemRule) {
       field("rest", commaSep1Trail($, itemRule, $.comma, $.newline)),
       $.rparen,
     ),
-    // Multi-line: (\n<indent>item,\nitem,\n...<dedent>)
-    // Policy: each item consumes its own leading newlines
     seq(
       $.lparen,
       repeat1($.newline),
@@ -767,13 +895,13 @@ function tuple_like($, itemRule) {
   );
 }
 
-// Helper: function argument list - single-line or multi-line with proper newline/comma handling
-// Uses same first/rest field structure as tuple_like for consistency across list-like expressions
-// IMPORTANT: Uses token.immediate("(") to require NO WHITESPACE before (
-// This disambiguates f(x) [call] from f (x) [space-application]
+//
+// Function-call argument parser.
+// token.immediate("(") disallows whitespace before "(" so:
+//   f(x)  => call
+//   f (x) => not parsed as this call form
 function arg_list($, itemRule) {
   return choice(
-    // Single-line: (arg, arg, ...)
     seq(
       token.immediate("("),
       optional(seq(
@@ -783,7 +911,6 @@ function arg_list($, itemRule) {
       )),
       $.rparen,
     ),
-    // Multi-line: (\n<indent>arg,\narg,\n...<dedent>)
     seq(
       token.immediate("("),
       repeat1($.newline),
@@ -808,11 +935,12 @@ function arg_list($, itemRule) {
   );
 }
 
+//
+// Multiline delimited list helper using indentation.
 function multiLineBracket($, open, commaToken, item, close) {
   return seq(
     open,
     $.newline,
-
     $.indent,
     commaSep1Trail($, item, commaToken, $.newline),
     $.dedent,
@@ -820,6 +948,8 @@ function multiLineBracket($, open, commaToken, item, close) {
   );
 }
 
+//
+// Layout-aware bracketed collection: single-line or indented multiline form.
 function layoutBracket($, open, close, item) {
   return choice(
     singleLineBracket(open, $.comma, item, close),
@@ -827,10 +957,12 @@ function layoutBracket($, open, close, item) {
   );
 }
 
+// optional comma-separated sequence.
 function commaSepTrail($, rule, commaToken, sepToken) {
   return optional(commaSep1Trail($, rule, commaToken, sepToken));
 }
 
+// one-or-more comma-separated sequence with optional trailing comma.
 function commaSep1Trail($, rule, commaToken, sepToken) {
   return seq(
     rule,
@@ -839,37 +971,39 @@ function commaSep1Trail($, rule, commaToken, sepToken) {
   );
 }
 
-// Record expression helpers: support { field: val }, { field: val, ..base }, or { ..base }
+//
+// Single-line record literal helper supporting:
+//   { a: 1 }
+//   { a: 1, ..base }
+//   { ..base }
 function singleLineRecordExpression($, field) {
   return seq(
     $.lbrace,
     optional(choice(
-      // Fields with optional spread
       seq(
         field,
         repeat(seq($.comma, field)),
         optional(seq($.comma, "..", $.expression))
       ),
-      // Pure spread (no fields)
       seq("..", $.expression)
     )),
     $.rbrace,
   );
 }
 
+//
+// Multiline record literal helper supporting fields and optional spread.
 function multiLineRecordExpression($, field) {
   return seq(
     $.lbrace,
     $.newline,
     $.indent,
     optional(choice(
-      // Fields with optional spread
       seq(
         field,
         repeat(seq(optional($.newline), $.comma, optional($.newline), field)),
         optional(seq(optional($.newline), $.comma, optional($.newline), "..", $.expression))
       ),
-      // Pure spread (no fields)
       seq("..", $.expression)
     )),
     $.dedent,
