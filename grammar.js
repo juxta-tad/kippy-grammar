@@ -44,6 +44,7 @@ module.exports = grammar({
     module_item: $ => choice(
       $.use_statement,
       $.module_declaration,
+      $.type_declaration,
       $.value_definition,
       $.expect_statement,
       $.implementation,
@@ -65,6 +66,14 @@ module.exports = grammar({
         repeat(seq($.module_item, repeat($.newline))),
       )),
       $.dedent,
+    ),
+
+    type_declaration: $ => seq(
+      $.kw_type,
+      field("name", $.type_name),
+      repeat(field("param", $.identifier)),
+      $.equals,
+      field("value", $.type_expression),
     ),
 
     annotation: $ => seq(
@@ -607,6 +616,7 @@ type_expression: $ => prec.right(choice(
     kw_use: $ => token(prec(2, "use")),
     kw_build: $ => token(prec(2, "build")),
     kw_for: $ => token(prec(2, "for")),
+    kw_type: $ => token(prec(2, "type")),
     kw_fn: $ => token(prec(2, "fn")),
     kw_or: $ => token(prec(2, "or")),
     kw_and: $ => token(prec(2, "and")),
