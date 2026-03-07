@@ -153,10 +153,6 @@
             "named": true
           },
           {
-            "type": "kw_with",
-            "named": true
-          },
-          {
             "type": "newline",
             "named": true
           },
@@ -1510,10 +1506,6 @@
             "named": true
           },
           {
-            "type": "kw_with",
-            "named": true
-          },
-          {
             "type": "newline",
             "named": true
           }
@@ -1632,10 +1624,6 @@
           },
           {
             "type": "indent",
-            "named": true
-          },
-          {
-            "type": "kw_with",
             "named": true
           },
           {
@@ -2122,10 +2110,6 @@
           "named": true
         },
         {
-          "type": "kw_with",
-          "named": true
-        },
-        {
           "type": "newline",
           "named": true
         },
@@ -2158,10 +2142,6 @@
         },
         {
           "type": "indent",
-          "named": true
-        },
-        {
-          "type": "kw_with",
           "named": true
         },
         {
@@ -2446,10 +2426,6 @@
             "named": true
           },
           {
-            "type": "kw_with",
-            "named": true
-          },
-          {
             "type": "newline",
             "named": true
           },
@@ -2541,10 +2517,6 @@
           },
           {
             "type": "indent",
-            "named": true
-          },
-          {
-            "type": "kw_with",
             "named": true
           },
           {

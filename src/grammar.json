@@ -239,10 +239,6 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "kw_with"
-                  },
-                  {
-                    "type": "SYMBOL",
                     "name": "newline"
                   },
                   {
@@ -331,10 +327,6 @@
               {
                 "type": "SEQ",
                 "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "kw_with"
-                  },
                   {
                     "type": "SYMBOL",
                     "name": "newline"
@@ -481,10 +473,6 @@
                         "members": [
                           {
                             "type": "SYMBOL",
-                            "name": "kw_with"
-                          },
-                          {
-                            "type": "SYMBOL",
                             "name": "newline"
                           },
                           {
@@ -567,10 +555,6 @@
                               {
                                 "type": "SEQ",
                                 "members": [
-                                  {
-                                    "type": "SYMBOL",
-                                    "name": "kw_with"
-                                  },
                                   {
                                     "type": "SYMBOL",
                                     "name": "newline"
@@ -2173,10 +2157,6 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "kw_with"
-                  },
-                  {
-                    "type": "SYMBOL",
                     "name": "newline"
                   },
                   {
@@ -3250,10 +3230,6 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "kw_with"
-                  },
-                  {
-                    "type": "SYMBOL",
                     "name": "newline"
                   },
                   {
@@ -3486,10 +3462,6 @@
                   {
                     "type": "SEQ",
                     "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "kw_with"
-                      },
                       {
                         "type": "SYMBOL",
                         "name": "newline"
@@ -3883,10 +3855,6 @@
             {
               "type": "SEQ",
               "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "kw_with"
-                },
                 {
                   "type": "SYMBOL",
                   "name": "newline"

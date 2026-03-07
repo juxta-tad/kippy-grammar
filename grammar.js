@@ -81,7 +81,7 @@ module.exports = grammar({
       repeat(seq($.attribute, optional($.newline))),
       field("name", $.assignment_lhs),
       ":",
-      field("type", same_line_or_with_block($, $.type_expression)),
+      field("type", same_line_or_indent_block($, $.type_expression)),
       optional(field("constraints", $.constraint_clause)),
     ),
 
@@ -89,7 +89,7 @@ module.exports = grammar({
       $.kw_sig,
       field("name", $.identifier),
       ":",
-      field("type", same_line_or_with_block($, $.type_expression)),
+      field("type", same_line_or_indent_block($, $.type_expression)),
       optional(field("constraints", $.constraint_clause)),
     ),
 
@@ -103,14 +103,14 @@ module.exports = grammar({
         // Signature-only: let name : Type (where ...)?
         seq(
           ":",
-          field("type", same_line_or_with_block($, $.type_expression)),
+          field("type", same_line_or_indent_block($, $.type_expression)),
           optional(field("constraints", $.constraint_clause)),
         ),
         // Definition: let name (: Type)? = expr
         seq(
           optional(seq(
             ":",
-            field("type", same_line_or_with_block($, $.type_expression)),
+            field("type", same_line_or_indent_block($, $.type_expression)),
           )),
           $.equals,
           field("value", same_line_or_indent_block($, $.expression)),
@@ -268,7 +268,7 @@ implementation: $ => seq(
 
     // Record field naming: name/value pattern for consistent downstream tooling
     // Every record field uses field("name", ...) and field("value", ...)
-    record_field: $ => seq(field("name", $.identifier), $.colon, field("value", same_line_or_with_block($, $.expression))),
+    record_field: $ => seq(field("name", $.identifier), $.colon, field("value", same_line_or_indent_block($, $.expression))),
 
     tuple_expression: $ => tuple_like($, $.expression),
 
@@ -427,7 +427,7 @@ implementation: $ => seq(
     when_arm: $ => seq(
       field("pattern", $.pattern),
       $.arrow_op,
-      field("value", same_line_or_with_block($, $.expression)),
+      field("value", same_line_or_indent_block($, $.expression)),
     ),
 
     // Function expression: fn params: body
@@ -438,16 +438,7 @@ implementation: $ => seq(
       field("param", $.identifier),
       repeat(seq(optional(repeat($.newline)), $.comma, optional(repeat($.newline)), field("param", $.identifier))),
       $.colon,
-      field("body", choice(
-        $.expression,
-        seq(
-          $.newline,
-          $.indent,
-          withLeadingNewlines($, $.expression),
-          repeat($.newline),
-          $.dedent,
-        ),
-      )),
+      field("body", same_line_or_indent_block($, $.expression)),
     ),
 
     if_expression: $ => seq(
@@ -460,7 +451,7 @@ implementation: $ => seq(
     ),
 
 type_expression: $ => prec.right(choice(
-      seq($.function_type_params, $.arrow_op, same_line_or_with_block($, $.type_expression)),
+      seq($.function_type_params, $.arrow_op, same_line_or_indent_block($, $.type_expression)),
       $.type_non_function,
     )),
 
@@ -521,7 +512,7 @@ type_expression: $ => prec.right(choice(
       $.rparen,
     ),
 
-    type_field: $ => seq($.identifier, ":", same_line_or_with_block($, $.type_expression)),
+    type_field: $ => seq($.identifier, ":", same_line_or_indent_block($, $.type_expression)),
 
     type_tag_union: $ => layoutBracket($, $.lbracket, $.rbracket, $.tag_type),
 
@@ -705,11 +696,6 @@ function withLeadingNewlines($, rule) {
   return seq(repeat($.newline), rule);
 }
 
-// Helper: with-block form only (with keyword followed by newline, indent, and rule)
-function with_block($, rule) {
-  return seq($.kw_with, $.newline, $.indent, withLeadingNewlines($, rule), repeat($.newline), $.dedent);
-}
-
 // Helper: indented block (newline + indent + rule), without requiring `with` keyword
 // Strict: requires exactly one newline (no blank lines) between = and indented expression
 function indent_block($, rule) {
@@ -717,19 +703,14 @@ function indent_block($, rule) {
 }
 
 // Helper: same-line form OR indented-block form (choice between them)
-// For let-value bodies: allows `let x = expr` OR `let x =\n  expr` (no `with` needed)
+// Unified layout policy: all multiline bodies allow natural indentation (no `with` keyword)
+// Supports both same-line and next-line indented forms:
+//   same-line: name = expr
+//   indented: name =\n  expr
 function same_line_or_indent_block($, rule) {
   return choice(
     rule,  // same line: name = expr
     indent_block($, rule),  // next line: name =\n  expr
-  );
-}
-
-// Helper: same-line form OR with-block form (choice between them)
-function same_line_or_with_block($, rule) {
-  return choice(
-    rule,  // same line: name = expr
-    with_block($, rule),  // next line: name = with \n  expr
   );
 }
 
