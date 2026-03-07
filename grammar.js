@@ -456,8 +456,8 @@ type_expression: $ => prec.right(choice(
 
     constraint_clause: $ => seq(
       $.kw_where,
-      $.kw_ability,
       field("type_var", $.identifier),
+      $.colon,
       field("constraint", $.type_non_function),
     ),
 

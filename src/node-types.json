@@ -489,7 +489,7 @@
       "required": true,
       "types": [
         {
-          "type": "kw_ability",
+          "type": "colon",
           "named": true
         },
         {

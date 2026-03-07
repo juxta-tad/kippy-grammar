@@ -3401,16 +3401,16 @@
           "name": "kw_where"
         },
         {
-          "type": "SYMBOL",
-          "name": "kw_ability"
-        },
-        {
           "type": "FIELD",
           "name": "type_var",
           "content": {
             "type": "SYMBOL",
             "name": "identifier"
           }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "colon"
         },
         {
           "type": "FIELD",
