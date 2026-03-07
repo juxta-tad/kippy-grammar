@@ -1617,6 +1617,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_sig",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -2769,6 +2779,10 @@
   },
   {
     "type": "kw_pub",
+    "named": true
+  },
+  {
+    "type": "kw_sig",
     "named": true
   },
   {

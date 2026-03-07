@@ -86,6 +86,7 @@ module.exports = grammar({
     ),
 
     signature: $ => seq(
+      $.kw_sig,
       field("name", $.identifier),
       ":",
       field("type", same_line_or_with_block($, $.type_expression)),
@@ -625,6 +626,7 @@ type_expression: $ => prec.right(choice(
     kw_build: $ => token(prec(2, "build")),
     kw_for: $ => token(prec(2, "for")),
     kw_type: $ => token(prec(2, "type")),
+    kw_sig: $ => token(prec(2, "sig")),
     kw_fn: $ => token(prec(2, "fn")),
     kw_or: $ => token(prec(2, "or")),
     kw_and: $ => token(prec(2, "and")),

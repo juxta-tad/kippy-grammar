@@ -303,6 +303,10 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "kw_sig"
+        },
+        {
           "type": "FIELD",
           "name": "name",
           "content": {
@@ -4884,6 +4888,17 @@
         "content": {
           "type": "STRING",
           "value": "type"
+        }
+      }
+    },
+    "kw_sig": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "STRING",
+          "value": "sig"
         }
       }
     },
