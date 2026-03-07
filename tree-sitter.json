@@ -1,4 +1,12 @@
 {
+	"grammers": [
+		{
+      "name": "Kippy",
+      "camelcase": "kippy",
+      "path": ".",
+      "file-types": ["kip"]
+    }
+	],
   "binding_version": 14,
   "build": {
     "channel": "stable",
