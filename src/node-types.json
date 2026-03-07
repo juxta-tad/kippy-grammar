@@ -937,6 +937,10 @@
           "named": true
         },
         {
+          "type": "signature",
+          "named": true
+        },
+        {
           "type": "type_declaration",
           "named": true
         },
@@ -1562,6 +1566,58 @@
     "type": "rparen",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "signature",
+    "named": true,
+    "fields": {
+      "constraints": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constraint_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "kw_with",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "source_file",

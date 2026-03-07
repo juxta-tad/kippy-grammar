@@ -46,6 +46,7 @@ module.exports = grammar({
       $.module_declaration,
       $.type_declaration,
       $.value_definition,
+      $.signature,
       $.expect_statement,
       $.implementation,
       $.ability_declaration,
@@ -79,6 +80,13 @@ module.exports = grammar({
     annotation: $ => seq(
       repeat(seq($.attribute, optional($.newline))),
       field("name", $.assignment_lhs),
+      ":",
+      field("type", same_line_or_with_block($, $.type_expression)),
+      optional(field("constraints", $.constraint_clause)),
+    ),
+
+    signature: $ => seq(
+      field("name", $.identifier),
       ":",
       field("type", same_line_or_with_block($, $.type_expression)),
       optional(field("constraints", $.constraint_clause)),
