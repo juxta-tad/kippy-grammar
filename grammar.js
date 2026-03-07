@@ -431,11 +431,12 @@ implementation: $ => seq(
     ),
 
     // Function expression: fn params: body
-    // Space-separated parameters for consistency with space-application syntax
+    // Parameters can be space-separated (fn x y z:) or comma-separated (fn x, y, z:)
     // Body supports same-line or natural indentation (no 'with' keyword required)
     lambda_expression: $ => seq(
       $.kw_fn,
-      repeat1(field("param", $.identifier)),
+      field("param", $.identifier),
+      repeat(seq(optional(repeat($.newline)), $.comma, optional(repeat($.newline)), field("param", $.identifier))),
       $.colon,
       field("body", choice(
         $.expression,

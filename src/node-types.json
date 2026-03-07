@@ -729,7 +729,15 @@
           "named": true
         },
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "kw_fn",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
