@@ -546,24 +546,33 @@ module.exports = grammar({
 
     //
     // Function types are right-associative.
+    // Arrow required for comma-separated types on the left.
     // Supports:
     //   a -> b
     //   a, b -> c
     //   a -> b -> c
     type_expression: $ => prec.right(choice(
-      seq($.function_type_domain, $.arrow_op, inline_or_block($, $.type_expression)),
+      seq(
+        field("left", choice(
+          $.type_function_params,
+          $.non_arrow_type,
+        )),
+        $.arrow_op,
+        field("right", inline_or_block($, $.type_expression)),
+      ),
       $.non_arrow_type,
     )),
 
     //
-    // Only the left-hand side of an arrow may use comma-separated parameters.
-    // Parenthesised comma lists remain tuples, not parameter groups.
-    function_type_domain: $ => choice(
-      $.non_arrow_type,
-      seq(
-        $.non_arrow_type,
-        repeat1(seq(repeat($.newline), $.comma, repeat($.newline), $.non_arrow_type))
-      ),
+    // Type function parameters: comma-separated list of types on the left of an arrow.
+    // Must have at least 2 items. Commas must follow immediately (no leading newlines).
+    type_function_params: $ => seq(
+      field("first", $.non_arrow_type),
+      repeat1(seq(
+        $.comma,
+        repeat($.newline),
+        field("rest", $.non_arrow_type),
+      )),
     ),
 
     // simple where-clause constraint.
@@ -607,7 +616,7 @@ module.exports = grammar({
       token.immediate("("),
       optional(seq(
         field("first", $.type_expression),
-        field("rest", repeat(seq(repeat($.newline), $.comma, repeat($.newline), $.type_expression))),
+        field("rest", repeat(seq($.comma, repeat($.newline), $.type_expression))),
         optional(seq(repeat($.newline), $.comma)),
       )),
       $.rparen,
@@ -629,7 +638,7 @@ module.exports = grammar({
     ),
 
     // tuple type.
-    type_tuple: $ => tuple_like($, $.type_expression),
+    type_tuple: $ => tuple_like($, $.non_arrow_type),
 
     // grouped type expression.
     parenthesized_type: $ => seq($.lparen, $.type_expression, $.rparen),
@@ -787,7 +796,7 @@ module.exports = grammar({
     lbrace: $ => "{",
     rbrace: $ => "}",
     // tuple constructor: #{x, y}
-    lbrace_hash: $ => token.immediate("#{"),
+    lbrace_hash: $ => token("#{"),
     comma: $ => ",",
     colon: $ => ":",
     equals: $ => token(prec(2, "=")),
@@ -885,7 +894,7 @@ function list_items($, itemRule) {
 
 //
 // Shared tuple parser for expression tuples and type tuples.
-// Uses first/rest field naming for downstream consistency.
+// Explicitly requires at least 2 items: first, comma, second, then optional rest.
 // Syntax: #{x, y} not (x, y)
 function tuple_like($, itemRule) {
   return choice(
@@ -893,7 +902,12 @@ function tuple_like($, itemRule) {
       $.lbrace_hash,
       field("first", itemRule),
       $.comma,
-      field("rest", commaSep1Trail($, itemRule, $.comma, $.newline)),
+      field("second", itemRule),
+      repeat(seq(
+        $.comma,
+        field("rest", itemRule),
+      )),
+      optional($.comma),
       $.rbrace,
     ),
     seq(
@@ -903,15 +917,13 @@ function tuple_like($, itemRule) {
       field("first", withLeadingNewlines($, itemRule)),
       repeat($.newline),
       $.comma,
-      field("rest", seq(
+      field("second", withLeadingNewlines($, itemRule)),
+      repeat(seq(
+        repeat($.newline),
+        $.comma,
         withLeadingNewlines($, itemRule),
-        repeat(seq(
-          repeat($.newline),
-          $.comma,
-          withLeadingNewlines($, itemRule),
-        )),
-        optional(seq(repeat($.newline), $.comma)),
       )),
+      optional(seq(repeat($.newline), $.comma)),
       repeat($.newline),
       $.dedent,
       $.rbrace,

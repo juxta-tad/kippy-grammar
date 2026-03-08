@@ -533,29 +533,6 @@
     }
   },
   {
-    "type": "function_type_domain",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "comma",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "non_arrow_type",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "if_expression",
     "named": true,
     "fields": {
@@ -2365,12 +2342,18 @@
       },
       "rest": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
-            "type": "comma",
+            "type": "expression",
             "named": true
-          },
+          }
+        ]
+      },
+      "second": {
+        "multiple": true,
+        "required": true,
+        "types": [
           {
             "type": "expression",
             "named": true
@@ -2392,6 +2375,10 @@
         },
         {
           "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "expression",
           "named": true
         },
         {
@@ -2549,9 +2536,46 @@
   {
     "type": "type_expression",
     "named": true,
-    "fields": {},
+    "fields": {
+      "left": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "non_arrow_type",
+            "named": true
+          },
+          {
+            "type": "type_function_params",
+            "named": true
+          }
+        ]
+      },
+      "right": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
@@ -2559,27 +2583,47 @@
           "named": true
         },
         {
-          "type": "dedent",
+          "type": "non_arrow_type",
           "named": true
-        },
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_function_params",
+    "named": true,
+    "fields": {
+      "first": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "non_arrow_type",
+            "named": true
+          }
+        ]
+      },
+      "rest": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "non_arrow_type",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
         {
-          "type": "function_type_domain",
-          "named": true
-        },
-        {
-          "type": "indent",
+          "type": "comma",
           "named": true
         },
         {
           "type": "newline",
-          "named": true
-        },
-        {
-          "type": "non_arrow_type",
-          "named": true
-        },
-        {
-          "type": "type_expression",
           "named": true
         }
       ]
@@ -2683,25 +2727,31 @@
             "named": true
           },
           {
-            "type": "type_expression",
+            "type": "non_arrow_type",
             "named": true
           }
         ]
       },
       "rest": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
-            "type": "comma",
+            "type": "non_arrow_type",
             "named": true
-          },
+          }
+        ]
+      },
+      "second": {
+        "multiple": true,
+        "required": true,
+        "types": [
           {
             "type": "newline",
             "named": true
           },
           {
-            "type": "type_expression",
+            "type": "non_arrow_type",
             "named": true
           }
         ]
@@ -2729,6 +2779,10 @@
         },
         {
           "type": "newline",
+          "named": true
+        },
+        {
+          "type": "non_arrow_type",
           "named": true
         },
         {
