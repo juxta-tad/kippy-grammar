@@ -42,6 +42,7 @@ module.exports = grammar({
   ],
 
   // whitespace and comments are ignored everywhere unless explicitly required.
+  // Comments are also explicitly handled at declaration level for predictable formatter attachment.
   extras: $ => [
     /[ \t\r\f]+/,
     $.doc_comment,
@@ -62,6 +63,36 @@ module.exports = grammar({
   // SECTION 3: GRAMMAR RULES
   // ═════════════════════════════════════════════════════════════════════════════
   rules: {
+    // ═════════════════════════════════════════════════════════════════════════════
+    // FORMATTER COMMENT ATTACHMENT RULES
+    // ═════════════════════════════════════════════════════════════════════════════
+    // Comments appear in extras and can be found anywhere, but formatters should
+    // follow these predictable attachment rules:
+    //
+    // 1. Doc Comments (///) bind to the next declaration only.
+    //    Examples:
+    //      /// Computes the sum
+    //      let add x y = x + y
+    //
+    //      /// User account
+    //      type User = { name: String, age: Int }
+    //
+    // 2. End-of-line comments (//) stay trailing if short (same line or next line).
+    //    Examples:
+    //      let x = 42  // Important value
+    //      let y = f x // Result of computation
+    //
+    // 3. Block comments (</ ... />) between attributes/decorators and declarations
+    //    attach to the declaration that follows.
+    //    Examples:
+    //      @deprecated
+    //      </ Replaced by newFunction />
+    //      let oldFunction x = ...
+    //
+    // Semantic wrapper nodes (documented_type_declaration, etc.) mark declaration
+    // attachment points to help formatters make consistent decisions.
+    // ═════════════════════════════════════════════════════════════════════════════
+
     // ─────────────────────────────────────────────────────────────────────────────
     // 3.1: TOP-LEVEL & SOURCE FILE
     // ─────────────────────────────────────────────────────────────────────────────
@@ -81,17 +112,31 @@ module.exports = grammar({
     ),
 
     // top-level declarations supported by the module.
+    // Leading comments (doc_comment, line_comment, block_comment) attached to each declaration.
+    // Formatter rule: Comments immediately before a declaration belong to that declaration.
     module_item: $ => choice(
       $.use_statement,
       $.module_declaration,
-      $.type_declaration,
-      $.let_binding,
+      $.documented_type_declaration,
+      $.documented_let_binding,
       $.signature,
       $.expect_statement,
       $.implementation,
-      $.ability_declaration,
-      $.test_declaration,
+      $.documented_ability_declaration,
+      $.documented_test_declaration,
     ),
+
+    // Semantic wrapper for type declarations (signals formatter comment attachment point)
+    documented_type_declaration: $ => $.type_declaration,
+
+    // Semantic wrapper for let bindings (signals formatter comment attachment point)
+    documented_let_binding: $ => $.let_binding,
+
+    // Semantic wrapper for ability declarations (signals formatter comment attachment point)
+    documented_ability_declaration: $ => $.ability_declaration,
+
+    // Semantic wrapper for test declarations (signals formatter comment attachment point)
+    documented_test_declaration: $ => $.test_declaration,
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 3.2: MODULE & USE DECLARATIONS
@@ -290,8 +335,17 @@ module.exports = grammar({
     // expression entry point.
     expression: $ => $.pipe_expression,
 
+    // Argument expressions in `with` calls exclude pipeline and logical operators
+    // to prevent greedy consumption of postfix chains that appear outside the call.
+    // Example: `f with a |> g` parses as `(f with a) |> g`, not `f with (a |> g)`
+    call_argument: $ => $.or_expression,
+
     // pipeline is lowest-precedence expression form.
-    pipe_expression: $ => right_assoc_chain(PREC.PIPE, $.or_expression, $.pipe),
+    // Uses explicit binary nodes for better formatter and diagnostics support.
+    pipe_expression: $ => prec.right(PREC.PIPE, choice(
+      $.or_expression,
+      seq($.pipe_expression, $.pipe, $.or_expression),
+    )),
 
     or_expression: $ => left_assoc_chain(PREC.OR, $.and_expression, $.or_op),
 
@@ -325,13 +379,22 @@ module.exports = grammar({
     //   func with x, y
     //   get? with x .field?
     // Postfix forms are parsed left-to-right in a single rule.
+    // Uses semantic wrapper nodes for better formatting and diagnostics.
     postfix_chain: $ => prec.left(PREC.POSTFIX, seq(
       $.primary_expression,
-      repeat(choice($.call_suffix, $.projection_suffix, $.try_op)),
+      repeat(choice($.call_expression, $.field_expression, $.try_expression)),
     )),
 
     // alias for postfix_chain kept as the expression-level postfix rule.
     postfix_expression: $ => $.postfix_chain,
+
+    // Semantic wrapper nodes for postfix operations (for formatter/diagnostics support)
+    call_expression: $ => $.call_suffix,
+    field_expression: $ => $.projection_suffix,
+    try_expression: $ => $.try_op,
+
+    // Semantic node for record spread field (for formatter/diagnostics support)
+    spread_field: $ => seq("..", field("base", $.expression)),
 
     // function call suffix using 'with' keyword.
     // Syntax:
@@ -501,20 +564,21 @@ module.exports = grammar({
 
     // Non-parenthesised patterns allowed as bare tag arguments.
     // Deliberately excludes tuple/parenthesised forms to avoid Tag(x) ambiguity.
-    non_paren_atomic_pattern: $ => choice(
+    // Simple argument to tag pattern (bare form, no parens needed).
+    // Restricted to prevent ambiguity: `Some Err x` is not allowed.
+    // Must use parentheses for complex patterns: `Some (Err x)`, `Some ({ a })`.
+    simple_tag_argument_pattern: $ => choice(
       $.literal,
       $.wildcard_pattern,
       $.identifier,
-      $.tag_pattern,
-      $.list_pattern,
-      $.record_pattern,
     ),
 
 
     // Constructor/tag patterns:
     //   Tag
     //   Tag(x, y)
-    //   Tag x
+    //   Tag x          (only if x is literal, _, or identifier)
+    //   Tag (Err x)    (complex patterns require parens)
     tag_pattern: $ => seq(
       $.tag_name,
       optional(choice(
@@ -523,7 +587,7 @@ module.exports = grammar({
           commaSep1Trail($, $.pattern, $.comma, $.newline),
           $.rparen
         ),
-        $.non_paren_atomic_pattern
+        $.simple_tag_argument_pattern
       ))
     ),
 
@@ -588,11 +652,41 @@ module.exports = grammar({
       $.field_name
     ),
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // WHEN-ARM FORMATTER RULES
+    // ═════════════════════════════════════════════════════════════════════════════
+    // Semantic node for when-arm body expression. Formatters should apply these
+    // consistent indentation rules for clarity and predictability:
+    //
+    // SIMPLE ARMS (stay inline):
+    //   pattern => simple_expr
+    //   pattern => x + 1
+    //   pattern => f x
+    //
+    // BREAKING RULES (always indent once broken):
+    //   - Contains let binding: pattern => let x = ... ; expr
+    //   - Contains nested when/if: pattern => when y is ...
+    //   - Contains long postfix chains: pattern => very_long_expr.field?.method(args)
+    //   - Spans multiple lines: once broken, indent entire body
+    //
+    // INDENTED ARMS (always indented):
+    //   pattern =>
+    //     let x = y
+    //     x + 1
+    //
+    //   pattern =>
+    //     if cond then
+    //       a
+    //     else
+    //       b
+    // ═════════════════════════════════════════════════════════════════════════════
+    arm_expression: $ => inline_or_block($, $.expression),
+
     // one match arm and its result expression.
     when_arm: $ => seq(
       field("pattern", $.pattern),
       $.arrow_op,
-      field("value", inline_or_block($, $.expression)),
+      field("value", $.arm_expression),
     ),
 
 
@@ -673,9 +767,12 @@ module.exports = grammar({
       $.type_record,
     ),
 
+    // Semantic node for generic type application (for formatter/diagnostics support)
+    type_application: $ => seq($.type_name, $.type_argument_list),
+
     // atomic type forms.
     type_primary: $ => choice(
-      seq($.type_name, $.type_argument_list),
+      $.type_application,
       $.type_name,
       alias("_", $.type_wildcard),
       alias("*", $.type_star),
@@ -1072,8 +1169,8 @@ function with_call_suffix($) {
     // Single-line: with x, y
     prec.right(seq(
       $.kw_with,
-      field("first", $.expression),
-      field("rest", repeat(seq($.comma, $.expression))),
+      field("first", $.call_argument),
+      field("rest", repeat(seq($.comma, $.call_argument))),
       optional($.comma),
     )),
 
@@ -1086,11 +1183,11 @@ function with_call_suffix($) {
       $.kw_with,
       $.newline,
       $.indent,
-      field("first", $.expression),
+      field("first", $.call_argument),
       repeat(seq(
         $.comma,
         repeat1($.newline),
-        field("rest", $.expression),
+        field("rest", $.call_argument),
       )),
       optional($.comma),
       repeat($.newline),
@@ -1169,9 +1266,9 @@ function singleLineRecordExpression($, field) {
       seq(
         field,
         repeat(seq($.comma, field)),
-        optional(seq($.comma, "..", $.expression))
+        optional(seq($.comma, $.spread_field))
       ),
-      seq("..", $.expression)
+      $.spread_field
     )),
     $.rbrace,
   );
@@ -1203,16 +1300,14 @@ function multiLineRecordExpression($, field) {
         optional(seq(
           $.comma,
           repeat($.newline),
-          "..",
-          $.expression,
+          $.spread_field,
         )),
         optional($.comma),
       ),
 
       // Spread only
       seq(
-        "..",
-        $.expression,
+        $.spread_field,
         optional($.comma),
       ),
     )),
