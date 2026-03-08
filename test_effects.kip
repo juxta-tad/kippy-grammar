@@ -1,0 +1,26 @@
+// Effectful functions marked with ! suffix
+let read_file! = fn path: String
+
+let print_line! = fn msg: String
+
+let main! = fn args: List(String)
+
+// Pure functions (no ! suffix)
+let parse = fn text: String
+
+let calculate = fn x: Int
+
+// Calling effectful functions with with syntax
+let content = read_file! with "data.txt"
+
+print_line! with "Hello, World!"
+
+main! with []
+
+// Effectful functions as first-class values
+let log = print_line!
+
+let handlers = [print_line!, read_file!]
+
+// Chaining effectful calls
+let result = read_file! with path

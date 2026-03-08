@@ -1,0 +1,2 @@
+let pure = f with 1
+let effectful = f! with 2

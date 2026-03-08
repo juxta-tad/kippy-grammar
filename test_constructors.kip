@@ -1,0 +1,17 @@
+## Bare tag names (no args) - parsed as identifiers
+let none = None
+let empty = Empty
+
+## Constructors with args
+let some_value = Some(42)
+let result_ok = Ok(value)
+let result_err = Err("message", code)
+
+## Constructors in pattern matching
+when value is
+  Some(x) -> x
+  None -> 0
+
+## Constructors as first-class values
+let make_ok = Ok
+let make_some = Some

@@ -1,0 +1,18 @@
+## Bare constructors as first-class values
+let none = None
+let some_constructor = Some
+
+## Constructors with `with` syntax
+let some_value = Some with 42
+let result_ok = Ok with value
+let result_err = Err with "message", code
+
+## Multiple arguments with `with`
+let either = Either with Left with "x", Right with 1
+
+## Bare tag names without application
+let f = Some
+let g = Ok
+
+## Constructor as argument to function
+let wrapped = wrap with Some with 5

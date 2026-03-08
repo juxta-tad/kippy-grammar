@@ -1,0 +1,12 @@
+// Const binding modifier
+const PI = 3.14159
+const max_size = 1000
+
+// Const with type annotation
+const version : String = "1.0"
+
+// Const with pub modifier
+pub const default_timeout = 5000
+
+// Const in record
+let config = {const: true, timeout: 30}

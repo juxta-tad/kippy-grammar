@@ -10,6 +10,18 @@ const PREC = {
   POSTFIX: 8,  // unified postfix chain (calls, fields, try operator)
 };
 
+//
+// Keyword helper: creates a keyword token with standard precedence (2)
+function kw(s) {
+  return $ => token(prec(2, s));
+}
+
+//
+// Operator helper: creates an operator token with specified precedence
+function op(p, s) {
+  return $ => token(prec(p, s));
+}
+
 module.exports = grammar({
   name: "kippy",
 
@@ -31,11 +43,6 @@ module.exports = grammar({
     $.block_comment,
   ],
 
-  // supertypes enable robust syntax highlighting, folding, navigation, and queries.
-  // Note: Tree-Sitter supertypes must be pure wrappers (single symbol, no choice/seq/repeat).
-  // Only expression and postfix_expression qualify in this grammar.
-  // Primary expression classes (primary_expression, pattern, atomic_pattern, type_expression)
-  // have internal choice/seq structure, so they cannot be supertypes.
   supertypes: $ => [
     $.expression,
     $.postfix_expression,
@@ -46,7 +53,6 @@ module.exports = grammar({
   ],
 
   rules: {
-    //
     // A source file is a newline-separated list of module items.
     // Leading blank lines are allowed. Multiple items cannot share one line.
     source_file: $ => seq(
@@ -83,12 +89,7 @@ module.exports = grammar({
     module_declaration: $ => seq(
       $.kw_module,
       field("name", $.type_name),
-      $.newline,
-      $.indent,
-      field("items", seq(
-        repeat(seq($.module_item, repeat($.newline))),
-      )),
-      $.dedent,
+      named_indented_list($, "items", $.module_item),
     ),
 
     //
@@ -136,7 +137,7 @@ module.exports = grammar({
     // Standalone annotation node used by ability method declarations.
     // Supports leading attributes and same-line or indented type bodies.
     annotation: $ => seq(
-      repeat(seq($.attribute, optional($.newline))),
+      attribute_prefix($),
       field("name", $.binding_target),
       $.colon,
       field("type", inline_or_block($, $.type_expression)),
@@ -157,9 +158,9 @@ module.exports = grammar({
     //   let name : Type
     //   let name = expr
     //   let name : Type = expr
-    // Also supports attributes, pub, and cert modifiers.
+    // Also supports attributes and pub modifiers.
     let_binding: $ => seq(
-      repeat(seq($.attribute, optional($.newline))),
+      attribute_prefix($),
       optional($.kw_pub),
       $.kw_let,
       field("name", $.binding_target),
@@ -213,6 +214,7 @@ module.exports = grammar({
       field("ability", $.type_name),
       $.kw_for,
       field("type", $.type_name),
+      named_indented_list($, "methods", $.let_binding),
     ),
 
     //
@@ -223,17 +225,10 @@ module.exports = grammar({
     //   ability Reader
     //     read: File -> Bytes
     ability_declaration: $ => seq(
-      repeat(seq($.attribute, optional($.newline))),
+      attribute_prefix($),
       $.kw_ability,
       field("name", $.type_name),
-      $.newline,
-      $.indent,
-      field("methods", seq(
-        $.annotation,
-        repeat(seq(repeat($.newline), $.annotation)),
-      )),
-      repeat($.newline),
-      $.dedent,
+      named_indented_list($, "methods", $.annotation, { atLeastOne: true }),
     ),
 
     // assertion/expectation form.
@@ -242,31 +237,17 @@ module.exports = grammar({
     //
     // Assignment LHS is limited to lowercase-style identifiers and dotted paths.
     // This avoids ambiguity with constructor/type names.
-    binding_target: $ => prec(1, seq(
-      $.identifier,
-      repeat(seq(token.immediate("."), $.identifier)),
-    )),
+    binding_target: $ => prec(1, dotted1($.identifier, $.identifier)),
 
     // expression entry point.
     expression: $ => $.pipe_expression,
 
     // pipeline is lowest-precedence expression form.
-    pipe_expression: $ => prec.right(PREC.PIPE, seq(
-      $.or_expression,
-      repeat(seq($.pipe, $.or_expression)),
-    )),
+    pipe_expression: $ => right_assoc_chain(PREC.PIPE, $.or_expression, $.pipe),
 
-    // logical OR chains left-associatively.
-    or_expression: $ => prec.left(PREC.OR, seq(
-      $.and_expression,
-      repeat(seq($.or_op, $.and_expression)),
-    )),
+    or_expression: $ => left_assoc_chain(PREC.OR, $.and_expression, $.or_op),
 
-    // logical AND chains left-associatively.
-    and_expression: $ => prec.left(PREC.AND, seq(
-      $.compare_expression,
-      repeat(seq($.and_op, $.compare_expression)),
-    )),
+    and_expression: $ => left_assoc_chain(PREC.AND, $.compare_expression, $.and_op),
 
     //
     // Comparison allows at most one comparator per node.
@@ -276,17 +257,9 @@ module.exports = grammar({
       optional(seq(choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op), $.add_expression)),
     )),
 
-    // additive operators.
-    add_expression: $ => prec.left(PREC.ADD, seq(
-      $.mul_expression,
-      repeat(seq(choice($.plus, $.minus), $.mul_expression)),
-    )),
+    add_expression: $ => left_assoc_chain(PREC.ADD, $.mul_expression, choice($.plus, $.minus)),
 
-    // multiplicative operators.
-    mul_expression: $ => prec.left(PREC.MUL, seq(
-      $.unary_expression,
-      repeat(seq(choice($.star, $.slash, $.double_slash, $.percent), $.unary_expression)),
-    )),
+    mul_expression: $ => left_assoc_chain(PREC.MUL, $.unary_expression, choice($.star, $.slash, $.double_slash, $.percent)),
 
     // unary negation and logical not bind tighter than binary operators.
     unary_expression: $ => choice(
@@ -634,7 +607,6 @@ module.exports = grammar({
       $.type_primary,
       $.type_tuple,
       $.type_record,
-      $.tag_union_type,
     ),
 
     // atomic type forms.
@@ -652,10 +624,7 @@ module.exports = grammar({
     // Example:
     //   Foo
     //   Mod.Foo
-    type_name: $ => seq(
-      $.name,
-      repeat(seq(token.immediate("."), $.name))
-    ),
+    type_name: $ => dotted1($.name, $.name),
 
     // explicit parenthesised type argument list.
     type_argument_list: $ => seq(
@@ -673,16 +642,6 @@ module.exports = grammar({
     record_type_field: $ => seq($.field_name, $.colon, inline_or_block($, $.type_expression)),
 
     //
-    // Tag union type (bracket form for inline/multiline).
-    //   [Some(A), None]
-    tag_union_type: $ => layoutBracket($, $.lbracket, $.rbracket, $.tag_union_member),
-
-    // one tag constructor inside a tag union type.
-    tag_union_member: $ => seq(
-      $.tag_name,
-      optional(seq($.lparen, commaSep1Trail($, $.type_expression, $.comma, $.newline), $.rparen))
-    ),
-
     // tuple type.
     type_tuple: $ => tuple_like($, $.non_arrow_type),
 
@@ -778,9 +737,8 @@ module.exports = grammar({
       ),
     )),
 
-
-    //
     // Lowercase-style identifiers, optionally prefixed by underscores and optionally ending in !.
+    // Trailing ! marks effectful functions/values.
     // Cannot match reserved keywords (see keyword declarations below).
     // Token precedence 1; keywords have precedence 2 and will be preferred by the lexer.
     identifier: $ => token(prec(1, /(_*[a-z][a-zA-Z0-9_]*!?)/)),
@@ -792,47 +750,37 @@ module.exports = grammar({
     name: $ => choice($.identifier, $.tag_name),
 
     // dotted qualified identifier/type path.
-    long_identifier: $ => prec.left(seq(
-      $.name,
-      repeat(seq(token.immediate("."), $.name))
-    )),
+    long_identifier: $ => prec.left(dotted1($.name, $.name)),
 
     // placeholder expression token.
     placeholder: $ => token("__"),
 
-    //
-    // Reserved keywords (token precedence 2, identifier precedence 1).
-    // These keywords cannot be used as identifiers anywhere in the grammar.
-    // Tree-Sitter's lexer prefers the higher-precedence keyword tokens.
-    // Reserved words:
-    //   pub, let, cert, expect, if, then, else, when, is, in, where, with,
-    //   ability, implement, module, use, build, for, type, sig, fn,
-    //   or, and, not, as
+    // Reserved
     kw_pub: $ => token(prec(2, "pub")),
     kw_let: $ => token(prec(2, "let")),
     kw_cert: $ => token(prec(2, "cert")),
     kw_expect: $ => token(prec(2, "expect")),
     kw_if: $ => token(prec(2, "if")),
     kw_then: $ => token(prec(2, "then")),
-    kw_else: $ => token(prec(2, "else")),
-    kw_when: $ => token(prec(2, "when")),
-    kw_is: $ => token(prec(2, "is")),
-    kw_in: $ => token(prec(2, "in")),
-    kw_where: $ => token(prec(2, "where")),
-    kw_with: $ => token(prec(2, "with")),
-    kw_ability: $ => token(prec(2, "ability")),
-    kw_implement: $ => token(prec(2, "implement")),
-    kw_module: $ => token(prec(2, "module")),
-    kw_use: $ => token(prec(2, "use")),
-    kw_build: $ => token(prec(2, "build")),
-    kw_for: $ => token(prec(2, "for")),
-    kw_type: $ => token(prec(2, "type")),
-    kw_sig: $ => token(prec(2, "sig")),
-    kw_fn: $ => token(prec(2, "fn")),
-    kw_or: $ => token(prec(2, "or")),
-    kw_and: $ => token(prec(2, "and")),
-    kw_not: $ => token(prec(2, "not")),
-    kw_as: $ => token(prec(2, "as")),
+    kw_else: kw("else"),
+    kw_when: kw("when"),
+    kw_is: kw("is"),
+    kw_in: kw("in"),
+    kw_where: kw("where"),
+    kw_with: kw("with"),
+    kw_ability: kw("ability"),
+    kw_implement: kw("implement"),
+    kw_module: kw("module"),
+    kw_use: kw("use"),
+    kw_build: kw("build"),
+    kw_for: kw("for"),
+    kw_type: kw("type"),
+    kw_sig: kw("sig"),
+    kw_fn: kw("fn"),
+    kw_or: kw("or"),
+    kw_and: kw("and"),
+    kw_not: kw("not"),
+    kw_as: kw("as"),
 
     // punctuation and operator tokens.
     lparen: $ => "(",
@@ -845,7 +793,7 @@ module.exports = grammar({
     lbrace_hash: $ => token("#{"),
     comma: $ => ",",
     colon: $ => ":",
-    equals: $ => token(prec(2, "=")),
+    equals: op(2, "="),
     dot: $ => ".",
 
     //
@@ -866,12 +814,12 @@ module.exports = grammar({
 
     //
     // Longer comparison operators are given higher precedence to avoid ambiguity.
-    eq_op: $ => token(prec(3, "==")),
-    ne_op: $ => token(prec(3, "!=")),
-    le_op: $ => token(prec(4, "<=")),
-    ge_op: $ => token(prec(4, ">=")),
-    lt_op: $ => token(prec(3, "<")),
-    gt_op: $ => token(prec(3, ">")),
+    eq_op: op(3, "=="),
+    ne_op: op(3, "!="),
+    le_op: op(4, "<="),
+    ge_op: op(4, ">="),
+    lt_op: op(3, "<"),
+    gt_op: op(3, ">"),
 
     arrow_op: $ => "->",
     try_op: $ => "?",
@@ -939,6 +887,61 @@ function list_items($, itemRule) {
 }
 
 //
+// Dotted name helper for qualified identifiers.
+// Matches: head (. tail)*
+// Used for: type_name, long_identifier, binding_target
+function dotted1(head, tail) {
+  return seq(
+    head,
+    repeat(seq(token.immediate("."), tail)),
+  );
+}
+
+//
+// Attribute prefix for declarations that support attributes.
+// Handles optional attributes followed by optional newlines before the declaration.
+function attribute_prefix($) {
+  return repeat(seq($.attribute, optional($.newline)));
+}
+
+//
+// Left-associative operator chain: operand (operator operand)*
+// Used for: or, and, comparison, add, mul expressions
+function left_assoc_chain(precValue, operand, operator) {
+  return prec.left(precValue, seq(
+    operand,
+    repeat(seq(operator, operand)),
+  ));
+}
+
+//
+// Right-associative operator chain: operand (operator operand)*
+// Used for: pipe expressions, function types
+function right_assoc_chain(precValue, operand, operator) {
+  return prec.right(precValue, seq(
+    operand,
+    repeat(seq(operator, operand)),
+  ));
+}
+
+//
+// Indented list helper for bodies with optional or required items.
+// Syntax: newline, indent, items, dedent
+// Used for: module items, implementation methods, ability methods, type variants, when arms, etc.
+function named_indented_list($, fieldName, itemRule, { atLeastOne = false } = {}) {
+  const body = atLeastOne
+    ? seq(itemRule, repeat(seq(repeat($.newline), itemRule)), repeat($.newline))
+    : repeat(seq(itemRule, repeat($.newline)));
+
+  return seq(
+    $.newline,
+    $.indent,
+    field(fieldName, body),
+    $.dedent,
+  );
+}
+
+//
 // Shared tuple parser for expression tuples and type tuples.
 // Explicitly requires at least 2 items: first, comma, second, then optional rest.
 // Syntax: #{x, y} not (x, y)
@@ -985,6 +988,7 @@ function tuple_like($, itemRule) {
 //   x, y
 // Single-line and multiline are distinct: single-line has no leading newline after 'with',
 // multiline has immediate newline+indent after 'with'.
+// Effects are marked by ! at the end of function/value names, not on the call.
 function with_call_suffix($) {
   return choice(
     // Single-line: with arg, arg, ... (NO NEWLINES between arguments)
