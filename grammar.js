@@ -438,12 +438,12 @@ module.exports = grammar({
     // )
     block_expression: $ => seq(
       $.lparen,
-      repeat1($.newline),
+      $.newline,
       $.indent,
       choice(
         field("value", $.expression),
         seq(
-          repeat(seq($.let_binding, repeat($.newline))),
+          repeat1(seq($.let_binding, repeat($.newline))),
           $.kw_in,
           field("value", $.expression),
         ),
@@ -927,12 +927,6 @@ function singleLineBracket(open, commaToken, item, close) {
 }
 
 
-// Attach any leading newlines directly to the rule.
-// Used to keep layout ownership local to the consuming construct.
-function withLeadingNewlines($, rule) {
-  return seq(repeat($.newline), rule);
-}
-
 // Indented body: newline, indent, rule, trailing newlines, dedent.
 // Used for constructs with a single logical body (not a list of peer items).
 function indented_body($, rule) {
@@ -1020,29 +1014,40 @@ function right_assoc_chain(precValue, operand, operator) {
 // Shared tuple parser for expression tuples and type tuples.
 // Explicitly requires at least 2 items: first, comma, second, then optional rest.
 // Syntax: #{x, y}
-// Multiline tuples follow strict entry rule: items start immediately after indent.
+// Multiline tuples enforce strict comma-before-newline ordering.
 function tuple_like($, itemRule) {
-  function tuple_items(item) {
-    return seq(
-      field("first", item),
-      $.comma,
-      field("second", item),
-      repeat(seq($.comma, field("rest", item))),
-      optional($.comma),
-    );
-  }
-
   return choice(
+    // Single-line: #{x, y, z}
     seq(
       $.lbrace_hash,
-      tuple_items(itemRule),
+      field("first", itemRule),
+      $.comma,
+      field("second", itemRule),
+      repeat(seq($.comma, field("rest", itemRule))),
+      optional($.comma),
       $.rbrace,
     ),
+
+    // Multiline with comma-newline ordering:
+    // #{
+    //   x,
+    //   y,
+    //   z
+    // }
     seq(
       $.lbrace_hash,
-      repeat1($.newline),
+      $.newline,
       $.indent,
-      tuple_items(itemRule),
+      field("first", itemRule),
+      $.comma,
+      repeat1($.newline),
+      field("second", itemRule),
+      repeat(seq(
+        $.comma,
+        repeat1($.newline),
+        field("rest", itemRule),
+      )),
+      optional($.comma),
       repeat($.newline),
       $.dedent,
       $.rbrace,
@@ -1057,39 +1062,37 @@ function tuple_like($, itemRule) {
 //   func with x, y
 //   func with
 //     x,
-//     y
+//     y,
+//     z
 // Single-line and multiline forms are distinct: single-line has no newline after 'with',
 // multiline requires an indented block immediately after 'with'.
 // Effects are marked by ! at the end of function/value names, not on the call.
-// Multiline form follows strict entry rule: arguments start immediately after indent.
 function with_call_suffix($) {
   return choice(
-    // Single-line: with arg, arg, ...
-    // Use prec.right to prefer shifting on comma and continue collecting arguments.
+    // Single-line: with x, y
     prec.right(seq(
       $.kw_with,
       field("first", $.expression),
       field("rest", repeat(seq($.comma, $.expression))),
       optional($.comma),
     )),
-    // Multi-line: with\n  arg,\n  arg
+
+    // Multi-line:
+    // with
+    //   x,
+    //   y,
+    //   z
     seq(
       $.kw_with,
-      repeat1($.newline),
+      $.newline,
       $.indent,
       field("first", $.expression),
-      repeat($.newline),
-      $.comma,
-      field("rest", seq(
-        $.expression,
-        repeat(seq(
-          repeat1($.newline),
-          $.comma,
-          repeat($.newline),
-          $.expression,
-        )),
-        optional(seq(repeat($.newline), $.comma)),
+      repeat(seq(
+        $.comma,
+        repeat1($.newline),
+        field("rest", $.expression),
       )),
+      optional($.comma),
       repeat($.newline),
       $.dedent,
     ),
@@ -1098,12 +1101,13 @@ function with_call_suffix($) {
 
 
 // Multiline delimited list helper using indentation.
+// Enforces comma followed by newlines before next item.
 function multiLineBracket($, open, commaToken, item, close) {
   return seq(
     open,
     $.newline,
     $.indent,
-    commaSep1Trail($, item, commaToken, $.newline),
+    commaSep1TrailMultiline($, item, commaToken, $.newline),
     repeat($.newline),
     $.dedent,
     close,
@@ -1124,12 +1128,32 @@ function commaSepTrail($, rule, commaToken, sepToken) {
 }
 
 // one-or-more comma-separated sequence with optional trailing comma.
-// Separators (newlines) are required between items when present.
+// Comma comes before separator (if present): rule, comma, separator, rule
+// Works for both single-line (no separator) and multiline (separator = newlines) contexts.
 function commaSep1Trail($, rule, commaToken, sepToken) {
   return seq(
     rule,
-    repeat(seq(repeat1(sepToken), commaToken, repeat(sepToken), rule)),
+    repeat(seq(
+      commaToken,
+      repeat(sepToken),
+      rule,
+    )),
     optional(seq(repeat(sepToken), commaToken)),
+  );
+}
+
+// Strict multiline comma-separated sequence with required newlines after commas.
+// For multiline-only contexts (lists, multiline brackets, etc).
+// Enforces: comma followed by at least one separator (newline).
+function commaSep1TrailMultiline($, rule, commaToken, sepToken) {
+  return seq(
+    rule,
+    repeat(seq(
+      commaToken,
+      repeat1(sepToken),
+      rule,
+    )),
+    optional(commaToken),
   );
 }
 
@@ -1155,19 +1179,42 @@ function singleLineRecordExpression($, field) {
 
 
 // Multiline record literal helper supporting fields and optional spread.
-// Follows strict entry rule: fields start immediately after indent, separated by required newlines.
+// Follows strict entry rule: fields/spread start immediately after indent.
+// Policy matches single-line form:
+//   - Fields first (zero or more), optionally followed by spread
+//   - Or spread only
+// Supports flexible newline placement around commas (same as commaSep1Trail).
+// Examples: { a: 1, b: 2 } or { a: 1,\n  b: 2 } or { a: 1, ..base } or { ..base }
+// NOT allowed: multiple spreads, spread before fields, fields after spread
 function multiLineRecordExpression($, field) {
   return seq(
     $.lbrace,
     $.newline,
     $.indent,
     optional(choice(
+      // Fields first, optional spread
       seq(
         field,
-        repeat(seq(repeat1($.newline), $.comma, repeat($.newline), field)),
-        optional(seq(repeat($.newline), $.comma))
+        repeat(seq(
+          $.comma,
+          repeat($.newline),
+          field,
+        )),
+        optional(seq(
+          $.comma,
+          repeat($.newline),
+          "..",
+          $.expression,
+        )),
+        optional($.comma),
       ),
-      seq(repeat($.newline), "..", $.expression)
+
+      // Spread only
+      seq(
+        "..",
+        $.expression,
+        optional($.comma),
+      ),
     )),
     repeat($.newline),
     $.dedent,
