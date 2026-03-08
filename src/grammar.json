@@ -4543,7 +4543,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PREC",
-        "value": -1,
+        "value": 2,
         "content": {
           "type": "PATTERN",
           "value": "\\/\\/\\/[^\\n]*"
@@ -4554,7 +4554,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PREC",
-        "value": -2,
+        "value": 1,
         "content": {
           "type": "PATTERN",
           "value": "\\/\\/[^\\n]*"

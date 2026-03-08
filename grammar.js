@@ -711,8 +711,8 @@ module.exports = grammar({
     escape_sequence: $ => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
     // comment forms, all treated as extras.
-    doc_comment: $ => token(prec(-1, /\/\/\/[^\n]*/)),
-    line_comment: $ => token(prec(-2, /\/\/[^\n]*/)),
+    doc_comment: _ => token(prec(2, /\/\/\/[^\n]*/)),
+    line_comment: _ => token(prec(1, /\/\/[^\n]*/)),
     block_comment: $ => token(prec(-3,
       seq(
         "</",
