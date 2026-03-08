@@ -393,6 +393,249 @@
     }
   },
   {
+    "type": "bare_add_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_mul_expression",
+          "named": true
+        },
+        {
+          "type": "minus",
+          "named": true
+        },
+        {
+          "type": "plus",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_and_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "and_op",
+          "named": true
+        },
+        {
+          "type": "bare_compare_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_call_argument",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_or_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_compare_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_add_expression",
+          "named": true
+        },
+        {
+          "type": "eq_op",
+          "named": true
+        },
+        {
+          "type": "ge_op",
+          "named": true
+        },
+        {
+          "type": "gt_op",
+          "named": true
+        },
+        {
+          "type": "le_op",
+          "named": true
+        },
+        {
+          "type": "lt_op",
+          "named": true
+        },
+        {
+          "type": "ne_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_mul_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_unary_expression",
+          "named": true
+        },
+        {
+          "type": "double_slash",
+          "named": true
+        },
+        {
+          "type": "percent",
+          "named": true
+        },
+        {
+          "type": "slash",
+          "named": true
+        },
+        {
+          "type": "star",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_or_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_and_expression",
+          "named": true
+        },
+        {
+          "type": "or_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_postfix_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_primary_expression",
+          "named": true
+        },
+        {
+          "type": "field_expression",
+          "named": true
+        },
+        {
+          "type": "try_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_primary_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "list_expression",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "long_identifier",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "placeholder",
+          "named": true
+        },
+        {
+          "type": "record_builder",
+          "named": true
+        },
+        {
+          "type": "record_expression",
+          "named": true
+        },
+        {
+          "type": "tuple_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_unary_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bare_postfix_expression",
+          "named": true
+        },
+        {
+          "type": "bare_unary_expression",
+          "named": true
+        },
+        {
+          "type": "kw_cert",
+          "named": true
+        },
+        {
+          "type": "minus",
+          "named": true
+        },
+        {
+          "type": "not_kw",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "binding_target",
     "named": true,
     "fields": {},
@@ -466,7 +709,7 @@
       "required": true,
       "types": [
         {
-          "type": "or_expression",
+          "type": "bare_call_argument",
           "named": true
         }
       ]
@@ -538,6 +781,21 @@
         },
         {
           "type": "newline",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "char_literal",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
           "named": true
         }
       ]
@@ -1102,6 +1360,10 @@
       "types": [
         {
           "type": "bool_literal",
+          "named": true
+        },
+        {
+          "type": "char_literal",
           "named": true
         },
         {
@@ -3244,6 +3506,10 @@
   },
   {
     "type": "\"\"\"",
+    "named": false
+  },
+  {
+    "type": "'",
     "named": false
   },
   {

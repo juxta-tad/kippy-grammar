@@ -335,10 +335,11 @@ module.exports = grammar({
     // expression entry point.
     expression: $ => $.pipe_expression,
 
-    // Argument expressions in `with` calls exclude pipeline and logical operators
-    // to prevent greedy consumption of postfix chains that appear outside the call.
-    // Example: `f with a |> g` parses as `(f with a) |> g`, not `f with (a |> g)`
-    call_argument: $ => $.or_expression,
+    // Argument expressions in `with` calls are restricted to prevent ambiguity.
+    // Bare arguments exclude clause-like forms (if, when, fn, block, with).
+    // Clause forms must be parenthesized: f with (if c then a else b)
+    // Example: `f with a + b` is valid, but `f with if c then a else b` requires parens.
+    call_argument: $ => $.bare_call_argument,
 
     // pipeline is lowest-precedence expression form.
     // Uses explicit binary nodes for better formatter and diagnostics support.
@@ -369,6 +370,51 @@ module.exports = grammar({
       $.postfix_expression,
     ),
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // BARE CALL ARGUMENT EXPRESSIONS (stricter than full expressions)
+    // ═════════════════════════════════════════════════════════════════════════════
+    // Used for unparenthesized arguments in `with` calls.
+    // Excludes clause-like forms (if, when, fn, block, with) unless parenthesized.
+    // Example: `f with x + y` is valid, but `f with if c then a else b` requires parens.
+    bare_call_argument: $ => $.bare_or_expression,
+
+    bare_or_expression: $ => left_assoc_chain(PREC.OR, $.bare_and_expression, $.or_op),
+
+    bare_and_expression: $ => left_assoc_chain(PREC.AND, $.bare_compare_expression, $.and_op),
+
+    bare_compare_expression: $ => prec.left(PREC.COMPARE, seq(
+      $.bare_add_expression,
+      optional(seq(choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op), $.bare_add_expression)),
+    )),
+
+    bare_add_expression: $ => left_assoc_chain(PREC.ADD, $.bare_mul_expression, choice($.plus, $.minus)),
+
+    bare_mul_expression: $ => left_assoc_chain(PREC.MUL, $.bare_unary_expression, choice($.star, $.slash, $.double_slash, $.percent)),
+
+    bare_unary_expression: $ => choice(
+      prec.right(PREC.UNARY, seq(choice($.minus, $.not_kw, $.kw_cert), $.bare_unary_expression)),
+      $.bare_postfix_expression,
+    ),
+
+    // Postfix expressions for bare arguments: allows field access and try, but NOT `with` calls.
+    bare_postfix_expression: $ => prec.left(PREC.POSTFIX, seq(
+      $.bare_primary_expression,
+      repeat(choice($.field_expression, $.try_expression)),
+    )),
+
+    // Primary expressions for bare arguments: excludes clause-like forms.
+    // Allowed: literals, identifiers, records, tuples, lists, field access, try.
+    // Excluded: if, when, fn, block, and nested `with` calls (unless parenthesized).
+    bare_primary_expression: $ => choice(
+      $.record_builder,
+      $.literal,
+      $.long_identifier,
+      $.placeholder,
+      $.list_expression,
+      $.record_expression,
+      $.tuple_expression,
+      $.parenthesized_expression,
+    ),
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
@@ -815,6 +861,7 @@ module.exports = grammar({
     literal: $ => choice(
       $.int_literal,
       $.float_literal,
+      $.char_literal,
       $.string,
       $.multiline_string,
       alias("true", $.bool_literal),
@@ -862,6 +909,17 @@ module.exports = grammar({
         $.multiline_double_quote,
       )),
       '"""',
+    ),
+
+    // Character literal: single-quoted character with escape support.
+    // Syntax: 'a', 'x', '\n', '\u0041', etc.
+    char_literal: $ => seq(
+      "'",
+      choice(
+        $.escape_sequence,
+        /[^'\\]/,  // any character except quote or backslash
+      ),
+      "'",
     ),
 
     // embedded expression interpolation in strings.
