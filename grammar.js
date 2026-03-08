@@ -151,14 +151,31 @@ module.exports = grammar({
       ),
     ),
 
-    // Attributes are simple name references without arguments.
+    // Attributes with optional arguments.
+    // Arguments must be on the same line as the attribute name (token.immediate).
     // Examples:
     //   @deprecated
     //   @inline
     //   @optimize.inline
+    //   @deprecated("reason")
+    //   @optimize(inline: true)
     attribute: $ => seq(
       "@",
       $.long_identifier,
+      optional($.attribute_arguments_inline),
+    ),
+
+    // attribute argument list (arguments must stay on same line as opening paren).
+    attribute_arguments_inline: $ => seq(
+      token.immediate("("),
+      optional(commaSepTrail($, $.attribute_argument, $.comma, $.newline)),
+      $.rparen,
+    ),
+
+    // attribute argument: either expression or named argument.
+    attribute_argument: $ => choice(
+      $.expression,
+      seq(field("name", $.identifier), $.colon, field("value", $.expression))
     ),
 
     // implement an ability for a concrete type.
