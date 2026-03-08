@@ -2362,6 +2362,10 @@
           {
             "type": "expression",
             "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
           }
         ]
       },
@@ -2390,10 +2394,6 @@
         },
         {
           "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "expression",
           "named": true
         },
         {
@@ -2781,6 +2781,10 @@
         "required": false,
         "types": [
           {
+            "type": "newline",
+            "named": true
+          },
+          {
             "type": "non_arrow_type",
             "named": true
           }
@@ -2823,10 +2827,6 @@
         },
         {
           "type": "newline",
-          "named": true
-        },
-        {
-          "type": "non_arrow_type",
           "named": true
         },
         {

@@ -936,33 +936,30 @@ function named_indented_list($, fieldName, itemRule, { atLeastOne = false } = {}
 // Explicitly requires at least 2 items: first, comma, second, then optional rest.
 // Syntax: #{x, y}
 function tuple_like($, itemRule) {
+  const inline_item = itemRule;
+  const block_item = withLeadingNewlines($, itemRule);
+
+  function tuple_items(item) {
+    return seq(
+      field("first", item),
+      $.comma,
+      field("second", item),
+      repeat(seq($.comma, field("rest", item))),
+      optional($.comma),
+    );
+  }
+
   return choice(
     seq(
       $.lbrace_hash,
-      field("first", itemRule),
-      $.comma,
-      field("second", itemRule),
-      repeat(seq(
-        $.comma,
-        field("rest", itemRule),
-      )),
-      optional($.comma),
+      tuple_items(inline_item),
       $.rbrace,
     ),
     seq(
       $.lbrace_hash,
       repeat1($.newline),
       $.indent,
-      field("first", withLeadingNewlines($, itemRule)),
-      repeat($.newline),
-      $.comma,
-      field("second", withLeadingNewlines($, itemRule)),
-      repeat(seq(
-        repeat($.newline),
-        $.comma,
-        withLeadingNewlines($, itemRule),
-      )),
-      optional(seq(repeat($.newline), $.comma)),
+      tuple_items(block_item),
       repeat($.newline),
       $.dedent,
       $.rbrace,
