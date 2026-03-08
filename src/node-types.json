@@ -883,7 +883,18 @@
   {
     "type": "documented_ability_declaration",
     "named": true,
-    "fields": {},
+    "fields": {
+      "docs": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "doc_comment",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -898,7 +909,18 @@
   {
     "type": "documented_let_binding",
     "named": true,
-    "fields": {},
+    "fields": {
+      "docs": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "doc_comment",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -911,9 +933,46 @@
     }
   },
   {
+    "type": "documented_signature",
+    "named": true,
+    "fields": {
+      "docs": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "doc_comment",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "signature",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "documented_test_declaration",
     "named": true,
-    "fields": {},
+    "fields": {
+      "docs": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "doc_comment",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -928,7 +987,18 @@
   {
     "type": "documented_type_declaration",
     "named": true,
-    "fields": {},
+    "fields": {
+      "docs": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "doc_comment",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -1462,6 +1532,10 @@
           "named": true
         },
         {
+          "type": "documented_signature",
+          "named": true
+        },
+        {
           "type": "documented_test_declaration",
           "named": true
         },
@@ -1475,10 +1549,6 @@
         },
         {
           "type": "implementation",
-          "named": true
-        },
-        {
-          "type": "signature",
           "named": true
         },
         {
@@ -2675,6 +2745,30 @@
     "fields": {}
   },
   {
+    "type": "static_string",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        },
+        {
+          "type": "static_string_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "static_string_text",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "string",
     "named": true,
     "fields": {},
@@ -2696,6 +2790,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "string_text",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "tag_pattern",
@@ -2767,7 +2866,7 @@
         "required": true,
         "types": [
           {
-            "type": "string",
+            "type": "static_string",
             "named": true
           }
         ]
@@ -2778,11 +2877,19 @@
       "required": true,
       "types": [
         {
+          "type": "attribute",
+          "named": true
+        },
+        {
           "type": "colon",
           "named": true
         },
         {
           "type": "kw_test",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -3648,8 +3755,7 @@
   },
   {
     "type": "doc_comment",
-    "named": true,
-    "extra": true
+    "named": true
   },
   {
     "type": "dot",
@@ -3894,10 +4000,6 @@
   },
   {
     "type": "slash",
-    "named": true
-  },
-  {
-    "type": "string_text",
     "named": true
   },
   {

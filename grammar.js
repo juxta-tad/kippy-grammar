@@ -45,7 +45,6 @@ module.exports = grammar({
 	// Comments are also explicitly handled at declaration level for predictable formatter attachment.
 	extras: ($) => [
 		/[ \t\r\f]+/,
-		$.doc_comment,
 		$.line_comment,
 		$.block_comment,
 	],
@@ -121,24 +120,47 @@ module.exports = grammar({
 				$.use_statement,
 				$.documented_type_declaration,
 				$.documented_let_binding,
-				$.signature,
+				$.documented_signature,
 				$.expect_statement,
 				$.implementation,
 				$.documented_ability_declaration,
 				$.documented_test_declaration,
 			),
 
-		// Semantic wrapper for type declarations (signals formatter comment attachment point)
-		documented_type_declaration: ($) => $.type_declaration,
+		// Semantic wrapper for type declarations with optional leading documentation.
+		documented_type_declaration: ($) =>
+			seq(
+				optional(field("docs", $.doc_comment)),
+				$.type_declaration,
+			),
 
-		// Semantic wrapper for let bindings (signals formatter comment attachment point)
-		documented_let_binding: ($) => $.let_binding,
+		// Semantic wrapper for signatures with optional leading documentation.
+		documented_signature: ($) =>
+			seq(
+				optional(field("docs", $.doc_comment)),
+				$.signature,
+			),
 
-		// Semantic wrapper for ability declarations (signals formatter comment attachment point)
-		documented_ability_declaration: ($) => $.ability_declaration,
+		// Semantic wrapper for let bindings with optional leading documentation.
+		documented_let_binding: ($) =>
+			seq(
+				optional(field("docs", $.doc_comment)),
+				$.let_binding,
+			),
 
-		// Semantic wrapper for test declarations (signals formatter comment attachment point)
-		documented_test_declaration: ($) => $.test_declaration,
+		// Semantic wrapper for ability declarations with optional leading documentation.
+		documented_ability_declaration: ($) =>
+			seq(
+				optional(field("docs", $.doc_comment)),
+				$.ability_declaration,
+			),
+
+		// Semantic wrapper for test declarations with optional leading documentation.
+		documented_test_declaration: ($) =>
+			seq(
+				optional(field("docs", $.doc_comment)),
+				$.test_declaration,
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.2: MODULE & USE DECLARATIONS
@@ -357,8 +379,9 @@ module.exports = grammar({
 		//       Err _ => expect false
 		test_declaration: ($) =>
 			seq(
+				attribute_prefix($),
 				$.kw_test,
-				field("name", $.string),
+				field("name", $.static_string),
 				$.colon,
 				field("body", indented_body($, $.expression)),
 			),
@@ -1096,11 +1119,36 @@ module.exports = grammar({
 		// supported escape sequences.
 		escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
+		// Static string literal: double-quoted string without interpolation.
+		// Used for constant strings like test names.
+		static_string: ($) =>
+			seq(
+				'"',
+				repeat(choice(
+					$.static_string_text,
+					$.escape_sequence,
+				)),
+				'"',
+			),
+
+		// Static string text content (no interpolation).
+		static_string_text: ($) => token(/[^"\\\n]+/),
+
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.16: COMMENTS
 		// ─────────────────────────────────────────────────────────────────────────────
 		// comment forms, all treated as extras.
-		doc_comment: (_) => token(prec(2, /\/\/\/[^\n]*/)),
+		doc_comment: (_) =>
+			token(
+				prec(
+					2,
+					seq(
+						"///",
+						/[^\n]*/,
+						repeat(seq("\n", "///", /[^\n]*/)),
+					),
+				),
+			),
 		line_comment: (_) => token(prec(1, /\/\/[^\n]*/)),
 		block_comment: ($) =>
 			token(prec(
