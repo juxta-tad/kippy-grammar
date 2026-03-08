@@ -10,13 +10,12 @@ const PREC = {
   POSTFIX: 8,  // unified postfix chain (calls, fields, try operator)
 };
 
-//
+
 // Keyword helper: creates a keyword token with standard precedence (2)
 function kw(s) {
   return $ => token(prec(2, s));
 }
 
-//
 // Operator helper: creates an operator token with specified precedence
 function op(p, s) {
   return $ => token(prec(p, s));
@@ -54,11 +53,16 @@ module.exports = grammar({
 
   rules: {
     // A source file is a newline-separated list of module items.
-    // Leading blank lines are allowed. Multiple items cannot share one line.
+    // Leading and trailing blank lines are allowed.
+    // Multiple items cannot share one line.
     source_file: $ => seq(
       repeat($.newline),
-      repeat(seq(
+      optional(seq(
         $.module_item,
+        repeat(seq(
+          repeat1($.newline),
+          $.module_item,
+        )),
         repeat($.newline),
       )),
     ),
@@ -92,7 +96,6 @@ module.exports = grammar({
       named_indented_list($, "items", $.module_item),
     ),
 
-    //
     // Type alias / type declaration.
     // Parameters are bare identifiers after the type name.
     type_declaration: $ => seq(
@@ -133,7 +136,7 @@ module.exports = grammar({
       optional(seq($.lparen, commaSep1Trail($, $.type_expression, $.comma, $.newline), $.rparen))
     ),
 
-    //
+
     // Standalone annotation node used by ability method declarations.
     // Supports leading attributes and same-line or indented type bodies.
     annotation: $ => seq(
@@ -153,7 +156,6 @@ module.exports = grammar({
       optional(field("constraints", $.constraint_clause)),
     ),
 
-    //
     // Value definitions support:
     //   let name : Type
     //   let name = expr
@@ -217,7 +219,7 @@ module.exports = grammar({
       named_indented_list($, "methods", $.let_binding),
     ),
 
-    //
+
     // Ability declaration with indented method annotations.
     // Example:
     //   ability Writer
@@ -234,7 +236,7 @@ module.exports = grammar({
     // assertion/expectation form.
     expect_statement: $ => seq($.kw_expect, field("value", $.expression)),
 
-    //
+
     // Assignment LHS is limited to lowercase-style identifiers and dotted paths.
     // This avoids ambiguity with constructor/type names.
     binding_target: $ => prec(1, dotted1($.identifier, $.identifier)),
@@ -249,7 +251,7 @@ module.exports = grammar({
 
     and_expression: $ => left_assoc_chain(PREC.AND, $.compare_expression, $.and_op),
 
-    //
+
     // Comparison allows at most one comparator per node.
     // Chained comparisons like a < b < c are not parsed as a single expression here.
     compare_expression: $ => prec.left(PREC.COMPARE, seq(
@@ -267,13 +269,13 @@ module.exports = grammar({
       $.postfix_expression,
     ),
 
-    //
+
     // Unified postfix chain:
-    //   f()
     //   value.field
     //   value?
-    //   get?().x?(y)
-    // All postfix forms (calls, fields, try) are handled in a single rule with left associativity.
+    //   func with x, y
+    //   get? with x .field?
+    // Postfix forms are parsed left-to-right in a single rule.
     postfix_chain: $ => prec.left(PREC.POSTFIX, seq(
       $.primary_expression,
       repeat(choice($.call_suffix, $.projection_suffix, $.try_op)),
@@ -283,10 +285,17 @@ module.exports = grammar({
     postfix_expression: $ => $.postfix_chain,
 
     // function call suffix using 'with' keyword.
-    // Syntax: func with x, y  (arguments are postfix_chains)
-    call_suffix: $ => prec(2, with_call_suffix($)),
+    // Syntax:
+    //   func with x, y
+    //   func with
+    //     x,
+    //     y
+    call_suffix: $ => with_call_suffix($),
 
-    // field projection or tuple/index access via dot syntax (allows keywords).
+    // field/property access suffix.
+    // Syntax:
+    //   obj.field
+    //   obj.0 (tuple index)
     projection_suffix: $ => seq(
       $.dot,
       field("field", choice($.field_name, $.tuple_index)),
@@ -314,7 +323,7 @@ module.exports = grammar({
     // list literal with single-line or layout-sensitive multiline support.
     list_expression: $ => layoutBracket($, $.lbracket, $.rbracket, $.expression),
 
-    //
+
     // Record literal:
     //   { a: 1, b: 2 }
     //   { a: 1, ..base }
@@ -324,7 +333,7 @@ module.exports = grammar({
       multiLineRecordExpression($, $.record_field),
     ),
 
-    //
+
     // Record builder for applicative composition patterns.
     // Example:
     //   build decoder { x: dx, y: dy }
@@ -362,7 +371,7 @@ module.exports = grammar({
       $.rparen,
     ),
 
-    //
+
     // Block expression:
     // (
     //   let x = 1
@@ -389,7 +398,7 @@ module.exports = grammar({
       $.rparen,
     ),
 
-    //
+
     // Pattern matching expression with an indented arm list.
     when_expression: $ => seq(
       $.kw_when,
@@ -438,7 +447,7 @@ module.exports = grammar({
     // wildcard pattern.
     wildcard_pattern: $ => "_",
 
-    //
+
     // Non-parenthesised patterns allowed as bare tag arguments.
     // Deliberately excludes tuple/parenthesised forms to avoid Tag(x) ambiguity.
     non_paren_atomic_pattern: $ => choice(
@@ -450,7 +459,7 @@ module.exports = grammar({
       $.record_pattern,
     ),
 
-    //
+
     // Constructor/tag patterns:
     //   Tag
     //   Tag(x, y)
@@ -467,7 +476,7 @@ module.exports = grammar({
       ))
     ),
 
-    //
+
     // List patterns:
     //   []
     //   [x, y]
@@ -492,9 +501,9 @@ module.exports = grammar({
       field("binding", $.identifier)
     ),
 
-    //
+
     // Tuple pattern must contain a comma so it cannot be confused with grouping.
-    // Syntax: #{x, y} not (x, y)
+    // Syntax: #{x, y}
     tuple_pattern: $ => seq(
       $.lbrace_hash,
       $.pattern,
@@ -503,7 +512,7 @@ module.exports = grammar({
       $.rbrace
     ),
 
-    //
+
     // Record patterns:
     //   { age }
     //   { age: x }
@@ -535,7 +544,7 @@ module.exports = grammar({
       field("value", inline_or_block($, $.expression)),
     ),
 
-    //
+
     // Lambda syntax:
     //   fn x:
     //   fn x, y, z:
@@ -563,9 +572,8 @@ module.exports = grammar({
       field("else_value", $.expression),
     ),
 
-    //
-    // Function types are right-associative.
-    // Arrow required for comma-separated types on the left.
+
+    // Function types are parsed with arrow precedence lower than non-arrow types.
     // Supports:
     //   a -> b
     //   a, b -> c
@@ -582,7 +590,6 @@ module.exports = grammar({
       $.non_arrow_type,
     )),
 
-    //
     // Type function parameters: comma-separated list of types on the left of an arrow.
     // Must have at least 2 items. Commas must follow immediately (no leading newlines).
     type_function_params: $ => seq(
@@ -620,7 +627,7 @@ module.exports = grammar({
 
     //
     // Qualified type name without arguments.
-    // Arguments are handled separately by type_primary or type_application.
+    // Arguments are handled separately by type_primary.
     // Example:
     //   Foo
     //   Mod.Foo
@@ -637,11 +644,10 @@ module.exports = grammar({
       $.rparen,
     ),
 
-    // record type field.
     // record type field (allows keywords as field names).
     record_type_field: $ => seq($.field_name, $.colon, inline_or_block($, $.type_expression)),
 
-    //
+
     // tuple type.
     type_tuple: $ => tuple_like($, $.non_arrow_type),
 
@@ -674,7 +680,7 @@ module.exports = grammar({
       /[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
     )),
 
-    //
+
     // Normal string with escapes and interpolation.
     // Interpolation starts with \( and ends at the matching parser-level ).
     string: $ => seq(
@@ -687,7 +693,7 @@ module.exports = grammar({
       '"',
     ),
 
-    //
+
     // Triple-quoted multiline string with interpolation and controlled quote tokenisation.
     multiline_string: $ => seq(
       '"""',
@@ -833,7 +839,7 @@ module.exports = grammar({
   },
 });
 
-//
+
 // Generic single-line delimited list helper with optional trailing comma.
 function singleLineBracket(open, commaToken, item, close) {
   return seq(
@@ -847,21 +853,20 @@ function singleLineBracket(open, commaToken, item, close) {
   );
 }
 
-//
+
 // Attach any leading newlines directly to the rule.
 // Used to keep layout ownership local to the consuming construct.
 function withLeadingNewlines($, rule) {
   return seq(repeat($.newline), rule);
 }
 
-//
 // Strict indented block form.
 // Requires a newline immediately before the indented body.
 function indented_block($, rule) {
   return seq($.newline, $.indent, withLeadingNewlines($, rule), repeat($.newline), $.dedent);
 }
 
-//
+
 // Unified body helper:
 // - same line: = expr
 // - indented:  =\n  expr
@@ -872,7 +877,7 @@ function inline_or_block($, rule) {
   );
 }
 
-//
+
 // Generic comma-list helper where items may own leading newlines.
 function list_items($, itemRule) {
   return seq(
@@ -886,7 +891,7 @@ function list_items($, itemRule) {
   );
 }
 
-//
+
 // Dotted name helper for qualified identifiers.
 // Matches: head (. tail)*
 // Used for: type_name, long_identifier, binding_target
@@ -897,16 +902,16 @@ function dotted1(head, tail) {
   );
 }
 
-//
+
 // Attribute prefix for declarations that support attributes.
 // Handles optional attributes followed by optional newlines before the declaration.
 function attribute_prefix($) {
   return repeat(seq($.attribute, optional($.newline)));
 }
 
-//
-// Left-associative operator chain: operand (operator operand)*
-// Used for: or, and, comparison, add, mul expressions
+
+// Left-associative operator chain precedence helper.
+// Produces a flat concrete syntax tree: operand (operator operand)*
 function left_assoc_chain(precValue, operand, operator) {
   return prec.left(precValue, seq(
     operand,
@@ -914,9 +919,9 @@ function left_assoc_chain(precValue, operand, operator) {
   ));
 }
 
-//
-// Right-associative operator chain: operand (operator operand)*
-// Used for: pipe expressions, function types
+
+// Right-associative operator chain precedence helper.
+// Produces a flat concrete syntax tree while assigning right-associative precedence.
 function right_assoc_chain(precValue, operand, operator) {
   return prec.right(precValue, seq(
     operand,
@@ -924,7 +929,7 @@ function right_assoc_chain(precValue, operand, operator) {
   ));
 }
 
-//
+
 // Indented list helper for bodies with optional or required items.
 // Syntax: newline, indent, items, dedent
 // Used for: module items, implementation methods, ability methods, type variants, when arms, etc.
@@ -941,10 +946,9 @@ function named_indented_list($, fieldName, itemRule, { atLeastOne = false } = {}
   );
 }
 
-//
 // Shared tuple parser for expression tuples and type tuples.
 // Explicitly requires at least 2 items: first, comma, second, then optional rest.
-// Syntax: #{x, y} not (x, y)
+// Syntax: #{x, y}
 function tuple_like($, itemRule) {
   return choice(
     seq(
@@ -980,19 +984,21 @@ function tuple_like($, itemRule) {
   );
 }
 
-//
+
 // Helper: function argument list using 'with' keyword without parentheses.
-// Arguments are postfix_chains (not full expressions) to provide natural boundaries.
-// Syntax: func with x, y (single-line, no newlines between args)
-// Multiline: func with
-//   x, y
-// Single-line and multiline are distinct: single-line has no leading newline after 'with',
-// multiline has immediate newline+indent after 'with'.
+// Arguments are full expressions.
+// Syntax:
+//   func with x, y
+//   func with
+//     x,
+//     y
+// Single-line and multiline forms are distinct: single-line has no newline after 'with',
+// multiline requires an indented block immediately after 'with'.
 // Effects are marked by ! at the end of function/value names, not on the call.
 function with_call_suffix($) {
   return choice(
-    // Single-line: with arg, arg, ... (NO NEWLINES between arguments)
-    // Use prec.right to prefer shifting on comma (continue collecting arguments)
+    // Single-line: with arg, arg, ...
+    // Use prec.right to prefer shifting on comma and continue collecting arguments.
     prec.right(seq(
       $.kw_with,
       field("first", $.expression),
@@ -1022,7 +1028,7 @@ function with_call_suffix($) {
   );
 }
 
-//
+
 // Multiline delimited list helper using indentation.
 function multiLineBracket($, open, commaToken, item, close) {
   return seq(
@@ -1036,7 +1042,6 @@ function multiLineBracket($, open, commaToken, item, close) {
   );
 }
 
-//
 // Layout-aware bracketed collection: single-line or indented multiline form.
 function layoutBracket($, open, close, item) {
   return choice(
