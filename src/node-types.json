@@ -14,7 +14,7 @@
     "named": true,
     "subtypes": [
       {
-        "type": "postfix_atom",
+        "type": "postfix_chain",
         "named": true
       }
     ]
@@ -151,7 +151,7 @@
         "required": true,
         "types": [
           {
-            "type": "assignment_lhs",
+            "type": "binding_target",
             "named": true
           }
         ]
@@ -229,21 +229,6 @@
     }
   },
   {
-    "type": "assignment_lhs",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "atomic_pattern",
     "named": true,
     "fields": {},
@@ -310,6 +295,21 @@
     }
   },
   {
+    "type": "binding_target",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "block_expression",
     "named": true,
     "fields": {
@@ -345,6 +345,10 @@
           "named": true
         },
         {
+          "type": "let_binding",
+          "named": true
+        },
+        {
           "type": "lparen",
           "named": true
         },
@@ -354,10 +358,6 @@
         },
         {
           "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "value_definition",
           "named": true
         }
       ]
@@ -376,7 +376,7 @@
             "named": true
           },
           {
-            "type": "postfix_atom",
+            "type": "postfix_chain",
             "named": true
           }
         ]
@@ -394,7 +394,7 @@
             "named": true
           },
           {
-            "type": "postfix_atom",
+            "type": "postfix_chain",
             "named": true
           }
         ]
@@ -475,7 +475,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_non_function",
+            "type": "non_arrow_type",
             "named": true
           }
         ]
@@ -533,37 +533,7 @@
     }
   },
   {
-    "type": "field_suffix",
-    "named": true,
-    "fields": {
-      "field": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "int_index",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "dot",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "function_type_params",
+    "type": "function_type_domain",
     "named": true,
     "fields": {},
     "children": {
@@ -579,7 +549,7 @@
           "named": true
         },
         {
-          "type": "type_non_function",
+          "type": "non_arrow_type",
           "named": true
         }
       ]
@@ -753,6 +723,110 @@
         },
         {
           "type": "kw_fn",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "let_binding",
+    "named": true,
+    "fields": {
+      "constraints": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constraint_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_target",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "equals",
+          "named": true
+        },
+        {
+          "type": "kw_cert",
+          "named": true
+        },
+        {
+          "type": "kw_let",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
           "named": true
         },
         {
@@ -951,6 +1025,10 @@
           "named": true
         },
         {
+          "type": "let_binding",
+          "named": true
+        },
+        {
           "type": "module_declaration",
           "named": true
         },
@@ -964,10 +1042,6 @@
         },
         {
           "type": "use_statement",
-          "named": true
-        },
-        {
-          "type": "value_definition",
           "named": true
         }
       ]
@@ -1049,6 +1123,33 @@
         },
         {
           "type": "tag_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "non_arrow_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "tag_union_type",
+          "named": true
+        },
+        {
+          "type": "type_primary",
+          "named": true
+        },
+        {
+          "type": "type_record",
+          "named": true
+        },
+        {
+          "type": "type_tuple",
           "named": true
         }
       ]
@@ -1260,7 +1361,7 @@
     }
   },
   {
-    "type": "postfix_atom",
+    "type": "postfix_chain",
     "named": true,
     "fields": {},
     "children": {
@@ -1272,11 +1373,11 @@
           "named": true
         },
         {
-          "type": "field_suffix",
+          "type": "primary_expression",
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "projection_suffix",
           "named": true
         },
         {
@@ -1340,6 +1441,136 @@
         },
         {
           "type": "when_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "projection_suffix",
+    "named": true,
+    "fields": {
+      "field": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "kw_ability",
+            "named": true
+          },
+          {
+            "type": "kw_and",
+            "named": true
+          },
+          {
+            "type": "kw_as",
+            "named": true
+          },
+          {
+            "type": "kw_build",
+            "named": true
+          },
+          {
+            "type": "kw_cert",
+            "named": true
+          },
+          {
+            "type": "kw_else",
+            "named": true
+          },
+          {
+            "type": "kw_expect",
+            "named": true
+          },
+          {
+            "type": "kw_fn",
+            "named": true
+          },
+          {
+            "type": "kw_for",
+            "named": true
+          },
+          {
+            "type": "kw_if",
+            "named": true
+          },
+          {
+            "type": "kw_implement",
+            "named": true
+          },
+          {
+            "type": "kw_in",
+            "named": true
+          },
+          {
+            "type": "kw_is",
+            "named": true
+          },
+          {
+            "type": "kw_let",
+            "named": true
+          },
+          {
+            "type": "kw_module",
+            "named": true
+          },
+          {
+            "type": "kw_not",
+            "named": true
+          },
+          {
+            "type": "kw_or",
+            "named": true
+          },
+          {
+            "type": "kw_pub",
+            "named": true
+          },
+          {
+            "type": "kw_sig",
+            "named": true
+          },
+          {
+            "type": "kw_then",
+            "named": true
+          },
+          {
+            "type": "kw_type",
+            "named": true
+          },
+          {
+            "type": "kw_use",
+            "named": true
+          },
+          {
+            "type": "kw_when",
+            "named": true
+          },
+          {
+            "type": "kw_where",
+            "named": true
+          },
+          {
+            "type": "kw_with",
+            "named": true
+          },
+          {
+            "type": "tuple_index",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "dot",
           "named": true
         }
       ]
@@ -1453,6 +1684,106 @@
           {
             "type": "identifier",
             "named": true
+          },
+          {
+            "type": "kw_ability",
+            "named": true
+          },
+          {
+            "type": "kw_and",
+            "named": true
+          },
+          {
+            "type": "kw_as",
+            "named": true
+          },
+          {
+            "type": "kw_build",
+            "named": true
+          },
+          {
+            "type": "kw_cert",
+            "named": true
+          },
+          {
+            "type": "kw_else",
+            "named": true
+          },
+          {
+            "type": "kw_expect",
+            "named": true
+          },
+          {
+            "type": "kw_fn",
+            "named": true
+          },
+          {
+            "type": "kw_for",
+            "named": true
+          },
+          {
+            "type": "kw_if",
+            "named": true
+          },
+          {
+            "type": "kw_implement",
+            "named": true
+          },
+          {
+            "type": "kw_in",
+            "named": true
+          },
+          {
+            "type": "kw_is",
+            "named": true
+          },
+          {
+            "type": "kw_let",
+            "named": true
+          },
+          {
+            "type": "kw_module",
+            "named": true
+          },
+          {
+            "type": "kw_not",
+            "named": true
+          },
+          {
+            "type": "kw_or",
+            "named": true
+          },
+          {
+            "type": "kw_pub",
+            "named": true
+          },
+          {
+            "type": "kw_sig",
+            "named": true
+          },
+          {
+            "type": "kw_then",
+            "named": true
+          },
+          {
+            "type": "kw_type",
+            "named": true
+          },
+          {
+            "type": "kw_use",
+            "named": true
+          },
+          {
+            "type": "kw_when",
+            "named": true
+          },
+          {
+            "type": "kw_where",
+            "named": true
+          },
+          {
+            "type": "kw_with",
+            "named": true
           }
         ]
       },
@@ -1534,7 +1865,242 @@
           "named": true
         },
         {
+          "type": "kw_ability",
+          "named": true
+        },
+        {
+          "type": "kw_and",
+          "named": true
+        },
+        {
+          "type": "kw_as",
+          "named": true
+        },
+        {
+          "type": "kw_build",
+          "named": true
+        },
+        {
+          "type": "kw_cert",
+          "named": true
+        },
+        {
+          "type": "kw_else",
+          "named": true
+        },
+        {
+          "type": "kw_expect",
+          "named": true
+        },
+        {
+          "type": "kw_fn",
+          "named": true
+        },
+        {
+          "type": "kw_for",
+          "named": true
+        },
+        {
+          "type": "kw_if",
+          "named": true
+        },
+        {
+          "type": "kw_implement",
+          "named": true
+        },
+        {
+          "type": "kw_in",
+          "named": true
+        },
+        {
+          "type": "kw_is",
+          "named": true
+        },
+        {
+          "type": "kw_let",
+          "named": true
+        },
+        {
+          "type": "kw_module",
+          "named": true
+        },
+        {
+          "type": "kw_not",
+          "named": true
+        },
+        {
+          "type": "kw_or",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_sig",
+          "named": true
+        },
+        {
+          "type": "kw_then",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "kw_use",
+          "named": true
+        },
+        {
+          "type": "kw_when",
+          "named": true
+        },
+        {
+          "type": "kw_where",
+          "named": true
+        },
+        {
+          "type": "kw_with",
+          "named": true
+        },
+        {
           "type": "pattern",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_type_field",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "kw_ability",
+          "named": true
+        },
+        {
+          "type": "kw_and",
+          "named": true
+        },
+        {
+          "type": "kw_as",
+          "named": true
+        },
+        {
+          "type": "kw_build",
+          "named": true
+        },
+        {
+          "type": "kw_cert",
+          "named": true
+        },
+        {
+          "type": "kw_else",
+          "named": true
+        },
+        {
+          "type": "kw_expect",
+          "named": true
+        },
+        {
+          "type": "kw_fn",
+          "named": true
+        },
+        {
+          "type": "kw_for",
+          "named": true
+        },
+        {
+          "type": "kw_if",
+          "named": true
+        },
+        {
+          "type": "kw_implement",
+          "named": true
+        },
+        {
+          "type": "kw_in",
+          "named": true
+        },
+        {
+          "type": "kw_is",
+          "named": true
+        },
+        {
+          "type": "kw_let",
+          "named": true
+        },
+        {
+          "type": "kw_module",
+          "named": true
+        },
+        {
+          "type": "kw_not",
+          "named": true
+        },
+        {
+          "type": "kw_or",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_sig",
+          "named": true
+        },
+        {
+          "type": "kw_then",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "kw_use",
+          "named": true
+        },
+        {
+          "type": "kw_when",
+          "named": true
+        },
+        {
+          "type": "kw_where",
+          "named": true
+        },
+        {
+          "type": "kw_with",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_expression",
           "named": true
         }
       ]
@@ -1706,7 +2272,7 @@
     }
   },
   {
-    "type": "tag_type",
+    "type": "tag_union_member",
     "named": true,
     "fields": {},
     "children": {
@@ -1735,6 +2301,45 @@
         },
         {
           "type": "type_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tag_union_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "lbracket",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rbracket",
+          "named": true
+        },
+        {
+          "type": "tag_union_member",
           "named": true
         }
       ]
@@ -1840,60 +2445,7 @@
     }
   },
   {
-    "type": "type_application",
-    "named": true,
-    "fields": {
-      "arg": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_arg",
-            "named": true
-          }
-        ]
-      },
-      "head": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_application",
-            "named": true
-          },
-          {
-            "type": "type_atom",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "type_arg",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "tag_name",
-          "named": true
-        },
-        {
-          "type": "type_wildcard",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "type_args",
+    "type": "type_argument_list",
     "named": true,
     "fields": {
       "first": {
@@ -1939,37 +2491,6 @@
         },
         {
           "type": "rparen",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "type_atom",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "parenthesized_type",
-          "named": true
-        },
-        {
-          "type": "type_args",
-          "named": true
-        },
-        {
-          "type": "type_name",
-          "named": true
-        },
-        {
-          "type": "type_star",
-          "named": true
-        },
-        {
-          "type": "type_wildcard",
           "named": true
         }
       ]
@@ -2042,7 +2563,7 @@
           "named": true
         },
         {
-          "type": "function_type_params",
+          "type": "function_type_domain",
           "named": true
         },
         {
@@ -2054,42 +2575,7 @@
           "named": true
         },
         {
-          "type": "type_expression",
-          "named": true
-        },
-        {
-          "type": "type_non_function",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "type_field",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "newline",
+          "type": "non_arrow_type",
           "named": true
         },
         {
@@ -2115,31 +2601,31 @@
     }
   },
   {
-    "type": "type_non_function",
+    "type": "type_primary",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "type_application",
+          "type": "parenthesized_type",
           "named": true
         },
         {
-          "type": "type_atom",
+          "type": "type_argument_list",
           "named": true
         },
         {
-          "type": "type_record",
+          "type": "type_name",
           "named": true
         },
         {
-          "type": "type_tag_union",
+          "type": "type_star",
           "named": true
         },
         {
-          "type": "type_tuple",
+          "type": "type_wildcard",
           "named": true
         }
       ]
@@ -2178,46 +2664,7 @@
           "named": true
         },
         {
-          "type": "type_field",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "type_tag_union",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "comma",
-          "named": true
-        },
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "lbracket",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rbracket",
-          "named": true
-        },
-        {
-          "type": "tag_type",
+          "type": "record_type_field",
           "named": true
         }
       ]
@@ -2332,110 +2779,6 @@
         },
         {
           "type": "long_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "value_definition",
-    "named": true,
-    "fields": {
-      "constraints": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "constraint_clause",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "assignment_lhs",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "newline",
-            "named": true
-          },
-          {
-            "type": "type_expression",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "expression",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "newline",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "equals",
-          "named": true
-        },
-        {
-          "type": "kw_cert",
-          "named": true
-        },
-        {
-          "type": "kw_let",
-          "named": true
-        },
-        {
-          "type": "kw_pub",
-          "named": true
-        },
-        {
-          "type": "newline",
           "named": true
         }
       ]
@@ -2653,10 +2996,6 @@
     "named": true
   },
   {
-    "type": "int_index",
-    "named": true
-  },
-  {
     "type": "int_literal",
     "named": true
   },
@@ -2863,6 +3202,10 @@
   },
   {
     "type": "try_op",
+    "named": true
+  },
+  {
+    "type": "tuple_index",
     "named": true
   },
   {
