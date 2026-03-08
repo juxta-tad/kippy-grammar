@@ -372,11 +372,11 @@
         "required": true,
         "types": [
           {
-            "type": "newline",
+            "type": "expression",
             "named": true
           },
           {
-            "type": "postfix_chain",
+            "type": "newline",
             "named": true
           }
         ]
@@ -390,11 +390,11 @@
             "named": true
           },
           {
-            "type": "newline",
+            "type": "expression",
             "named": true
           },
           {
-            "type": "postfix_chain",
+            "type": "newline",
             "named": true
           }
         ]

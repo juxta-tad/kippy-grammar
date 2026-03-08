@@ -933,8 +933,8 @@ function with_call_suffix($) {
     // Use prec.right to prefer shifting on comma (continue collecting arguments)
     prec.right(seq(
       $.kw_with,
-      field("first", $.postfix_chain),
-      field("rest", repeat(seq($.comma, $.postfix_chain))),
+      field("first", $.expression),
+      field("rest", repeat(seq($.comma, $.expression))),
       optional($.comma),
     )),
     // Multi-line: with\n  arg,\n  arg
@@ -942,15 +942,15 @@ function with_call_suffix($) {
       $.kw_with,
       repeat1($.newline),
       $.indent,
-      field("first", withLeadingNewlines($, $.postfix_chain)),
+      field("first", withLeadingNewlines($, $.expression)),
       repeat($.newline),
       $.comma,
       field("rest", seq(
-        withLeadingNewlines($, $.postfix_chain),
+        withLeadingNewlines($, $.expression),
         repeat(seq(
           repeat($.newline),
           $.comma,
-          withLeadingNewlines($, $.postfix_chain),
+          withLeadingNewlines($, $.expression),
         )),
         optional(seq(repeat($.newline), $.comma)),
       )),
