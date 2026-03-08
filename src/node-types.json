@@ -1,11 +1,31 @@
 [
   {
+    "type": "expression",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "pipe_expression",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "postfix_expression",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "postfix_atom",
+        "named": true
+      }
+    ]
+  },
+  {
     "type": "ability_declaration",
     "named": true,
     "fields": {
       "methods": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "annotation",
@@ -46,10 +66,6 @@
         },
         {
           "type": "kw_ability",
-          "named": true
-        },
-        {
-          "type": "kw_with",
           "named": true
         },
         {
@@ -165,10 +181,14 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
           "named": true
         },
         {
@@ -279,13 +299,9 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "call_suffix",
-          "named": true
-        },
         {
           "type": "long_identifier",
           "named": true
@@ -353,14 +369,14 @@
     "fields": {
       "first": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "newline",
             "named": true
           },
           {
-            "type": "newline",
+            "type": "postfix_atom",
             "named": true
           }
         ]
@@ -374,11 +390,11 @@
             "named": true
           },
           {
-            "type": "expression",
+            "type": "newline",
             "named": true
           },
           {
-            "type": "newline",
+            "type": "postfix_atom",
             "named": true
           }
         ]
@@ -401,20 +417,15 @@
           "named": true
         },
         {
-          "type": "newline",
+          "type": "kw_with",
           "named": true
         },
         {
-          "type": "rparen",
+          "type": "newline",
           "named": true
         }
       ]
     }
-  },
-  {
-    "type": "colon",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "compare_expression",
@@ -516,21 +527,6 @@
       "types": [
         {
           "type": "kw_expect",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "pipe_expression",
           "named": true
         }
       ]
@@ -698,6 +694,10 @@
         {
           "type": "interpolation_start",
           "named": true
+        },
+        {
+          "type": "rparen",
+          "named": true
         }
       ]
     }
@@ -761,11 +761,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "lbrace",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "list_expression",
@@ -926,10 +921,6 @@
         },
         {
           "type": "kw_module",
-          "named": true
-        },
-        {
-          "type": "kw_with",
           "named": true
         },
         {
@@ -1296,21 +1287,6 @@
     }
   },
   {
-    "type": "postfix_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "postfix_atom",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "primary_expression",
     "named": true,
     "fields": {},
@@ -1368,11 +1344,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "rbrace",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "record_builder",
@@ -1555,6 +1526,10 @@
       "required": true,
       "types": [
         {
+          "type": "colon",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1580,11 +1555,6 @@
         ]
       }
     }
-  },
-  {
-    "type": "rparen",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "signature",
@@ -1634,9 +1604,13 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "colon",
+          "named": true
+        },
         {
           "type": "kw_sig",
           "named": true
@@ -1820,7 +1794,7 @@
           "named": true
         },
         {
-          "type": "lparen",
+          "type": "lbrace_hash",
           "named": true
         },
         {
@@ -1828,7 +1802,7 @@
           "named": true
         },
         {
-          "type": "rparen",
+          "type": "rbrace",
           "named": true
         }
       ]
@@ -1847,7 +1821,7 @@
           "named": true
         },
         {
-          "type": "lparen",
+          "type": "lbrace_hash",
           "named": true
         },
         {
@@ -1859,7 +1833,7 @@
           "named": true
         },
         {
-          "type": "rparen",
+          "type": "rbrace",
           "named": true
         }
       ]
@@ -1975,11 +1949,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "parenthesized_type",
+          "named": true
+        },
+        {
+          "type": "type_args",
           "named": true
         },
         {
@@ -2095,6 +2073,10 @@
       "required": true,
       "types": [
         {
+          "type": "colon",
+          "named": true
+        },
+        {
           "type": "dedent",
           "named": true
         },
@@ -2127,10 +2109,6 @@
       "types": [
         {
           "type": "name",
-          "named": true
-        },
-        {
-          "type": "type_args",
           "named": true
         }
       ]
@@ -2173,7 +2151,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "comma",
@@ -2188,7 +2166,15 @@
           "named": true
         },
         {
+          "type": "lbrace",
+          "named": true
+        },
+        {
           "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rbrace",
           "named": true
         },
         {
@@ -2291,7 +2277,7 @@
           "named": true
         },
         {
-          "type": "lparen",
+          "type": "lbrace_hash",
           "named": true
         },
         {
@@ -2299,7 +2285,7 @@
           "named": true
         },
         {
-          "type": "rparen",
+          "type": "rbrace",
           "named": true
         }
       ]
@@ -2426,6 +2412,10 @@
       "types": [
         {
           "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
           "named": true
         },
         {
@@ -2573,10 +2563,6 @@
     "named": false
   },
   {
-    "type": ")",
-    "named": false
-  },
-  {
     "type": "*",
     "named": false
   },
@@ -2586,10 +2572,6 @@
   },
   {
     "type": "..",
-    "named": false
-  },
-  {
-    "type": ":",
     "named": false
   },
   {
@@ -2611,6 +2593,10 @@
   },
   {
     "type": "bool_literal",
+    "named": true
+  },
+  {
+    "type": "colon",
     "named": true
   },
   {
@@ -2779,6 +2765,14 @@
     "named": true
   },
   {
+    "type": "lbrace",
+    "named": true
+  },
+  {
+    "type": "lbrace_hash",
+    "named": true
+  },
+  {
     "type": "lbracket",
     "named": true
   },
@@ -2844,7 +2838,15 @@
     "named": true
   },
   {
+    "type": "rbrace",
+    "named": true
+  },
+  {
     "type": "rbracket",
+    "named": true
+  },
+  {
+    "type": "rparen",
     "named": true
   },
   {
@@ -2870,13 +2872,5 @@
   {
     "type": "type_wildcard",
     "named": true
-  },
-  {
-    "type": "{",
-    "named": false
-  },
-  {
-    "type": "}",
-    "named": false
   }
 ]

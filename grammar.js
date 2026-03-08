@@ -7,9 +7,7 @@ const PREC = {
   ADD: 5,
   MUL: 6,
   UNARY: 7,
-  POSTFIX_CALL: 8,
-  POSTFIX_FIELD: 9,
-  POSTFIX_SPACE_APP: 10,
+  POSTFIX: 8,  // unified postfix chain (calls, fields, try operator)
 };
 
 module.exports = grammar({
@@ -31,6 +29,16 @@ module.exports = grammar({
     $.doc_comment,
     $.line_comment,
     $.block_comment,
+  ],
+
+  // supertypes enable robust syntax highlighting, folding, navigation, and queries.
+  // Note: Tree-Sitter supertypes must be pure wrappers (single symbol, no choice/seq/repeat).
+  // Only expression and postfix_expression qualify in this grammar.
+  // Primary expression classes (primary_expression, pattern, atomic_pattern, type_expression)
+  // have internal choice/seq structure, so they cannot be supertypes.
+  supertypes: $ => [
+    $.expression,
+    $.postfix_expression,
   ],
 
   rules: {
@@ -66,12 +74,11 @@ module.exports = grammar({
     //
     // Nested module declaration with an indented body.
     // Example:
-    //   module Foo with
+    //   module Foo
     //     let x = 1
     module_declaration: $ => seq(
       $.kw_module,
       field("name", $.type_name),
-      $.kw_with,
       $.newline,
       $.indent,
       field("items", seq(
@@ -97,7 +104,7 @@ module.exports = grammar({
     annotation: $ => seq(
       repeat(seq($.attribute, optional($.newline))),
       field("name", $.assignment_lhs),
-      ":",
+      $.colon,
       field("type", same_line_or_indent_block($, $.type_expression)),
       optional(field("constraints", $.constraint_clause)),
     ),
@@ -106,7 +113,7 @@ module.exports = grammar({
     signature: $ => seq(
       $.kw_sig,
       field("name", $.identifier),
-      ":",
+      $.colon,
       field("type", same_line_or_indent_block($, $.type_expression)),
       optional(field("constraints", $.constraint_clause)),
     ),
@@ -125,13 +132,13 @@ module.exports = grammar({
       field("name", $.assignment_lhs),
       choice(
         seq(
-          ":",
+          $.colon,
           field("type", same_line_or_indent_block($, $.type_expression)),
           optional(field("constraints", $.constraint_clause)),
         ),
         seq(
           optional(seq(
-            ":",
+            $.colon,
             field("type", same_line_or_indent_block($, $.type_expression)),
           )),
           $.equals,
@@ -140,15 +147,14 @@ module.exports = grammar({
       ),
     ),
 
-    //
-    // Attributes use call-like syntax:
-    //   @name
-    //   @name(args)
-    //   @qualified.name(args)
+    // Attributes are simple name references without arguments.
+    // Examples:
+    //   @deprecated
+    //   @inline
+    //   @optimize.inline
     attribute: $ => seq(
       "@",
       $.long_identifier,
-      optional($.call_suffix),
     ),
 
     // implement an ability for a concrete type.
@@ -160,22 +166,24 @@ module.exports = grammar({
     ),
 
     //
-    // Ability declaration with optional indented method annotations.
+    // Ability declaration with indented method annotations.
+    // Example:
+    //   ability Writer
+    //     write: File -> Bytes -> Void
+    //   ability Reader
+    //     read: File -> Bytes
     ability_declaration: $ => seq(
       repeat(seq($.attribute, optional($.newline))),
       $.kw_ability,
       field("name", $.type_name),
-      optional(seq(
-        $.kw_with,
-        $.newline,
-        $.indent,
-        field("methods", seq(
-          $.annotation,
-          repeat(seq(repeat($.newline), $.annotation)),
-        )),
-        repeat($.newline),
-        $.dedent,
+      $.newline,
+      $.indent,
+      field("methods", seq(
+        $.annotation,
+        repeat(seq(repeat($.newline), $.annotation)),
       )),
+      repeat($.newline),
+      $.dedent,
     ),
 
     // assertion/expectation form.
@@ -242,8 +250,8 @@ module.exports = grammar({
     //   value.field
     //   value?
     //   get?().x?(y)
-    // This avoids separate precedence layers for each postfix form.
-    postfix_atom: $ => prec.left(PREC.POSTFIX_FIELD, seq(
+    // All postfix forms (calls, fields, try) are handled in a single rule with left associativity.
+    postfix_atom: $ => prec.left(PREC.POSTFIX, seq(
       $.primary_expression,
       repeat(choice($.call_suffix, $.field_suffix, $.try_op)),
     )),
@@ -251,8 +259,9 @@ module.exports = grammar({
     // alias for postfix_atom kept as the expression-level postfix rule.
     postfix_expression: $ => $.postfix_atom,
 
-    // function call suffix requires immediate "(" with no whitespace.
-    call_suffix: $ => prec(2, arg_list($, $.expression)),
+    // function call suffix using 'with' keyword.
+    // Syntax: func with x, y  (arguments are postfix_atoms)
+    call_suffix: $ => prec(2, with_call($)),
 
     // field projection or tuple/index access via dot syntax.
     field_suffix: $ => seq(
@@ -451,12 +460,13 @@ module.exports = grammar({
 
     //
     // Tuple pattern must contain a comma so it cannot be confused with grouping.
+    // Syntax: #{x, y} not (x, y)
     tuple_pattern: $ => seq(
-      $.lparen,
+      $.lbrace_hash,
       $.pattern,
       $.comma,
       commaSepTrail($, $.pattern, $.comma, $.newline),
-      $.rparen
+      $.rbrace
     ),
 
     //
@@ -480,7 +490,7 @@ module.exports = grammar({
 
     // shorthand field or explicit field pattern.
     record_pattern_field: $ => choice(
-      seq($.identifier, ":", $.pattern),
+      seq($.identifier, $.colon, $.pattern),
       $.identifier
     ),
 
@@ -576,6 +586,7 @@ module.exports = grammar({
 
     // atomic type forms.
     type_atom: $ => choice(
+      seq($.type_name, $.type_args),
       $.type_name,
       alias("_", $.type_wildcard),
       alias("*", $.type_star),
@@ -583,14 +594,14 @@ module.exports = grammar({
     ),
 
     //
-    // Qualified type name with optional explicit type arguments.
+    // Qualified type name without arguments.
+    // Arguments are handled separately by type_atom or type_application.
     // Example:
     //   Foo
-    //   Mod.Foo(a, b)
+    //   Mod.Foo
     type_name: $ => seq(
       $.name,
-      repeat(seq(token.immediate("."), $.name)),
-      optional($.type_args)
+      repeat(seq(token.immediate("."), $.name))
     ),
 
     // explicit parenthesised type argument list.
@@ -605,7 +616,7 @@ module.exports = grammar({
     ),
 
     // record type field.
-    type_field: $ => seq($.identifier, ":", same_line_or_indent_block($, $.type_expression)),
+    type_field: $ => seq($.identifier, $.colon, same_line_or_indent_block($, $.type_expression)),
 
     //
     // Tag union type:
@@ -681,7 +692,7 @@ module.exports = grammar({
     interpolation: $ => seq(
       $.interpolation_start,
       $.expression,
-      ")",
+      $.rparen,
     ),
 
     // token for the start of interpolation.
@@ -700,16 +711,16 @@ module.exports = grammar({
     escape_sequence: $ => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
     // comment forms, all treated as extras.
-    doc_comment: $ => token(prec(-1, /##[^\n]*/)),
-    line_comment: $ => token(prec(-2, /#[^\n]*/)),
+    doc_comment: $ => token(prec(-1, /\/\/\/[^\n]*/)),
+    line_comment: $ => token(prec(-2, /\/\/[^\n]*/)),
     block_comment: $ => token(prec(-3,
       seq(
-        "<#",
+        "/*",
         repeat(choice(
-          /[^#]/,
-          /#[^>]/,
+          /[^*]/,
+          /\*[^/]/,
         )),
-        "#>",
+        "*/",
       ),
     )),
 
@@ -718,6 +729,8 @@ module.exports = grammar({
 
     //
     // Lowercase-style identifiers, optionally prefixed by underscores and optionally ending in !.
+    // Cannot match reserved keywords (see keyword declarations below).
+    // Token precedence 1; keywords have precedence 2 and will be preferred by the lexer.
     identifier: $ => token(prec(1, /(_*[a-z][a-zA-Z0-9_]*!?)/)),
 
     // constructor/type/tag names are uppercase-initial.
@@ -732,7 +745,14 @@ module.exports = grammar({
     // placeholder expression token.
     placeholder: $ => token("__"),
 
-    // keywords get token precedence to reduce conflicts with identifiers.
+    //
+    // Reserved keywords (token precedence 2, identifier precedence 1).
+    // These keywords cannot be used as identifiers anywhere in the grammar.
+    // Tree-Sitter's lexer prefers the higher-precedence keyword tokens.
+    // Reserved words:
+    //   pub, let, cert, expect, if, then, else, when, is, in, where, with,
+    //   ability, implement, module, use, build, for, type, sig, fn,
+    //   or, and, not, as
     kw_pub: $ => token(prec(2, "pub")),
     kw_let: $ => token(prec(2, "let")),
     kw_cert: $ => token(prec(2, "cert")),
@@ -766,6 +786,8 @@ module.exports = grammar({
     rbracket: $ => "]",
     lbrace: $ => "{",
     rbrace: $ => "}",
+    // tuple constructor: #{x, y}
+    lbrace_hash: $ => token.immediate("#{"),
     comma: $ => ",",
     colon: $ => ":",
     equals: $ => token(prec(2, "=")),
@@ -800,7 +822,7 @@ module.exports = grammar({
     try_op: $ => "?",
 
     // record type literal syntax.
-    type_record: $ => layoutBracket($, "{", "}", $.type_field),
+    type_record: $ => layoutBracket($, $.lbrace, $.rbrace, $.type_field),
 
     // wildcard and star type atoms.
     type_wildcard: $ => "_",
@@ -864,17 +886,18 @@ function list_items($, itemRule) {
 //
 // Shared tuple parser for expression tuples and type tuples.
 // Uses first/rest field naming for downstream consistency.
+// Syntax: #{x, y} not (x, y)
 function tuple_like($, itemRule) {
   return choice(
     seq(
-      $.lparen,
+      $.lbrace_hash,
       field("first", itemRule),
       $.comma,
       field("rest", commaSep1Trail($, itemRule, $.comma, $.newline)),
-      $.rparen,
+      $.rbrace,
     ),
     seq(
-      $.lparen,
+      $.lbrace_hash,
       repeat1($.newline),
       $.indent,
       field("first", withLeadingNewlines($, itemRule)),
@@ -889,48 +912,50 @@ function tuple_like($, itemRule) {
         )),
         optional(seq(repeat($.newline), $.comma)),
       )),
+      repeat($.newline),
       $.dedent,
-      $.rparen,
+      $.rbrace,
     ),
   );
 }
 
 //
-// Function-call argument parser.
-// token.immediate("(") disallows whitespace before "(" so:
-//   f(x)  => call
-//   f (x) => not parsed as this call form
-function arg_list($, itemRule) {
+// Helper: function argument list using 'with' keyword without parentheses.
+// Arguments are postfix_atoms (not full expressions) to provide natural boundaries.
+// Syntax: func with x, y (single-line, no newlines between args)
+// Multiline: func with
+//   x, y
+// Single-line and multiline are distinct: single-line has no leading newline after 'with',
+// multiline has immediate newline+indent after 'with'.
+function with_call($) {
   return choice(
+    // Single-line: with arg, arg, ... (NO NEWLINES between arguments)
+    // Use prec.right to prefer shifting on comma (continue collecting arguments)
+    prec.right(seq(
+      $.kw_with,
+      field("first", $.postfix_atom),
+      field("rest", repeat(seq($.comma, $.postfix_atom))),
+      optional($.comma),
+    )),
+    // Multi-line: with\n  arg,\n  arg
     seq(
-      token.immediate("("),
-      optional(seq(
-        field("first", itemRule),
-        field("rest", repeat(seq(repeat($.newline), $.comma, repeat($.newline), itemRule))),
-        optional(seq(repeat($.newline), $.comma)),
-      )),
-      $.rparen,
-    ),
-    seq(
-      token.immediate("("),
+      $.kw_with,
       repeat1($.newline),
       $.indent,
-      optional(seq(
-        field("first", withLeadingNewlines($, itemRule)),
-        repeat($.newline),
-        $.comma,
-        field("rest", seq(
-          withLeadingNewlines($, itemRule),
-          repeat(seq(
-            repeat($.newline),
-            $.comma,
-            withLeadingNewlines($, itemRule),
-          )),
-          optional(seq(repeat($.newline), $.comma)),
+      field("first", withLeadingNewlines($, $.postfix_atom)),
+      repeat($.newline),
+      $.comma,
+      field("rest", seq(
+        withLeadingNewlines($, $.postfix_atom),
+        repeat(seq(
+          repeat($.newline),
+          $.comma,
+          withLeadingNewlines($, $.postfix_atom),
         )),
+        optional(seq(repeat($.newline), $.comma)),
       )),
+      repeat($.newline),
       $.dedent,
-      $.rparen,
     ),
   );
 }
@@ -943,6 +968,7 @@ function multiLineBracket($, open, commaToken, item, close) {
     $.newline,
     $.indent,
     commaSep1Trail($, item, commaToken, $.newline),
+    repeat($.newline),
     $.dedent,
     close,
   );
@@ -971,7 +997,7 @@ function commaSep1Trail($, rule, commaToken, sepToken) {
   );
 }
 
-//
+
 // Single-line record literal helper supporting:
 //   { a: 1 }
 //   { a: 1, ..base }
@@ -991,7 +1017,7 @@ function singleLineRecordExpression($, field) {
   );
 }
 
-//
+
 // Multiline record literal helper supporting fields and optional spread.
 function multiLineRecordExpression($, field) {
   return seq(
@@ -1006,6 +1032,7 @@ function multiLineRecordExpression($, field) {
       ),
       seq("..", $.expression)
     )),
+    repeat($.newline),
     $.dedent,
     $.rbrace,
   );
