@@ -1,0 +1,12 @@
+type Maybe(A) =
+  | Some(A)
+  | None
+
+type Result(A, E) =
+  | Ok(A)
+  | Err(E)
+
+type Color =
+  | Red
+  | Green
+  | Blue

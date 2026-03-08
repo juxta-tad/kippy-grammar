@@ -97,9 +97,39 @@ module.exports = grammar({
     type_declaration: $ => seq(
       $.kw_type,
       field("name", $.type_name),
-      repeat(field("param", $.identifier)),
+      optional($.type_parameter_list),
       $.equals,
-      field("value", $.type_expression),
+      field("value", choice(
+        $.type_expression,
+        $.type_variant_block,
+      )),
+    ),
+
+    // Type parameter list: (A, B, C)
+    type_parameter_list: $ => seq(
+      $.lparen,
+      commaSep1Trail($, $.identifier, $.comma, $.newline),
+      $.rparen,
+    ),
+
+    // Indented variant block for type declarations:
+    //   type Maybe(A) =
+    //     | Some(A)
+    //     | None
+    type_variant_block: $ => seq(
+      $.newline,
+      $.indent,
+      $.type_variant,
+      repeat(seq(repeat($.newline), $.type_variant)),
+      repeat($.newline),
+      $.dedent,
+    ),
+
+    // one type variant: | TagName or | TagName(args)
+    type_variant: $ => seq(
+      $.pipe_bar,
+      field("name", $.tag_name),
+      optional(seq($.lparen, commaSep1Trail($, $.type_expression, $.comma, $.newline), $.rparen))
     ),
 
     //
@@ -132,7 +162,6 @@ module.exports = grammar({
       repeat(seq($.attribute, optional($.newline))),
       optional($.kw_pub),
       $.kw_let,
-      optional($.kw_cert),
       field("name", $.binding_target),
       choice(
         seq(
@@ -261,7 +290,7 @@ module.exports = grammar({
 
     // unary negation and logical not bind tighter than binary operators.
     unary_expression: $ => choice(
-      prec.right(PREC.UNARY, seq(choice($.minus, $.not_kw), $.unary_expression)),
+      prec.right(PREC.UNARY, seq(choice($.minus, $.not_kw, $.kw_cert), $.unary_expression)),
       $.postfix_expression,
     ),
 
@@ -644,8 +673,8 @@ module.exports = grammar({
     record_type_field: $ => seq($.field_name, $.colon, inline_or_block($, $.type_expression)),
 
     //
-    // Tag union type:
-    //   [Some(a), None]
+    // Tag union type (bracket form for inline/multiline).
+    //   [Some(A), None]
     tag_union_type: $ => layoutBracket($, $.lbracket, $.rbracket, $.tag_union_member),
 
     // one tag constructor inside a tag union type.
