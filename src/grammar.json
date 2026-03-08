@@ -4571,7 +4571,7 @@
           "members": [
             {
               "type": "STRING",
-              "value": "/*"
+              "value": "</"
             },
             {
               "type": "REPEAT",
@@ -4580,18 +4580,18 @@
                 "members": [
                   {
                     "type": "PATTERN",
-                    "value": "[^*]"
+                    "value": "[^/]"
                   },
                   {
                     "type": "PATTERN",
-                    "value": "\\*[^/]"
+                    "value": "\\/[^>]"
                   }
                 ]
               }
             },
             {
               "type": "STRING",
-              "value": "*/"
+              "value": "/>"
             }
           ]
         }
