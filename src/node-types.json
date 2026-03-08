@@ -1098,6 +1098,25 @@
     }
   },
   {
+    "type": "import_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "tag_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "interpolation",
     "named": true,
     "fields": {},
@@ -1934,6 +1953,10 @@
             "named": true
           },
           {
+            "type": "kw_using",
+            "named": true
+          },
+          {
             "type": "kw_when",
             "named": true
           },
@@ -2161,6 +2184,10 @@
             "named": true
           },
           {
+            "type": "kw_using",
+            "named": true
+          },
+          {
             "type": "kw_when",
             "named": true
           },
@@ -2340,6 +2367,10 @@
           "named": true
         },
         {
+          "type": "kw_using",
+          "named": true
+        },
+        {
           "type": "kw_when",
           "named": true
         },
@@ -2468,6 +2499,10 @@
         },
         {
           "type": "kw_use",
+          "named": true
+        },
+        {
+          "type": "kw_using",
           "named": true
         },
         {
@@ -3388,17 +3423,70 @@
   {
     "type": "use_statement",
     "named": true,
-    "fields": {},
+    "fields": {
+      "alias": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "tag_name",
+            "named": true
+          }
+        ]
+      },
+      "module": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_name",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "import_name",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "kw_as",
+          "named": true
+        },
+        {
           "type": "kw_use",
           "named": true
         },
         {
-          "type": "long_identifier",
+          "type": "kw_using",
+          "named": true
+        },
+        {
+          "type": "lparen",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rparen",
           "named": true
         }
       ]
@@ -3701,6 +3789,10 @@
   },
   {
     "type": "kw_use",
+    "named": true
+  },
+  {
+    "type": "kw_using",
     "named": true
   },
   {

@@ -147,7 +147,15 @@ module.exports = grammar({
 		use_statement: ($) =>
 			seq(
 				$.kw_use,
-				$.long_identifier,
+				field("module", $.type_name),
+				optional(seq(
+					$.kw_as,
+					field("alias", $.tag_name),
+				)),
+				optional(seq(
+					$.kw_using,
+					layoutBracket($, $.lparen, $.rparen, $.import_name),
+				)),
 			),
 
 		//
@@ -616,6 +624,7 @@ module.exports = grammar({
 				$.kw_implement,
 				$.kw_module,
 				$.kw_use,
+				$.kw_using,
 				$.kw_build,
 				$.kw_for,
 				$.kw_type,
@@ -1118,6 +1127,11 @@ module.exports = grammar({
 		// constructor/type/tag names are uppercase-initial.
 		tag_name: ($) => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
 
+		// Import name: can be identifier or tag name.
+		// Used in use_statement for selective imports.
+		// Example: use Data.Json.Decode using (run, field, Some, None)
+		import_name: ($) => choice($.identifier, $.tag_name),
+
 		// name may be lowercase identifier or uppercase tag/type name.
 		name: ($) => choice($.identifier, $.tag_name),
 
@@ -1147,6 +1161,7 @@ module.exports = grammar({
 		kw_implement: kw("implement"),
 		kw_module: kw("module"),
 		kw_use: kw("use"),
+		kw_using: kw("using"),
 		kw_build: kw("build"),
 		kw_for: kw("for"),
 		kw_type: kw("type"),
