@@ -1,4 +1,0 @@
-let f = cert fn x: x + 1
-let g = cert (fn y: y * 2)
-let x = cert 42
-let simple = 5

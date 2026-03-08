@@ -1,3 +1,0 @@
-@deprecated("old")
-@optimize(inline: true)
-let x = 5

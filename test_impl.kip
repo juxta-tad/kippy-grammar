@@ -1,6 +1,0 @@
-implement Add for Int
-    let __add__ = fn a, b: a + b
-
-implement Sub for Int
-    let __sub__ = fn a, b: a - b
-    let __neg__ = fn x: 0 - x

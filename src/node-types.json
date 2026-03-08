@@ -1404,28 +1404,6 @@
     "type": "module_declaration",
     "named": true,
     "fields": {
-      "items": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "module_item",
-            "named": true
-          },
-          {
-            "type": "newline",
-            "named": true
-          }
-        ]
-      },
       "name": {
         "multiple": false,
         "required": true,
@@ -1478,10 +1456,6 @@
         },
         {
           "type": "implementation",
-          "named": true
-        },
-        {
-          "type": "module_declaration",
           "named": true
         },
         {
@@ -2627,8 +2601,12 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
+        {
+          "type": "module_declaration",
+          "named": true
+        },
         {
           "type": "module_item",
           "named": true
@@ -3173,6 +3151,10 @@
           "named": true
         },
         {
+          "type": "type_variable",
+          "named": true
+        },
+        {
           "type": "type_wildcard",
           "named": true
         }
@@ -3279,6 +3261,21 @@
         },
         {
           "type": "rbrace",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_variable",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
           "named": true
         }
       ]

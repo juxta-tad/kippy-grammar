@@ -1,8 +1,0 @@
-const pi = 3.14159
-const max_size = 1000
-
-const version : String = "1.0"
-
-pub const default_timeout = 5000
-
-let config = {const: true, timeout: 30}

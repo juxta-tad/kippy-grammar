@@ -1,1 +1,0 @@
-type Maybe(A) = [Some(A), None]

@@ -1,6 +1,0 @@
-let result = print with "hello"
-let effect = print! with "world"
-let x = f with 1, 2
-let y = g! with
-  1,
-  2

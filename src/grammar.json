@@ -14,33 +14,49 @@
           }
         },
         {
+          "type": "SYMBOL",
+          "name": "module_declaration"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "newline"
+          }
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "module_item"
-                },
-                {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "REPEAT1",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "newline"
-                        }
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "module_item"
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "module_item"
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "REPEAT1",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "newline"
+                            }
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "module_item"
+                          }
+                        ]
                       }
-                    ]
-                  }
+                    }
+                  ]
                 },
                 {
                   "type": "REPEAT",
@@ -64,10 +80,6 @@
         {
           "type": "SYMBOL",
           "name": "use_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "module_declaration"
         },
         {
           "type": "SYMBOL",
@@ -141,70 +153,6 @@
           "content": {
             "type": "SYMBOL",
             "name": "type_name"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "items",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "newline"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "indent"
-              },
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "module_item"
-                      },
-                      {
-                        "type": "REPEAT",
-                        "content": {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "REPEAT1",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "newline"
-                              }
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "module_item"
-                            }
-                          ]
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "BLANK"
-                  }
-                ]
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "newline"
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "dedent"
-              }
-            ]
           }
         }
       ]
@@ -4103,6 +4051,10 @@
         }
       ]
     },
+    "type_variable": {
+      "type": "SYMBOL",
+      "name": "identifier"
+    },
     "type_primary": {
       "type": "CHOICE",
       "members": [
@@ -4113,6 +4065,10 @@
         {
           "type": "SYMBOL",
           "name": "type_name"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_variable"
         },
         {
           "type": "ALIAS",
