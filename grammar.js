@@ -90,6 +90,7 @@ module.exports = grammar({
       $.expect_statement,
       $.implementation,
       $.ability_declaration,
+      $.test_declaration,
     ),
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ module.exports = grammar({
     module_declaration: $ => seq(
       $.kw_module,
       field("name", $.type_name),
-      named_indented_list($, "items", $.module_item),
+      field("items", indented_list($, $.module_item)),
     ),
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -139,14 +140,7 @@ module.exports = grammar({
     //   type Maybe(A) =
     //     | Some(A)
     //     | None
-    type_variant_block: $ => seq(
-      $.newline,
-      $.indent,
-      $.type_variant,
-      repeat(seq(repeat($.newline), $.type_variant)),
-      repeat($.newline),
-      $.dedent,
-    ),
+    type_variant_block: $ => indented_list($, $.type_variant, { at_least_one: true }),
 
     // one type variant: | TagName or | TagName(args)
     type_variant: $ => seq(
@@ -225,7 +219,8 @@ module.exports = grammar({
       optional($.attribute_arguments_inline),
     ),
 
-    // attribute argument list (arguments must stay on same line as opening paren).
+    // attribute argument list: opening paren must be on same line as attribute name (token.immediate),
+    // but arguments can span multiple lines if needed.
     attribute_arguments_inline: $ => seq(
       token.immediate("("),
       optional(commaSepTrail($, $.attribute_argument, $.comma, $.newline)),
@@ -247,7 +242,7 @@ module.exports = grammar({
       field("ability", $.type_name),
       $.kw_for,
       field("type", $.type_name),
-      named_indented_list($, "methods", $.let_binding),
+      field("methods", indented_list($, $.let_binding)),
     ),
 
 
@@ -261,16 +256,33 @@ module.exports = grammar({
       attribute_prefix($),
       $.kw_ability,
       field("name", $.type_name),
-      named_indented_list($, "methods", $.annotation, { atLeastOne: true }),
+      field("methods", indented_list($, $.annotation, { at_least_one: true })),
     ),
 
     // assertion/expectation form.
     expect_statement: $ => seq($.kw_expect, field("value", $.expression)),
 
+    // test declaration with string name and indented body.
+    // Body supports any expression (let bindings, when/if, expect, etc).
+    // Syntax:
+    //   test "test name":
+    //     let x = 1
+    //     expect x == 1
+    //
+    //   test "conditional":
+    //     when value is
+    //       Ok x => expect x == 5
+    //       Err _ => expect false
+    test_declaration: $ => seq(
+      $.kw_test,
+      field("name", $.string),
+      $.colon,
+      field("body", indented_body($, $.expression)),
+    ),
 
-    // Assignment LHS is limited to lowercase-style identifiers and dotted paths.
-    // This avoids ambiguity with constructor/type names.
-    binding_target: $ => prec(1, dotted1($.identifier, $.identifier)),
+    // Binding target is a simple lowercase identifier.
+    // No dotted paths (language is immutable - no field assignment).
+    binding_target: $ => $.identifier,
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
@@ -429,11 +441,11 @@ module.exports = grammar({
       repeat1($.newline),
       $.indent,
       choice(
-        field("value", withLeadingNewlines($, $.expression)),
+        field("value", $.expression),
         seq(
           repeat(seq($.let_binding, repeat($.newline))),
           $.kw_in,
-          field("value", withLeadingNewlines($, $.expression)),
+          field("value", $.expression),
         ),
       ),
       repeat($.newline),
@@ -447,14 +459,7 @@ module.exports = grammar({
       $.kw_when,
       field("subject", $.expression),
       $.kw_is,
-      $.newline,
-      $.indent,
-      field("arms", seq(
-        repeat(seq($.when_arm, $.newline)),
-        $.when_arm,
-      )),
-      repeat($.newline),
-      $.dedent,
+      field("arms", indented_list($, $.when_arm, { at_least_one: true })),
     ),
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -678,12 +683,12 @@ module.exports = grammar({
     ),
 
     //
-    // Qualified type name without arguments.
+    // Qualified type name without arguments (uppercase only).
     // Arguments are handled separately by type_primary.
     // Example:
     //   Foo
     //   Mod.Foo
-    type_name: $ => dotted1($.name, $.name),
+    type_name: $ => dotted1($.tag_name, $.tag_name),
 
     // explicit parenthesised type argument list.
     type_argument_list: $ => seq(
@@ -847,6 +852,7 @@ module.exports = grammar({
     kw_type: kw("type"),
     kw_sig: kw("sig"),
     kw_fn: kw("fn"),
+    kw_test: kw("test"),
     kw_or: kw("or"),
     kw_and: kw("and"),
     kw_not: kw("not"),
@@ -927,20 +933,48 @@ function withLeadingNewlines($, rule) {
   return seq(repeat($.newline), rule);
 }
 
-// Strict indented block form.
-// Requires a newline immediately before the indented body.
-function indented_block($, rule) {
-  return seq($.newline, $.indent, withLeadingNewlines($, rule), repeat($.newline), $.dedent);
+// Indented body: newline, indent, rule, trailing newlines, dedent.
+// Used for constructs with a single logical body (not a list of peer items).
+function indented_body($, rule) {
+  return seq(
+    $.newline,
+    $.indent,
+    rule,
+    repeat($.newline),
+    $.dedent,
+  );
 }
 
+// Indented list of items: handles zero or more items with newline separators.
+// Set at_least_one=true to require at least one item.
+// Used for constructs with a list of peer items (module items, when arms, type variants, etc).
+function indented_list($, item, { at_least_one = false } = {}) {
+  const body = at_least_one
+    ? seq(
+        item,
+        repeat(seq(repeat1($.newline), item)),
+      )
+    : optional(seq(
+        item,
+        repeat(seq(repeat1($.newline), item)),
+      ));
 
-// Unified body helper:
+  return seq(
+    $.newline,
+    $.indent,
+    body,
+    repeat($.newline),
+    $.dedent,
+  );
+}
+
+// Unified body helper for same-line or indented bodies.
 // - same line: = expr
 // - indented:  =\n  expr
 function inline_or_block($, rule) {
   return choice(
     rule,
-    indented_block($, rule),
+    indented_body($, rule),
   );
 }
 
@@ -957,9 +991,9 @@ function dotted1(head, tail) {
 
 
 // Attribute prefix for declarations that support attributes.
-// Handles optional attributes followed by optional newlines before the declaration.
+// Each attribute must be on its own line (enforces line-based attribute policy).
 function attribute_prefix($) {
-  return repeat(seq($.attribute, optional($.newline)));
+  return repeat(seq($.attribute, $.newline));
 }
 
 
@@ -983,29 +1017,11 @@ function right_assoc_chain(precValue, operand, operator) {
 }
 
 
-// Indented list helper for bodies with optional or required items.
-// Syntax: newline, indent, items, dedent
-// Used for: module items, implementation methods, ability methods, type variants, when arms, etc.
-function named_indented_list($, fieldName, itemRule, { atLeastOne = false } = {}) {
-  const body = atLeastOne
-    ? seq(itemRule, repeat(seq(repeat($.newline), itemRule)), repeat($.newline))
-    : repeat(seq(itemRule, repeat($.newline)));
-
-  return seq(
-    $.newline,
-    $.indent,
-    field(fieldName, body),
-    $.dedent,
-  );
-}
-
 // Shared tuple parser for expression tuples and type tuples.
 // Explicitly requires at least 2 items: first, comma, second, then optional rest.
 // Syntax: #{x, y}
+// Multiline tuples follow strict entry rule: items start immediately after indent.
 function tuple_like($, itemRule) {
-  const inline_item = itemRule;
-  const block_item = withLeadingNewlines($, itemRule);
-
   function tuple_items(item) {
     return seq(
       field("first", item),
@@ -1019,14 +1035,14 @@ function tuple_like($, itemRule) {
   return choice(
     seq(
       $.lbrace_hash,
-      tuple_items(inline_item),
+      tuple_items(itemRule),
       $.rbrace,
     ),
     seq(
       $.lbrace_hash,
       repeat1($.newline),
       $.indent,
-      tuple_items(block_item),
+      tuple_items(itemRule),
       repeat($.newline),
       $.dedent,
       $.rbrace,
@@ -1045,6 +1061,7 @@ function tuple_like($, itemRule) {
 // Single-line and multiline forms are distinct: single-line has no newline after 'with',
 // multiline requires an indented block immediately after 'with'.
 // Effects are marked by ! at the end of function/value names, not on the call.
+// Multiline form follows strict entry rule: arguments start immediately after indent.
 function with_call_suffix($) {
   return choice(
     // Single-line: with arg, arg, ...
@@ -1060,15 +1077,16 @@ function with_call_suffix($) {
       $.kw_with,
       repeat1($.newline),
       $.indent,
-      field("first", withLeadingNewlines($, $.expression)),
+      field("first", $.expression),
       repeat($.newline),
       $.comma,
       field("rest", seq(
-        withLeadingNewlines($, $.expression),
+        $.expression,
         repeat(seq(
-          repeat($.newline),
+          repeat1($.newline),
           $.comma,
-          withLeadingNewlines($, $.expression),
+          repeat($.newline),
+          $.expression,
         )),
         optional(seq(repeat($.newline), $.comma)),
       )),
@@ -1106,10 +1124,11 @@ function commaSepTrail($, rule, commaToken, sepToken) {
 }
 
 // one-or-more comma-separated sequence with optional trailing comma.
+// Separators (newlines) are required between items when present.
 function commaSep1Trail($, rule, commaToken, sepToken) {
   return seq(
     rule,
-    repeat(seq(repeat(sepToken), commaToken, repeat(sepToken), rule)),
+    repeat(seq(repeat1(sepToken), commaToken, repeat(sepToken), rule)),
     optional(seq(repeat(sepToken), commaToken)),
   );
 }
@@ -1136,6 +1155,7 @@ function singleLineRecordExpression($, field) {
 
 
 // Multiline record literal helper supporting fields and optional spread.
+// Follows strict entry rule: fields start immediately after indent, separated by required newlines.
 function multiLineRecordExpression($, field) {
   return seq(
     $.lbrace,
@@ -1144,10 +1164,10 @@ function multiLineRecordExpression($, field) {
     optional(choice(
       seq(
         field,
-        repeat(seq(optional($.newline), $.comma, optional($.newline), field)),
-        optional(seq(optional($.newline), $.comma, optional($.newline), "..", $.expression))
+        repeat(seq(repeat1($.newline), $.comma, repeat($.newline), field)),
+        optional(seq(repeat($.newline), $.comma))
       ),
-      seq("..", $.expression)
+      seq(repeat($.newline), "..", $.expression)
     )),
     repeat($.newline),
     $.dedent,
