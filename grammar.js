@@ -1,3 +1,7 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 1: CONSTANTS & TOKEN HELPERS
+// ═════════════════════════════════════════════════════════════════════════════
+
 const PREC = {
   // Lowest to highest precedence
   PIPE: 1,
@@ -10,7 +14,6 @@ const PREC = {
   POSTFIX: 8,  // unified postfix chain (calls, fields, try operator)
 };
 
-
 // Keyword helper: creates a keyword token with standard precedence (2)
 function kw(s) {
   return $ => token(prec(2, s));
@@ -20,6 +23,10 @@ function kw(s) {
 function op(p, s) {
   return $ => token(prec(p, s));
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 2: GRAMMAR METADATA & CONFIGURATION
+// ═════════════════════════════════════════════════════════════════════════════
 
 module.exports = grammar({
   name: "kippy",
@@ -51,7 +58,13 @@ module.exports = grammar({
     $.field_name,
   ],
 
+  // ═════════════════════════════════════════════════════════════════════════════
+  // SECTION 3: GRAMMAR RULES
+  // ═════════════════════════════════════════════════════════════════════════════
   rules: {
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.1: TOP-LEVEL & SOURCE FILE
+    // ─────────────────────────────────────────────────────────────────────────────
     // A source file is a newline-separated list of module items.
     // Leading and trailing blank lines are allowed.
     // Multiple items cannot share one line.
@@ -79,6 +92,9 @@ module.exports = grammar({
       $.ability_declaration,
     ),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.2: MODULE & USE DECLARATIONS
+    // ─────────────────────────────────────────────────────────────────────────────
     // import/reference another module path.
     use_statement: $ => seq(
       $.kw_use,
@@ -96,6 +112,9 @@ module.exports = grammar({
       named_indented_list($, "items", $.module_item),
     ),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.3: TYPE DECLARATIONS & VARIANTS
+    // ─────────────────────────────────────────────────────────────────────────────
     // Type alias / type declaration.
     // Parameters are bare identifiers after the type name.
     type_declaration: $ => seq(
@@ -137,6 +156,9 @@ module.exports = grammar({
     ),
 
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.4: ANNOTATIONS & SIGNATURES
+    // ─────────────────────────────────────────────────────────────────────────────
     // Standalone annotation node used by ability method declarations.
     // Supports leading attributes and same-line or indented type bodies.
     annotation: $ => seq(
@@ -156,6 +178,9 @@ module.exports = grammar({
       optional(field("constraints", $.constraint_clause)),
     ),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.5: VALUE BINDINGS & LET DECLARATIONS
+    // ─────────────────────────────────────────────────────────────────────────────
     // Value definitions support:
     //   let name : Type
     //   let name = expr
@@ -183,6 +208,9 @@ module.exports = grammar({
       ),
     ),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.6: ATTRIBUTES & METADATA
+    // ─────────────────────────────────────────────────────────────────────────────
     // Attributes with optional arguments.
     // Arguments must be on the same line as the attribute name (token.immediate).
     // Examples:
@@ -210,6 +238,9 @@ module.exports = grammar({
       seq(field("name", $.identifier), $.colon, field("value", $.expression))
     ),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.7: IMPLEMENTATIONS & ABILITIES
+    // ─────────────────────────────────────────────────────────────────────────────
     // implement an ability for a concrete type.
     implementation: $ => seq(
       $.kw_implement,
@@ -241,6 +272,9 @@ module.exports = grammar({
     // This avoids ambiguity with constructor/type names.
     binding_target: $ => prec(1, dotted1($.identifier, $.identifier)),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
+    // ─────────────────────────────────────────────────────────────────────────────
     // expression entry point.
     expression: $ => $.pipe_expression,
 
@@ -270,6 +304,9 @@ module.exports = grammar({
     ),
 
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
+    // ─────────────────────────────────────────────────────────────────────────────
     // Unified postfix chain:
     //   value.field
     //   value?
@@ -304,6 +341,9 @@ module.exports = grammar({
     // numeric dot-field like .0, .1.
     tuple_index: $ => token(/[0-9]+/),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.10: PRIMARY EXPRESSION FORMS
+    // ─────────────────────────────────────────────────────────────────────────────
     // primary expressions are the irreducible expression forms.
     primary_expression: $ => choice(
       $.when_expression,
@@ -372,6 +412,9 @@ module.exports = grammar({
     ),
 
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
+    // ─────────────────────────────────────────────────────────────────────────────
     // Block expression:
     // (
     //   let x = 1
@@ -414,6 +457,9 @@ module.exports = grammar({
       $.dedent,
     ),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.12: PATTERN MATCHING
+    // ─────────────────────────────────────────────────────────────────────────────
     // full pattern plus optional guard.
     pattern: $ => seq(
       $.or_pattern,
@@ -545,6 +591,9 @@ module.exports = grammar({
     ),
 
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.13: LAMBDA & SPECIAL EXPRESSIONS
+    // ─────────────────────────────────────────────────────────────────────────────
     // Lambda syntax:
     //   fn x:
     //   fn x, y, z:
@@ -573,6 +622,9 @@ module.exports = grammar({
     ),
 
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.14: TYPE SYSTEM
+    // ─────────────────────────────────────────────────────────────────────────────
     // Function types are parsed with arrow precedence lower than non-arrow types.
     // Supports:
     //   a -> b
@@ -654,6 +706,9 @@ module.exports = grammar({
     // grouped type expression.
     parenthesized_type: $ => seq($.lparen, $.type_expression, $.rparen),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.15: LITERALS & STRING FORMS
+    // ─────────────────────────────────────────────────────────────────────────────
     // literal forms available in both expressions and patterns.
     literal: $ => choice(
       $.int_literal,
@@ -729,6 +784,9 @@ module.exports = grammar({
     // supported escape sequences.
     escape_sequence: $ => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.16: COMMENTS
+    // ─────────────────────────────────────────────────────────────────────────────
     // comment forms, all treated as extras.
     doc_comment: _ => token(prec(2, /\/\/\/[^\n]*/)),
     line_comment: _ => token(prec(1, /\/\/[^\n]*/)),
@@ -743,6 +801,9 @@ module.exports = grammar({
       ),
     )),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.17: IDENTIFIERS & KEYWORDS
+    // ─────────────────────────────────────────────────────────────────────────────
     // Lowercase-style identifiers, optionally prefixed by underscores and optionally ending in !.
     // Trailing ! marks effectful functions/values.
     // Cannot match reserved keywords (see keyword declarations below).
@@ -761,6 +822,9 @@ module.exports = grammar({
     // placeholder expression token.
     placeholder: $ => token("__"),
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 3.18: OPERATORS & PUNCTUATION
+    // ─────────────────────────────────────────────────────────────────────────────
     // Reserved
     kw_pub: $ => token(prec(2, "pub")),
     kw_let: $ => token(prec(2, "let")),
@@ -839,6 +903,9 @@ module.exports = grammar({
   },
 });
 
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 4: HELPER FUNCTIONS
+// ═════════════════════════════════════════════════════════════════════════════
 
 // Generic single-line delimited list helper with optional trailing comma.
 function singleLineBracket(open, commaToken, item, close) {
