@@ -878,20 +878,6 @@ function inline_or_block($, rule) {
 }
 
 
-// Generic comma-list helper where items may own leading newlines.
-function list_items($, itemRule) {
-  return seq(
-    withLeadingNewlines($, itemRule),
-    repeat(seq(
-      repeat($.newline),
-      $.comma,
-      withLeadingNewlines($, itemRule),
-    )),
-    optional(seq(repeat($.newline), $.comma)),
-  );
-}
-
-
 // Dotted name helper for qualified identifiers.
 // Matches: head (. tail)*
 // Used for: type_name, long_identifier, binding_target
