@@ -101,16 +101,25 @@ module.exports = grammar({
 		// Source file: optional module header and optional declarations.
 		// Module header is optional; files can contain just declarations or be empty.
 		source_file: ($) =>
-			seq(
+			choice(
 				repeat($.newline),
-				optional(seq(
+
+				seq(
+					repeat($.newline),
 					$.module_declaration,
 					repeat($.newline),
-				)),
-				optional(seq(
+				),
+
+				seq(
+					repeat($.newline),
+					optional(seq(
+						$.module_declaration,
+						repeat1($.newline),
+					)),
 					$.module_item,
 					repeat(seq(repeat1($.newline), $.module_item)),
-				)),
+					repeat($.newline),
+				),
 			),
 
 		// top-level declarations supported by the module.
@@ -918,6 +927,20 @@ module.exports = grammar({
 				$.non_arrow_type,
 			)),
 
+		// Restricted type expression: disallows top-level comma chains.
+		// Used in comma-delimited contexts (record fields, tuple types, generic arguments).
+		// Allows: String, A -> B, Foo(Bar, Baz), parenthesized types.
+		// Disallows: A, B without parentheses (must be A -> B or similar).
+		type_expression_no_comma: ($) =>
+			prec.right(choice(
+				seq(
+					field("left", $.non_arrow_type),
+					$.arrow_op,
+					field("right", inline_or_block($, $.type_expression)),
+				),
+				$.non_arrow_type,
+			)),
+
 		// Type function parameters: comma-separated list of types on the left of an arrow.
 		// Must have at least 2 items. Commas must follow immediately (no leading newlines).
 		type_function_params: ($) =>
@@ -985,14 +1008,15 @@ module.exports = grammar({
 		type_name: ($) => dotted1($, $.tag_name, $.tag_name),
 
 		// explicit parenthesised type argument list.
+		// Uses restricted type form to avoid ambiguity with argument separator commas.
 		type_argument_list: ($) =>
 			seq(
 				$.lparen,
 				optional(seq(
-					field("first", $.type_expression),
+					field("first", $.type_expression_no_comma),
 					field(
 						"rest",
-						repeat(seq($.comma, repeat($.newline), $.type_expression)),
+						repeat(seq($.comma, repeat($.newline), $.type_expression_no_comma)),
 					),
 					optional(seq(repeat($.newline), $.comma)),
 				)),
@@ -1000,8 +1024,9 @@ module.exports = grammar({
 			),
 
 		// record type field (allows keywords as field names).
+		// Uses restricted type form to avoid ambiguity with record field comma separator.
 		record_type_field: ($) =>
-			seq($.field_name, $.colon, inline_or_block($, $.type_expression)),
+			seq($.field_name, $.colon, inline_or_block($, $.type_expression_no_comma)),
 
 		// tuple type.
 		type_tuple: ($) => tuple_like($, $.non_arrow_type),
