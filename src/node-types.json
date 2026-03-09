@@ -2255,61 +2255,7 @@
     "fields": {}
   },
   {
-    "type": "record_builder",
-    "named": true,
-    "fields": {
-      "builder": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "long_identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "comma",
-          "named": true
-        },
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "kw_build",
-          "named": true
-        },
-        {
-          "type": "lbrace",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rbrace",
-          "named": true
-        },
-        {
-          "type": "record_field",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "record_expression",
+    "type": "record_body",
     "named": true,
     "fields": {},
     "children": {
@@ -2346,6 +2292,51 @@
         },
         {
           "type": "spread_element",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_builder",
+    "named": true,
+    "fields": {
+      "builder": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "long_identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_build",
+          "named": true
+        },
+        {
+          "type": "record_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "record_body",
           "named": true
         }
       ]
@@ -2470,23 +2461,11 @@
         ]
       },
       "value": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "expression",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "newline",
+            "type": "record_field_value",
             "named": true
           }
         ]
@@ -2498,6 +2477,33 @@
       "types": [
         {
           "type": "colon",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_field_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "expression",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]

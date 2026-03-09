@@ -555,11 +555,15 @@ module.exports = grammar({
 		//   { a: 1, b: 2 }
 		//   { a: 1, ..base }
 		//   { ..base }
-		record_expression: ($) =>
+		// Shared record body: single-line or multiline format.
+		// Used by both record_expression and record_builder.
+		record_body: ($) =>
 			choice(
 				singleLineRecordExpression($, $.record_field),
 				multiLineRecordExpression($, $.record_field),
 			),
+
+		record_expression: ($) => $.record_body,
 
 		// Record builder for applicative composition patterns.
 		// Example:
@@ -568,7 +572,7 @@ module.exports = grammar({
 			seq(
 				$.kw_build,
 				field("builder", $.long_identifier),
-				layoutBracket($, $.lbrace, $.rbrace, $.record_field),
+				$.record_body,
 			),
 
 		// field name - allows identifiers and contextual keywords.
@@ -604,11 +608,24 @@ module.exports = grammar({
 			),
 
 		// standardised field naming for downstream tooling.
+		// Record field value: inline or multiline, but without trailing newline tolerance.
+		// Used in comma-delimited containers where the container owns the separator boundary.
+		record_field_value: ($) =>
+			choice(
+				$.expression,
+				seq(
+					$.newline,
+					$.indent,
+					$.expression,
+					$.dedent,
+				),
+			),
+
 		record_field: ($) =>
 			seq(
 				field("name", $.field_name),
 				$.colon,
-				field("value", inline_or_block($, $.expression)),
+				field("value", $.record_field_value),
 			),
 
 		// tuple literal parser shared with type tuples.
@@ -1314,6 +1331,7 @@ function indented_body($, rule) {
 		$.newline,
 		$.indent,
 		rule,
+		repeat($.newline),
 		$.dedent,
 	);
 }
@@ -1483,11 +1501,11 @@ function tuple_like($, itemRule) {
 function with_call_suffix($) {
 	return choice(
 		// Single-line: with x, y
+		// Note: no trailing comma - it belongs to the enclosing construct (record fields, lists, etc.)
 		prec.right(seq(
 			$.kw_with,
 			field("first", $.call_argument),
 			field("rest", repeat(seq($.comma, $.call_argument))),
-			optional($.comma),
 		)),
 		// Multi-line:
 		// with
