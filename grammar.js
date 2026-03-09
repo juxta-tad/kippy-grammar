@@ -1071,7 +1071,7 @@ module.exports = grammar({
 
 		// Type variables: lowercase identifiers used in generic types.
 		// Example: `a` and `e` in `Maybe(a)` and `Result(a, e)`
-		type_variable: ($) => $.tag_name,
+		type_variable: ($) => $.identifier,
 
 		// atomic type forms.
 		type_primary: ($) =>

@@ -4769,7 +4769,7 @@
     },
     "type_variable": {
       "type": "SYMBOL",
-      "name": "tag_name"
+      "name": "identifier"
     },
     "type_primary": {
       "type": "CHOICE",
