@@ -12,16 +12,12 @@ COMMIT_MESSAGE="${1:-Regenerate parser}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-echo "🔨 Regenerating Tree-sitter parser..."
-tree-sitter generate
+tree-sitter generate 2>&1 | grep -v "Warning:" || true
 
-echo "📝 Staging changes..."
 git add -A
 
-echo "💾 Committing with message: '$COMMIT_MESSAGE'"
-git commit -m "$COMMIT_MESSAGE"
+git commit -m "$COMMIT_MESSAGE" --quiet
 
-echo "🚀 Pushing to GitHub..."
-git push
+git push --quiet
 
-echo "✅ Done! Parser regenerated and pushed to GitHub."
+echo "✅ Parser regenerated and pushed."
