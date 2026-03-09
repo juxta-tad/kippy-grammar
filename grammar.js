@@ -491,44 +491,46 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Explicit postfix expression with proper call_expression nodes.
-		// Structure allows chaining: foo with x.field?, foo.bar with z, etc.
-		// Each postfix operation is explicit:
-		//   foo           → primary_expression
-		//   foo.field     → field_expression with object and field
-		//   foo with x    → call_expression with function and arguments
-		//   foo?          → try_expression with value
+		// Postfix expression is a choice of four semantic operations.
+		// This allows postfix_expression to be a supertype (single visible child).
+		// Each operation (call, field, try) is a separate named node with proper fields.
 		postfix_expression: ($) =>
 			choice(
 				$.primary_expression,
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("object", $.postfix_expression),
-						$.projection_suffix,
-					),
-				),
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("function", $.postfix_expression),
-						field("arguments", $.call_suffix),
-					),
-				),
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("value", $.postfix_expression),
-						$.try_op,
-					),
+				$.call_expression,
+				$.field_expression,
+				$.try_expression,
+			),
+
+		// Function call with 'with' keyword and arguments
+		call_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					field("function", $.postfix_expression),
+					field("arguments", $.call_suffix),
 				),
 			),
 
-		// Semantic wrapper nodes for postfix operations (for formatter/diagnostics support)
-		// Note: call_expression is now created directly in postfix_expression choice
-		call_expression: ($) => $.call_suffix,  // kept for compatibility, but not used in tree
-		field_expression: ($) => $.projection_suffix,
-		try_expression: ($) => $.try_op,
+		// Field/property access
+		field_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					field("object", $.postfix_expression),
+					$.projection_suffix,
+				),
+			),
+
+		// Try operator for error handling
+		try_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					field("value", $.postfix_expression),
+					$.try_op,
+				),
+			),
 
 		// Semantic node for record spread field (for formatter/diagnostics support)
 		// Generic spread element: expands a collection's contents into context.

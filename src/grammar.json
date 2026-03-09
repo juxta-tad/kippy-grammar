@@ -2101,85 +2101,85 @@
           "name": "primary_expression"
         },
         {
-          "type": "PREC_LEFT",
-          "value": 8,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "object",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "postfix_expression"
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "projection_suffix"
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "call_expression"
         },
         {
-          "type": "PREC_LEFT",
-          "value": 8,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "function",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "postfix_expression"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "arguments",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "call_suffix"
-                }
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "field_expression"
         },
         {
-          "type": "PREC_LEFT",
-          "value": 8,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "value",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "postfix_expression"
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "try_op"
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "try_expression"
         }
       ]
     },
     "call_expression": {
-      "type": "SYMBOL",
-      "name": "call_suffix"
+      "type": "PREC_LEFT",
+      "value": 8,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "function",
+            "content": {
+              "type": "SYMBOL",
+              "name": "postfix_expression"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "call_suffix"
+            }
+          }
+        ]
+      }
     },
     "field_expression": {
-      "type": "SYMBOL",
-      "name": "projection_suffix"
+      "type": "PREC_LEFT",
+      "value": 8,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "object",
+            "content": {
+              "type": "SYMBOL",
+              "name": "postfix_expression"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "projection_suffix"
+          }
+        ]
+      }
     },
     "try_expression": {
-      "type": "SYMBOL",
-      "name": "try_op"
+      "type": "PREC_LEFT",
+      "value": 8,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "value",
+            "content": {
+              "type": "SYMBOL",
+              "name": "postfix_expression"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "try_op"
+          }
+        ]
+      }
     },
     "spread_element": {
       "type": "SEQ",

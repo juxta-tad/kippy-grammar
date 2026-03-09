@@ -14,7 +14,19 @@
     "named": true,
     "subtypes": [
       {
-        "type": "postfix_chain",
+        "type": "call_expression",
+        "named": true
+      },
+      {
+        "type": "field_expression",
+        "named": true
+      },
+      {
+        "type": "primary_expression",
+        "named": true
+      },
+      {
+        "type": "try_expression",
         "named": true
       }
     ]
@@ -541,21 +553,42 @@
   {
     "type": "bare_postfix_expression",
     "named": true,
-    "fields": {},
+    "fields": {
+      "object": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "bare_postfix_expression",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "bare_postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "field_expression",
-          "named": true
-        },
         {
           "type": "non_clause_primary",
           "named": true
         },
         {
-          "type": "try_expression",
+          "type": "projection_suffix",
+          "named": true
+        },
+        {
+          "type": "try_op",
           "named": true
         }
       ]
@@ -675,16 +708,27 @@
   {
     "type": "call_expression",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "call_suffix",
-          "named": true
-        }
-      ]
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "call_suffix",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "postfix_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -975,25 +1019,62 @@
   {
     "type": "condition_postfix",
     "named": true,
-    "fields": {},
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "call_suffix",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "condition_postfix",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "condition_postfix",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "condition_postfix",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
-      "required": true,
+      "multiple": false,
+      "required": false,
       "types": [
-        {
-          "type": "call_expression",
-          "named": true
-        },
-        {
-          "type": "field_expression",
-          "named": true
-        },
         {
           "type": "non_clause_primary",
           "named": true
         },
         {
-          "type": "try_expression",
+          "type": "projection_suffix",
+          "named": true
+        },
+        {
+          "type": "try_op",
           "named": true
         }
       ]
@@ -1153,7 +1234,18 @@
   {
     "type": "field_expression",
     "named": true,
-    "fields": {},
+    "fields": {
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
@@ -2155,33 +2247,6 @@
     }
   },
   {
-    "type": "postfix_chain",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "call_expression",
-          "named": true
-        },
-        {
-          "type": "field_expression",
-          "named": true
-        },
-        {
-          "type": "primary_expression",
-          "named": true
-        },
-        {
-          "type": "try_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "primary_expression",
     "named": true,
     "fields": {},
@@ -2823,7 +2888,18 @@
   {
     "type": "try_expression",
     "named": true,
-    "fields": {},
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": false,
       "required": true,
