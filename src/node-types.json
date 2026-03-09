@@ -22,11 +22,11 @@
         "named": true
       },
       {
-        "type": "primary_expression",
+        "type": "possessive_field_expression",
         "named": true
       },
       {
-        "type": "receiver_method_expression",
+        "type": "primary_expression",
         "named": true
       },
       {
@@ -555,6 +555,42 @@
     }
   },
   {
+    "type": "bare_possessive_field_expression",
+    "named": true,
+    "fields": {
+      "field": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_name",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "bare_postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "possessive",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "bare_postfix_expression",
     "named": true,
     "fields": {},
@@ -563,11 +599,11 @@
       "required": true,
       "types": [
         {
-          "type": "bare_projection_expression",
+          "type": "bare_possessive_field_expression",
           "named": true
         },
         {
-          "type": "bare_receiver_method_expression",
+          "type": "bare_projection_expression",
           "named": true
         },
         {
@@ -602,42 +638,6 @@
       "types": [
         {
           "type": "projection_suffix",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "bare_receiver_method_expression",
-    "named": true,
-    "fields": {
-      "method": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "receiver": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "bare_postfix_expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "apostrophe",
           "named": true
         }
       ]
@@ -1118,6 +1118,42 @@
     }
   },
   {
+    "type": "condition_possessive_field_expression",
+    "named": true,
+    "fields": {
+      "field": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_name",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "condition_postfix",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "possessive",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "condition_postfix",
     "named": true,
     "fields": {},
@@ -1130,11 +1166,11 @@
           "named": true
         },
         {
-          "type": "condition_projection_expression",
+          "type": "condition_possessive_field_expression",
           "named": true
         },
         {
-          "type": "condition_receiver_method_expression",
+          "type": "condition_projection_expression",
           "named": true
         },
         {
@@ -1169,42 +1205,6 @@
       "types": [
         {
           "type": "projection_suffix",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "condition_receiver_method_expression",
-    "named": true,
-    "fields": {
-      "method": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "receiver": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "condition_postfix",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "apostrophe",
           "named": true
         }
       ]
@@ -2309,6 +2309,42 @@
     }
   },
   {
+    "type": "possessive_field_expression",
+    "named": true,
+    "fields": {
+      "field": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_name",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "possessive",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "primary_expression",
     "named": true,
     "fields": {},
@@ -2401,42 +2437,6 @@
     "type": "quote",
     "named": true,
     "fields": {}
-  },
-  {
-    "type": "receiver_method_expression",
-    "named": true,
-    "fields": {
-      "method": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "receiver": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "postfix_expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "apostrophe",
-          "named": true
-        }
-      ]
-    }
   },
   {
     "type": "record_body",
@@ -3892,10 +3892,6 @@
     "named": false
   },
   {
-    "type": "apostrophe",
-    "named": true
-  },
-  {
     "type": "arrow_op",
     "named": true
   },
@@ -4143,6 +4139,10 @@
   },
   {
     "type": "plus",
+    "named": true
+  },
+  {
+    "type": "possessive",
     "named": true
   },
   {

@@ -2092,7 +2092,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "bare_receiver_method_expression"
+          "name": "bare_possessive_field_expression"
         }
       ]
     },
@@ -2138,7 +2138,7 @@
         ]
       }
     },
-    "bare_receiver_method_expression": {
+    "bare_possessive_field_expression": {
       "type": "PREC_LEFT",
       "value": 8,
       "content": {
@@ -2146,7 +2146,7 @@
         "members": [
           {
             "type": "FIELD",
-            "name": "receiver",
+            "name": "object",
             "content": {
               "type": "SYMBOL",
               "name": "bare_postfix_expression"
@@ -2154,14 +2154,14 @@
           },
           {
             "type": "SYMBOL",
-            "name": "apostrophe"
+            "name": "possessive"
           },
           {
             "type": "FIELD",
-            "name": "method",
+            "name": "field",
             "content": {
               "type": "SYMBOL",
-              "name": "identifier"
+              "name": "field_name"
             }
           }
         ]
@@ -2188,7 +2188,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "receiver_method_expression"
+          "name": "possessive_field_expression"
         }
       ]
     },
@@ -2276,7 +2276,7 @@
         ]
       }
     },
-    "receiver_method_expression": {
+    "possessive_field_expression": {
       "type": "PREC_LEFT",
       "value": 8,
       "content": {
@@ -2284,7 +2284,7 @@
         "members": [
           {
             "type": "FIELD",
-            "name": "receiver",
+            "name": "object",
             "content": {
               "type": "SYMBOL",
               "name": "postfix_expression"
@@ -2292,14 +2292,14 @@
           },
           {
             "type": "SYMBOL",
-            "name": "apostrophe"
+            "name": "possessive"
           },
           {
             "type": "FIELD",
-            "name": "method",
+            "name": "field",
             "content": {
               "type": "SYMBOL",
-              "name": "identifier"
+              "name": "field_name"
             }
           }
         ]
@@ -4314,7 +4314,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "condition_receiver_method_expression"
+          "name": "condition_possessive_field_expression"
         }
       ]
     },
@@ -4385,7 +4385,7 @@
         ]
       }
     },
-    "condition_receiver_method_expression": {
+    "condition_possessive_field_expression": {
       "type": "PREC_LEFT",
       "value": 8,
       "content": {
@@ -4393,7 +4393,7 @@
         "members": [
           {
             "type": "FIELD",
-            "name": "receiver",
+            "name": "object",
             "content": {
               "type": "SYMBOL",
               "name": "condition_postfix"
@@ -4401,14 +4401,14 @@
           },
           {
             "type": "SYMBOL",
-            "name": "apostrophe"
+            "name": "possessive"
           },
           {
             "type": "FIELD",
-            "name": "method",
+            "name": "field",
             "content": {
               "type": "SYMBOL",
-              "name": "identifier"
+              "name": "field_name"
             }
           }
         ]
@@ -6073,11 +6073,11 @@
       "type": "STRING",
       "value": "?"
     },
-    "apostrophe": {
+    "possessive": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
         "type": "STRING",
-        "value": "'"
+        "value": "'s"
       }
     },
     "type_record": {

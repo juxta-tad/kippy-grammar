@@ -469,7 +469,7 @@ module.exports = grammar({
 				$.non_clause_primary,
 				$.bare_projection_expression,
 				$.bare_try_expression,
-				$.bare_receiver_method_expression,
+				$.bare_possessive_field_expression,
 			),
 
 		// Bare projection (field/tuple access): no tight binding requirements
@@ -486,12 +486,12 @@ module.exports = grammar({
 				$.try_op,
 			),
 
-		// Bare receiver method: method reference in naked arguments
-		bare_receiver_method_expression: ($) =>
+		// Bare possessive field: field access with 's in naked arguments
+		bare_possessive_field_expression: ($) =>
 			postfixOp(
-				field("receiver", $.bare_postfix_expression),
-				$.apostrophe,
-				field("method", $.identifier),
+				field("object", $.bare_postfix_expression),
+				$.possessive,
+				field("field", $.field_name),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -506,7 +506,7 @@ module.exports = grammar({
 				$.call_expression,
 				$.field_expression,
 				$.try_expression,
-				$.receiver_method_expression,
+				$.possessive_field_expression,
 			),
 
 		// Function call with 'with' keyword and arguments
@@ -540,16 +540,16 @@ module.exports = grammar({
 				),
 			),
 
-		// Receiver method reference using apostrophe syntax
-		// Syntax: receiver'method
-		// Example: user'show, a'eq with b
-		receiver_method_expression: ($) =>
+		// Possessive field access using 's syntax
+		// Syntax: object's field
+		// Example: user's name, person's age
+		possessive_field_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
 				seq(
-					field("receiver", $.postfix_expression),
-					$.apostrophe,
-					field("method", $.identifier),
+					field("object", $.postfix_expression),
+					$.possessive,
+					field("field", $.field_name),
 				),
 			),
 
@@ -942,7 +942,7 @@ module.exports = grammar({
 				$.condition_projection_expression,
 				$.condition_call_expression,
 				$.condition_try_expression,
-				$.condition_receiver_method_expression,
+				$.condition_possessive_field_expression,
 			),
 
 		// Condition projection (field/tuple access): for pattern matching
@@ -966,12 +966,12 @@ module.exports = grammar({
 				$.try_op,
 			),
 
-		// Condition receiver method: method references in pattern guards
-		condition_receiver_method_expression: ($) =>
+		// Condition possessive field: field access with 's in pattern guards
+		condition_possessive_field_expression: ($) =>
 			postfixOp(
-				field("receiver", $.condition_postfix),
-				$.apostrophe,
-				field("method", $.identifier),
+				field("object", $.condition_postfix),
+				$.possessive,
+				field("field", $.field_name),
 			),
 
 		// expression-level if/then/else.
@@ -1364,7 +1364,7 @@ module.exports = grammar({
 
 		arrow_op: ($) => "->",
 		try_op: ($) => "?",
-		apostrophe: ($) => token.immediate("'"),
+		possessive: ($) => token.immediate("'s"),
 
 		// record type literal syntax.
 		type_record: ($) =>
