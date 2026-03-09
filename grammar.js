@@ -203,7 +203,7 @@ module.exports = grammar({
 		type_parameter_list: ($) =>
 			seq(
 				$.lparen,
-				commaSep1Trail($, $.identifier, $.comma, $.newline),
+				commaSep1Trail($, $.type_variable, $.comma, $.newline),
 				$.rparen,
 			),
 
@@ -1071,7 +1071,7 @@ module.exports = grammar({
 
 		// Type variables: lowercase identifiers used in generic types.
 		// Example: `a` and `e` in `Maybe(a)` and `Result(a, e)`
-		type_variable: ($) => $.identifier,
+		type_variable: ($) => $.tag_name,
 
 		// atomic type forms.
 		type_primary: ($) =>

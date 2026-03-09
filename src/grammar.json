@@ -506,7 +506,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "identifier"
+              "name": "type_variable"
             },
             {
               "type": "REPEAT",
@@ -526,7 +526,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "identifier"
+                    "name": "type_variable"
                   }
                 ]
               }
@@ -4769,7 +4769,7 @@
     },
     "type_variable": {
       "type": "SYMBOL",
-      "name": "identifier"
+      "name": "tag_name"
     },
     "type_primary": {
       "type": "CHOICE",
