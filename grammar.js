@@ -612,36 +612,7 @@ module.exports = grammar({
 			),
 
 		// field name - allows identifiers and contextual keywords.
-		field_name: ($) =>
-			choice(
-				$.identifier,
-				$.kw_pub,
-				$.kw_let,
-				$.kw_cert,
-				$.kw_expect,
-				$.kw_if,
-				$.kw_then,
-				$.kw_else,
-				$.kw_when,
-				$.kw_is,
-				$.kw_in,
-				$.kw_where,
-				$.kw_with,
-				$.kw_ability,
-				$.kw_implement,
-				$.kw_module,
-				$.kw_use,
-				$.kw_using,
-				$.kw_build,
-				$.kw_for,
-				$.kw_type,
-				$.kw_sig,
-				$.kw_fn,
-				$.kw_or,
-				$.kw_and,
-				$.kw_not,
-				$.kw_as,
-			),
+		field_name: ($) => $.identifier,
 
 		// standardised field naming for downstream tooling.
 		// Record field value: inline or multiline, but without trailing newline tolerance.
