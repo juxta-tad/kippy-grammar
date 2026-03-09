@@ -95,12 +95,21 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "FIELD",
-              "name": "docs",
-              "content": {
-                "type": "SYMBOL",
-                "name": "doc_comment"
-              }
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "docs",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "doc_comment"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "newline"
+                }
+              ]
             },
             {
               "type": "BLANK"
@@ -5053,8 +5062,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "\""
+          "type": "SYMBOL",
+          "name": "quote"
         },
         {
           "type": "REPEAT",
@@ -5077,8 +5086,8 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "\""
+          "type": "SYMBOL",
+          "name": "quote"
         }
       ]
     },
@@ -5086,8 +5095,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "\"\"\""
+          "type": "SYMBOL",
+          "name": "triple_quote"
         },
         {
           "type": "REPEAT",
@@ -5118,8 +5127,8 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "\"\"\""
+          "type": "SYMBOL",
+          "name": "triple_quote"
         }
       ]
     },
@@ -5127,8 +5136,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "'"
+          "type": "SYMBOL",
+          "name": "single_quote"
         },
         {
           "type": "CHOICE",
@@ -5144,8 +5153,8 @@
           ]
         },
         {
-          "type": "STRING",
-          "value": "'"
+          "type": "SYMBOL",
+          "name": "single_quote"
         }
       ]
     },
@@ -5738,6 +5747,21 @@
         "type": "STRING",
         "value": "#{"
       }
+    },
+    "quote": {
+      "type": "STRING",
+      "value": "\""
+    },
+    "triple_quote": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "\"\"\""
+      }
+    },
+    "single_quote": {
+      "type": "STRING",
+      "value": "'"
     },
     "comma": {
       "type": "STRING",

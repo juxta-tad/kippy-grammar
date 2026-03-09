@@ -127,7 +127,10 @@ module.exports = grammar({
 		// Attaches doc comments to any declarable item.
 		documented_declaration: ($) =>
 			seq(
-				optional(field("docs", $.doc_comment)),
+				optional(seq(
+					field("docs", $.doc_comment),
+					$.newline,
+				)),
 				choice(
 					$.type_declaration,
 					$.signature,
@@ -1043,19 +1046,19 @@ module.exports = grammar({
 		// Interpolation starts with \( and ends at the matching parser-level ).
 		string: ($) =>
 			seq(
-				'"',
+				$.quote,
 				repeat(choice(
 					$.string_text,
 					$.escape_sequence,
 					$.interpolation,
 				)),
-				'"',
+				$.quote,
 			),
 
 		// Triple-quoted multiline string with interpolation and controlled quote tokenisation.
 		multiline_string: ($) =>
 			seq(
-				'"""',
+				$.triple_quote,
 				repeat(choice(
 					$.multiline_text,
 					$.escape_sequence,
@@ -1063,19 +1066,19 @@ module.exports = grammar({
 					$.multiline_quote,
 					$.multiline_double_quote,
 				)),
-				'"""',
+				$.triple_quote,
 			),
 
 		// Character literal: single-quoted character with escape support.
 		// Syntax: 'a', 'x', '\n', '\u0041', etc.
 		char_literal: ($) =>
 			seq(
-				"'",
+				$.single_quote,
 				choice(
 					$.escape_sequence,
 					/[^'\\]/, // any character except quote or backslash
 				),
-				"'",
+				$.single_quote,
 			),
 
 		// embedded expression interpolation in strings.
@@ -1212,6 +1215,12 @@ module.exports = grammar({
 		rbrace: ($) => "}",
 		// tuple constructor: #{x, y}
 		lbrace_hash: ($) => token("#{"),
+
+		// Quote delimiters for pair matching
+		quote: ($) => '"',
+		triple_quote: ($) => token('"""'),
+		single_quote: ($) => "'",
+
 		comma: ($) => ",",
 		colon: ($) => ":",
 		equals: op(2, "="),
