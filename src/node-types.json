@@ -1860,10 +1860,6 @@
       "required": true,
       "types": [
         {
-          "type": "bool_literal",
-          "named": true
-        },
-        {
           "type": "char_literal",
           "named": true
         },
@@ -3803,10 +3799,6 @@
     "type": "block_comment",
     "named": true,
     "extra": true
-  },
-  {
-    "type": "bool_literal",
-    "named": true
   },
   {
     "type": "colon",

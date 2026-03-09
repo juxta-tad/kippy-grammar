@@ -99,13 +99,11 @@ module.exports = grammar({
 		source_file: ($) =>
 			choice(
 				repeat($.newline),
-
 				seq(
 					repeat($.newline),
 					$.module_declaration,
 					repeat($.newline),
 				),
-
 				seq(
 					repeat($.newline),
 					optional(seq(
@@ -1105,7 +1103,11 @@ module.exports = grammar({
 		// record type field (allows keywords as field names).
 		// Uses restricted type form to avoid ambiguity with record field comma separator.
 		record_type_field: ($) =>
-			seq($.field_name, $.colon, inline_or_block($, $.type_expression_no_comma)),
+			seq(
+				$.field_name,
+				$.colon,
+				inline_or_block($, $.type_expression_no_comma),
+			),
 
 		// tuple type.
 		type_tuple: ($) => tuple_like($, $.non_arrow_type),
@@ -1124,8 +1126,6 @@ module.exports = grammar({
 				$.char_literal,
 				$.string,
 				$.multiline_string,
-				alias("true", $.bool_literal),
-				alias("false", $.bool_literal),
 			),
 
 		// decimal/scientific floating-point formats with optional f32/f64 suffix.
@@ -1491,7 +1491,11 @@ function add_rule($, next_level) {
 }
 
 function mul_rule($, next_level) {
-	return left_assoc_chain(PREC.MUL, next_level, choice($.star, $.slash, $.percent));
+	return left_assoc_chain(
+		PREC.MUL,
+		next_level,
+		choice($.star, $.slash, $.percent),
+	);
 }
 
 function postfix_rule($, base, ...suffixes) {

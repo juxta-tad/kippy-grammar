@@ -5128,24 +5128,6 @@
         {
           "type": "SYMBOL",
           "name": "multiline_string"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "true"
-          },
-          "named": true,
-          "value": "bool_literal"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "false"
-          },
-          "named": true,
-          "value": "bool_literal"
         }
       ]
     },
