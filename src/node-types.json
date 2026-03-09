@@ -1235,6 +1235,20 @@
     "type": "field_expression",
     "named": true,
     "fields": {
+      "field": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_name",
+            "named": true
+          },
+          {
+            "type": "tuple_index",
+            "named": true
+          }
+        ]
+      },
       "object": {
         "multiple": false,
         "required": true,
@@ -1251,7 +1265,7 @@
       "required": true,
       "types": [
         {
-          "type": "projection_suffix",
+          "type": "dot",
           "named": true
         }
       ]

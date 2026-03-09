@@ -518,7 +518,8 @@ module.exports = grammar({
 				PREC.POSTFIX,
 				seq(
 					field("object", $.postfix_expression),
-					$.projection_suffix,
+					$.dot,
+					field("field", choice($.field_name, $.tuple_index)),
 				),
 			),
 

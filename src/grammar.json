@@ -2155,7 +2155,24 @@
           },
           {
             "type": "SYMBOL",
-            "name": "projection_suffix"
+            "name": "dot"
+          },
+          {
+            "type": "FIELD",
+            "name": "field",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "field_name"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "tuple_index"
+                }
+              ]
+            }
           }
         ]
       }
