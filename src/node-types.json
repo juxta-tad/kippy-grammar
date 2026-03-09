@@ -3110,6 +3110,10 @@
           "named": true
         },
         {
+          "type": "lparen",
+          "named": true
+        },
+        {
           "type": "newline",
           "named": true
         },

@@ -1024,7 +1024,7 @@ module.exports = grammar({
 		// explicit parenthesised type argument list.
 		type_argument_list: ($) =>
 			seq(
-				token.immediate("("),
+				$.lparen,
 				optional(seq(
 					field("first", $.type_expression),
 					field(
