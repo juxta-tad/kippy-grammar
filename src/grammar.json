@@ -6102,9 +6102,7 @@
       "name": "dedent"
     }
   ],
-  "inline": [
-    "field_name"
-  ],
+  "inline": [],
   "supertypes": [
     "expression",
     "postfix_expression"
