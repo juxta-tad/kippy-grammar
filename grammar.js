@@ -193,7 +193,7 @@ module.exports = grammar({
 				field(
 					"value",
 					choice(
-						$.type_expression,
+						inline_or_block($, $.type_expression),
 						$.type_variant_block,
 					),
 				),
@@ -467,20 +467,22 @@ module.exports = grammar({
 		bare_postfix_expression: ($) =>
 			choice(
 				$.non_clause_primary,
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("object", $.bare_postfix_expression),
-						$.projection_suffix,
-					),
-				),
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("value", $.bare_postfix_expression),
-						$.try_op,
-					),
-				),
+				$.bare_projection_expression,
+				$.bare_try_expression,
+			),
+
+		// Bare projection (field/tuple access): no tight binding requirements
+		bare_projection_expression: ($) =>
+			postfixOp(
+				field("object", $.bare_postfix_expression),
+				$.projection_suffix,
+			),
+
+		// Bare try operator: error handling
+		bare_try_expression: ($) =>
+			postfixOp(
+				field("value", $.bare_postfix_expression),
+				$.try_op,
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -928,27 +930,30 @@ module.exports = grammar({
 		condition_postfix: ($) =>
 			choice(
 				$.non_clause_primary,
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("object", $.condition_postfix),
-						$.projection_suffix,
-					),
-				),
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("function", $.condition_postfix),
-						field("arguments", $.call_suffix),
-					),
-				),
-				prec.left(
-					PREC.POSTFIX,
-					seq(
-						field("value", $.condition_postfix),
-						$.try_op,
-					),
-				),
+				$.condition_projection_expression,
+				$.condition_call_expression,
+				$.condition_try_expression,
+			),
+
+		// Condition projection (field/tuple access): for pattern matching
+		condition_projection_expression: ($) =>
+			postfixOp(
+				field("object", $.condition_postfix),
+				$.projection_suffix,
+			),
+
+		// Condition call (with-call): function calls in guards
+		condition_call_expression: ($) =>
+			postfixOp(
+				field("function", $.condition_postfix),
+				field("arguments", $.call_suffix),
+			),
+
+		// Condition try operator: error handling in conditions
+		condition_try_expression: ($) =>
+			postfixOp(
+				field("value", $.condition_postfix),
+				$.try_op,
 			),
 
 		// expression-level if/then/else.
@@ -1492,6 +1497,12 @@ function postfix_rule($, base, ...suffixes) {
 			repeat(choice(...suffixes)),
 		),
 	);
+}
+
+// Wrap a postfix operation pattern with precedence and associativity.
+// Eliminates repeated prec.left(PREC.POSTFIX, seq(...)) boilerplate.
+function postfixOp(...pattern) {
+	return prec.left(PREC.POSTFIX, seq(...pattern));
 }
 
 // Shared tuple parser for expression tuples and type tuples.
