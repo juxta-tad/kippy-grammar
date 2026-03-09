@@ -567,6 +567,10 @@
           "named": true
         },
         {
+          "type": "bare_receiver_method_expression",
+          "named": true
+        },
+        {
           "type": "bare_try_expression",
           "named": true
         },
@@ -598,6 +602,42 @@
       "types": [
         {
           "type": "projection_suffix",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bare_receiver_method_expression",
+    "named": true,
+    "fields": {
+      "method": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "receiver": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "bare_postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "apostrophe",
           "named": true
         }
       ]
@@ -1094,6 +1134,10 @@
           "named": true
         },
         {
+          "type": "condition_receiver_method_expression",
+          "named": true
+        },
+        {
           "type": "condition_try_expression",
           "named": true
         },
@@ -1125,6 +1169,42 @@
       "types": [
         {
           "type": "projection_suffix",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "condition_receiver_method_expression",
+    "named": true,
+    "fields": {
+      "method": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "receiver": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "condition_postfix",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "apostrophe",
           "named": true
         }
       ]

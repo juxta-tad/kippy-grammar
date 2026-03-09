@@ -2089,6 +2089,10 @@
         {
           "type": "SYMBOL",
           "name": "bare_try_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "bare_receiver_method_expression"
         }
       ]
     },
@@ -2130,6 +2134,35 @@
           {
             "type": "SYMBOL",
             "name": "try_op"
+          }
+        ]
+      }
+    },
+    "bare_receiver_method_expression": {
+      "type": "PREC_LEFT",
+      "value": 8,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "receiver",
+            "content": {
+              "type": "SYMBOL",
+              "name": "bare_postfix_expression"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "apostrophe"
+          },
+          {
+            "type": "FIELD",
+            "name": "method",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
           }
         ]
       }
@@ -4278,6 +4311,10 @@
         {
           "type": "SYMBOL",
           "name": "condition_try_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "condition_receiver_method_expression"
         }
       ]
     },
@@ -4344,6 +4381,35 @@
           {
             "type": "SYMBOL",
             "name": "try_op"
+          }
+        ]
+      }
+    },
+    "condition_receiver_method_expression": {
+      "type": "PREC_LEFT",
+      "value": 8,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "receiver",
+            "content": {
+              "type": "SYMBOL",
+              "name": "condition_postfix"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "apostrophe"
+          },
+          {
+            "type": "FIELD",
+            "name": "method",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
           }
         ]
       }

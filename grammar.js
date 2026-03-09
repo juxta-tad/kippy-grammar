@@ -469,6 +469,7 @@ module.exports = grammar({
 				$.non_clause_primary,
 				$.bare_projection_expression,
 				$.bare_try_expression,
+				$.bare_receiver_method_expression,
 			),
 
 		// Bare projection (field/tuple access): no tight binding requirements
@@ -483,6 +484,14 @@ module.exports = grammar({
 			postfixOp(
 				field("value", $.bare_postfix_expression),
 				$.try_op,
+			),
+
+		// Bare receiver method: method reference in naked arguments
+		bare_receiver_method_expression: ($) =>
+			postfixOp(
+				field("receiver", $.bare_postfix_expression),
+				$.apostrophe,
+				field("method", $.identifier),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -933,6 +942,7 @@ module.exports = grammar({
 				$.condition_projection_expression,
 				$.condition_call_expression,
 				$.condition_try_expression,
+				$.condition_receiver_method_expression,
 			),
 
 		// Condition projection (field/tuple access): for pattern matching
@@ -954,6 +964,14 @@ module.exports = grammar({
 			postfixOp(
 				field("value", $.condition_postfix),
 				$.try_op,
+			),
+
+		// Condition receiver method: method references in pattern guards
+		condition_receiver_method_expression: ($) =>
+			postfixOp(
+				field("receiver", $.condition_postfix),
+				$.apostrophe,
+				field("method", $.identifier),
 			),
 
 		// expression-level if/then/else.
@@ -1486,16 +1504,6 @@ function mul_rule($, next_level) {
 		PREC.MUL,
 		next_level,
 		choice($.star, $.slash, $.percent),
-	);
-}
-
-function postfix_rule($, base, ...suffixes) {
-	return prec.left(
-		PREC.POSTFIX,
-		seq(
-			base,
-			repeat(choice(...suffixes)),
-		),
 	);
 }
 
