@@ -98,15 +98,15 @@ module.exports = grammar({
 		// A source file is a newline-separated list of module items.
 		// Leading and trailing blank lines are allowed.
 		// Multiple items cannot share one line.
-		// Source file: required module header, optional declarations.
-		// Every file must declare its module scope.
+		// Source file: optional module header and optional declarations.
+		// Module header is optional; files can contain just declarations or be empty.
 		source_file: ($) =>
 			seq(
 				repeat($.newline),
-				optional(seq($.module_declaration, repeat1($.newline))),
+				optional(seq($.module_declaration, repeat($.newline))),
 				optional(seq(
 					$.module_item,
-					repeat(seq(repeat($.newline), $.module_item)),
+					repeat(seq(repeat1($.newline), $.module_item)),
 					repeat($.newline),
 				)),
 			),
@@ -118,48 +118,23 @@ module.exports = grammar({
 		module_item: ($) =>
 			choice(
 				$.use_statement,
-				$.documented_type_declaration,
-				$.documented_let_binding,
-				$.documented_signature,
-				$.expect_statement,
-				$.implementation,
-				$.documented_ability_declaration,
-				$.documented_test_declaration,
+				$.documented_declaration,
 			),
 
-		// Semantic wrapper for type declarations with optional leading documentation.
-		documented_type_declaration: ($) =>
+		// Semantic wrapper for declarations with optional leading documentation.
+		// Attaches doc comments to any declarable item.
+		documented_declaration: ($) =>
 			seq(
 				optional(field("docs", $.doc_comment)),
-				$.type_declaration,
-			),
-
-		// Semantic wrapper for signatures with optional leading documentation.
-		documented_signature: ($) =>
-			seq(
-				optional(field("docs", $.doc_comment)),
-				$.signature,
-			),
-
-		// Semantic wrapper for let bindings with optional leading documentation.
-		documented_let_binding: ($) =>
-			seq(
-				optional(field("docs", $.doc_comment)),
-				$.let_binding,
-			),
-
-		// Semantic wrapper for ability declarations with optional leading documentation.
-		documented_ability_declaration: ($) =>
-			seq(
-				optional(field("docs", $.doc_comment)),
-				$.ability_declaration,
-			),
-
-		// Semantic wrapper for test declarations with optional leading documentation.
-		documented_test_declaration: ($) =>
-			seq(
-				optional(field("docs", $.doc_comment)),
-				$.test_declaration,
+				choice(
+					$.type_declaration,
+					$.signature,
+					$.let_binding,
+					$.ability_declaration,
+					$.test_declaration,
+					$.expect_statement,
+					$.implementation,
+				),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -202,6 +177,7 @@ module.exports = grammar({
 		// Parameters are bare identifiers after the type name.
 		type_declaration: ($) =>
 			seq(
+				attribute_prefix($),
 				$.kw_type,
 				field("name", $.type_name),
 				optional($.type_parameter_list),
@@ -261,6 +237,7 @@ module.exports = grammar({
 		// top-level signature declaration.
 		signature: ($) =>
 			seq(
+				attribute_prefix($),
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
@@ -413,43 +390,24 @@ module.exports = grammar({
 				),
 			),
 
-		or_expression: ($) => left_assoc_chain(PREC.OR, $.and_expression, $.or_op),
+		or_expression: ($) => or_rule($, $.bare_and_expression),
 
-		and_expression: ($) =>
-			left_assoc_chain(PREC.AND, $.compare_expression, $.and_op),
+		and_expression: ($) => and_rule($, $.compare_expression),
 
 		// Comparison allows at most one comparator per node.
 		// Chained comparisons like a < b < c are not parsed as a single expression here.
-		compare_expression: ($) =>
-			prec.left(
-				PREC.COMPARE,
-				seq(
-					$.add_expression,
-					optional(
-						seq(
-							choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-							$.add_expression,
-						),
-					),
-				),
-			),
+		compare_expression: ($) => compare_rule($, $.add_expression),
 
-		add_expression: ($) =>
-			left_assoc_chain(PREC.ADD, $.mul_expression, choice($.plus, $.minus)),
+		add_expression: ($) => add_rule($, $.mul_expression),
 
-		mul_expression: ($) =>
-			left_assoc_chain(
-				PREC.MUL,
-				$.unary_expression,
-				choice($.star, $.slash, $.percent),
-			),
+		mul_expression: ($) => mul_rule($, $.unary_expression),
 
 		// unary negation and logical not bind tighter than binary operators.
 		unary_expression: ($) =>
 			choice(
 				prec.right(
 					PREC.UNARY,
-					seq(choice($.minus, $.not_kw, $.kw_cert), $.unary_expression),
+					seq(choice($.minus, $.kw_not, $.kw_cert), $.unary_expression),
 				),
 				$.postfix_expression,
 			),
@@ -462,63 +420,31 @@ module.exports = grammar({
 		// Example: `f with x + y` is valid, but `f with if c then a else b` requires parens.
 		bare_call_argument: ($) => $.bare_or_expression,
 
-		bare_or_expression: ($) =>
-			left_assoc_chain(PREC.OR, $.bare_and_expression, $.or_op),
+		bare_or_expression: ($) => or_rule($, $.bare_and_expression),
 
-		bare_and_expression: ($) =>
-			left_assoc_chain(PREC.AND, $.bare_compare_expression, $.and_op),
+		bare_and_expression: ($) => and_rule($, $.bare_compare_expression),
 
-		bare_compare_expression: ($) =>
-			prec.left(
-				PREC.COMPARE,
-				seq(
-					$.bare_add_expression,
-					optional(
-						seq(
-							choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-							$.bare_add_expression,
-						),
-					),
-				),
-			),
+		bare_compare_expression: ($) => compare_rule($, $.bare_add_expression),
 
-		bare_add_expression: ($) =>
-			left_assoc_chain(
-				PREC.ADD,
-				$.bare_mul_expression,
-				choice($.plus, $.minus),
-			),
+		bare_add_expression: ($) => add_rule($, $.bare_mul_expression),
 
-		bare_mul_expression: ($) =>
-			left_assoc_chain(
-				PREC.MUL,
-				$.bare_unary_expression,
-				choice($.star, $.slash, $.percent),
-			),
+		bare_mul_expression: ($) => mul_rule($, $.bare_unary_expression),
 
+		// Unary expressions (right-associative): allows chaining like `--x`, `not not y`.
 		bare_unary_expression: ($) =>
 			choice(
 				prec.right(
 					PREC.UNARY,
-					seq(choice($.minus, $.not_kw, $.kw_cert), $.bare_unary_expression),
+					seq(choice($.minus, $.kw_not, $.kw_cert), $.bare_unary_expression),
 				),
 				$.bare_postfix_expression,
 			),
 
 		// Postfix expressions for bare arguments: allows field access and try, but NOT `with` calls.
-		bare_postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.bare_primary_expression,
-					repeat(choice($.field_expression, $.try_expression)),
-				),
-			),
-
-		// Primary expressions for bare arguments: excludes clause-like forms.
-		// Allowed: literals, identifiers, records, tuples, lists, field access, try.
-		// Excluded: if, when, fn, block, and nested `with` calls (unless parenthesized).
-		bare_primary_expression: ($) =>
+		// Primary expressions that exclude clause-style constructs (when, if, fn, blocks).
+		// Used by bare-call and condition expression hierarchies.
+		// These remain usable through parenthesized_expression.
+		non_clause_primary: ($) =>
 			choice(
 				$.record_builder,
 				$.literal,
@@ -530,6 +456,8 @@ module.exports = grammar({
 				$.parenthesized_expression,
 			),
 
+		bare_postfix_expression: ($) => postfix_rule($, $.non_clause_primary, $.field_expression, $.try_expression),
+
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -540,16 +468,7 @@ module.exports = grammar({
 		//   get? with x .field?
 		// Postfix forms are parsed left-to-right in a single rule.
 		// Uses semantic wrapper nodes for better formatting and diagnostics.
-		postfix_chain: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					repeat(
-						choice($.call_expression, $.field_expression, $.try_expression),
-					),
-				),
-			),
+		postfix_chain: ($) => postfix_rule($, $.primary_expression, $.call_expression, $.field_expression, $.try_expression),
 
 		// alias for postfix_chain kept as the expression-level postfix rule.
 		postfix_expression: ($) => $.postfix_chain,
@@ -920,16 +839,53 @@ module.exports = grammar({
 				field("body", inline_or_block($, $.expression)),
 			),
 
+		// Primary expressions that exclude clause-style constructs (when, if, fn, blocks).
+		// These remain usable through parenthesized_expression.
+		condition_expression: ($) => $.condition_pipe,
+
+		condition_pipe: ($) =>
+			prec.right(
+				PREC.PIPE,
+				choice(
+					$.condition_or,
+					seq($.condition_pipe, $.pipe, $.condition_or),
+				),
+			),
+
+		condition_or: ($) => or_rule($, $.condition_and),
+
+		condition_and: ($) => and_rule($, $.condition_compare),
+
+		condition_compare: ($) => compare_rule($, $.condition_add),
+
+		condition_add: ($) => add_rule($, $.condition_mul),
+
+		condition_mul: ($) => mul_rule($, $.condition_unary),
+
+		condition_unary: ($) =>
+			choice(
+				prec.right(
+					PREC.UNARY,
+					seq(choice($.minus, $.kw_not, $.kw_cert), $.condition_unary),
+				),
+				$.condition_postfix,
+			),
+
+		condition_postfix: ($) => postfix_rule($, $.non_clause_primary, $.call_expression, $.field_expression, $.try_expression),
+
 		// expression-level if/then/else.
 		if_expression: ($) =>
 			seq(
 				$.kw_if,
-				field("condition", $.expression),
+				field("condition", $.condition_expression),
 				$.kw_then,
-				field("then_value", $.expression),
+				field("then_value", $.if_branch),
 				$.kw_else,
-				field("else_value", $.expression),
+				field("else_value", $.if_branch),
 			),
+
+		// Helper for if-expression branches (supports both inline and multiline bodies).
+		if_branch: ($) => inline_or_block($, $.expression),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.14: TYPE SYSTEM
@@ -1369,9 +1325,9 @@ function dotted1($, head, tail) {
 }
 
 // Attribute prefix for declarations that support attributes.
-// Each attribute must be on its own line (enforces line-based attribute policy).
+// Each attribute must be on its own line. Blank lines after attributes are allowed.
 function attribute_prefix($) {
-	return repeat(seq($.attribute, $.newline));
+	return repeat(seq($.attribute, repeat1($.newline)));
 }
 
 // Left-associative operator chain precedence helper.
@@ -1382,6 +1338,51 @@ function left_assoc_chain(precValue, operand, operator) {
 		seq(
 			operand,
 			repeat(seq(operator, operand)),
+		),
+	);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Operator Ladder Factories
+// ═════════════════════════════════════════════════════════════════════════════
+// These helpers reduce duplication across parallel expression hierarchies
+// (normal, bare-call, condition). Update once, applies to all three.
+
+function or_rule($, next_level) {
+	return left_assoc_chain(PREC.OR, next_level, $.or_op);
+}
+
+function and_rule($, next_level) {
+	return left_assoc_chain(PREC.AND, next_level, $.and_op);
+}
+
+function compare_rule($, next_level) {
+	return prec.left(
+		PREC.COMPARE,
+		seq(
+			next_level,
+			optional(seq(
+				choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
+				next_level,
+			)),
+		),
+	);
+}
+
+function add_rule($, next_level) {
+	return left_assoc_chain(PREC.ADD, next_level, choice($.plus, $.minus));
+}
+
+function mul_rule($, next_level) {
+	return left_assoc_chain(PREC.MUL, next_level, choice($.star, $.slash, $.percent));
+}
+
+function postfix_rule($, base, ...suffixes) {
+	return prec.left(
+		PREC.POSTFIX,
+		seq(
+			base,
+			repeat(choice(...suffixes)),
 		),
 	);
 }
@@ -1430,9 +1431,11 @@ function tuple_like($, itemRule) {
 }
 
 // Helper: function argument list using 'with' keyword without parentheses.
-// Arguments are full expressions.
+// Function call with 'with' keyword. Arguments are restricted (bare call arguments).
+// Clause-like forms (if, when, fn, blocks) must be parenthesized in unparenthesized calls.
 // Syntax:
 //   func with x, y
+//   func with (if c then a else b)
 //   func with
 //     x,
 //     y,
