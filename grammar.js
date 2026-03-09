@@ -495,6 +495,7 @@ module.exports = grammar({
 				$.call_expression,
 				$.field_expression,
 				$.try_expression,
+				$.receiver_method_expression,
 			),
 
 		// Function call with 'with' keyword and arguments
@@ -525,6 +526,19 @@ module.exports = grammar({
 				seq(
 					field("value", $.postfix_expression),
 					$.try_op,
+				),
+			),
+
+		// Receiver method reference using apostrophe syntax
+		// Syntax: receiver'method
+		// Example: user'show, a'eq with b
+		receiver_method_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					field("receiver", $.postfix_expression),
+					$.apostrophe,
+					field("method", $.identifier),
 				),
 			),
 
@@ -1299,7 +1313,7 @@ module.exports = grammar({
 		comma: ($) => ",",
 		colon: ($) => ":",
 		equals: op(2, "="),
-		dot: ($) => ".",
+		dot: ($) => token.immediate("."),
 
 		//
 		// |> must tokenise before plain | to avoid partial matches.
@@ -1327,6 +1341,7 @@ module.exports = grammar({
 
 		arrow_op: ($) => "->",
 		try_op: ($) => "?",
+		apostrophe: ($) => token.immediate("'"),
 
 		// record type literal syntax.
 		type_record: ($) =>

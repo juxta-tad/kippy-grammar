@@ -26,6 +26,10 @@
         "named": true
       },
       {
+        "type": "receiver_method_expression",
+        "named": true
+      },
+      {
         "type": "try_expression",
         "named": true
       }
@@ -2247,6 +2251,42 @@
     "fields": {}
   },
   {
+    "type": "receiver_method_expression",
+    "named": true,
+    "fields": {
+      "method": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "receiver": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "postfix_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "apostrophe",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "record_body",
     "named": true,
     "fields": {},
@@ -3686,6 +3726,10 @@
   {
     "type": "_",
     "named": false
+  },
+  {
+    "type": "apostrophe",
+    "named": true
   },
   {
     "type": "arrow_op",

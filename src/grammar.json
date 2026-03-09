@@ -2111,6 +2111,10 @@
         {
           "type": "SYMBOL",
           "name": "try_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "receiver_method_expression"
         }
       ]
     },
@@ -2194,6 +2198,35 @@
           {
             "type": "SYMBOL",
             "name": "try_op"
+          }
+        ]
+      }
+    },
+    "receiver_method_expression": {
+      "type": "PREC_LEFT",
+      "value": 8,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "receiver",
+            "content": {
+              "type": "SYMBOL",
+              "name": "postfix_expression"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "apostrophe"
+          },
+          {
+            "type": "FIELD",
+            "name": "method",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
           }
         ]
       }
@@ -5795,8 +5828,11 @@
       }
     },
     "dot": {
-      "type": "STRING",
-      "value": "."
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "."
+      }
     },
     "pipe": {
       "type": "TOKEN",
@@ -5917,6 +5953,13 @@
     "try_op": {
       "type": "STRING",
       "value": "?"
+    },
+    "apostrophe": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "'"
+      }
     },
     "type_record": {
       "type": "CHOICE",
