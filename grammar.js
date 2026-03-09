@@ -88,7 +88,7 @@ module.exports = grammar({
 		//      </ Replaced by newFunction />
 		//      let oldFunction x = ...
 		//
-		// Semantic wrapper nodes (documented_type_declaration, etc.) mark declaration
+		// Semantic wrapper node (documented_declaration) marks declaration
 		// attachment points to help formatters make consistent decisions.
 		// ═════════════════════════════════════════════════════════════════════════════
 
@@ -1343,9 +1343,9 @@ function left_assoc_chain(precValue, operand, operator) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Operator Ladder Factories
+// Operator Ladder Helpers
 // ═════════════════════════════════════════════════════════════════════════════
-// These helpers reduce duplication across parallel expression hierarchies
+// These direct-style helpers reduce duplication across parallel expression hierarchies
 // (normal, bare-call, condition). Update once, applies to all three.
 
 function or_rule($, next_level) {
