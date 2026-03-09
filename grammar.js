@@ -560,7 +560,10 @@ module.exports = grammar({
 		try_expression: ($) => $.try_op,
 
 		// Semantic node for record spread field (for formatter/diagnostics support)
-		spread_field: ($) => seq("..", field("base", $.expression)),
+		// Generic spread element: expands a collection's contents into context.
+		// Used in lists, records, and other collection literals.
+		// Example: [1, 2, ..rest], {a: 1, ..base}
+		spread_element: ($) => seq("..", field("base", $.expression)),
 
 		// function call suffix using 'with' keyword.
 		// Syntax:
@@ -605,7 +608,15 @@ module.exports = grammar({
 
 		// list literal with single-line or layout-sensitive multiline support.
 		list_expression: ($) =>
-			layoutBracket($, $.lbracket, $.rbracket, $.expression),
+			layoutBracket($, $.lbracket, $.rbracket, $.list_item),
+
+		// List item: either a normal expression or spread element.
+		// Example: [1, 2, ..xs] or [..transform with list]
+		list_item: ($) =>
+			choice(
+				$.expression,
+				$.spread_element,
+			),
 
 		// Record literal:
 		//   { a: 1, b: 2 }
@@ -968,9 +979,20 @@ module.exports = grammar({
 		// non-arrow type forms (parenthesized arguments only).
 		non_arrow_type: ($) =>
 			choice(
+				$.function_type,
 				$.type_primary,
 				$.type_tuple,
 				$.type_record,
+			),
+
+		// Function type: requires fn keyword followed by parenthesized type expression.
+		// Example: fn(Int -> String), fn(Int, Int -> Bool)
+		function_type: ($) =>
+			seq(
+				$.kw_fn,
+				$.lparen,
+				$.type_expression,
+				$.rparen,
 			),
 
 		// Semantic node for generic type application (for formatter/diagnostics support)
@@ -1517,9 +1539,9 @@ function singleLineRecordExpression($, field) {
 			seq(
 				field,
 				repeat(seq($.comma, field)),
-				optional(seq($.comma, $.spread_field)),
+				optional(seq($.comma, $.spread_element)),
 			),
-			$.spread_field,
+			$.spread_element,
 		)),
 		$.rbrace,
 	);
@@ -1550,13 +1572,13 @@ function multiLineRecordExpression($, field) {
 				optional(seq(
 					$.comma,
 					repeat($.newline),
-					$.spread_field,
+					$.spread_element,
 				)),
 				optional($.comma),
 			),
 			// Spread only
 			seq(
-				$.spread_field,
+				$.spread_element,
 				optional($.comma),
 			),
 		)),
