@@ -390,7 +390,7 @@ module.exports = grammar({
 				),
 			),
 
-		or_expression: ($) => or_rule($, $.bare_and_expression),
+		or_expression: ($) => or_rule($, $.and_expression),
 
 		and_expression: ($) => and_rule($, $.compare_expression),
 
