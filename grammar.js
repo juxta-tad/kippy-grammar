@@ -103,11 +103,13 @@ module.exports = grammar({
 		source_file: ($) =>
 			seq(
 				repeat($.newline),
-				optional(seq($.module_declaration, repeat($.newline))),
+				optional(seq(
+					$.module_declaration,
+					repeat($.newline),
+				)),
 				optional(seq(
 					$.module_item,
 					repeat(seq(repeat1($.newline), $.module_item)),
-					repeat($.newline),
 				)),
 			),
 
@@ -628,7 +630,9 @@ module.exports = grammar({
 				choice(
 					field("value", $.expression),
 					seq(
-						repeat1(seq($.let_binding, repeat($.newline))),
+						$.let_binding,
+						repeat(seq(repeat1($.newline), $.let_binding)),
+						repeat($.newline),
 						$.kw_in,
 						field("value", $.expression),
 					),
@@ -1276,7 +1280,6 @@ function indented_body($, rule) {
 		$.newline,
 		$.indent,
 		rule,
-		repeat($.newline),
 		$.dedent,
 	);
 }
@@ -1288,11 +1291,11 @@ function indented_list($, item, { at_least_one = false } = {}) {
 	const body = at_least_one
 		? seq(
 			item,
-			repeat(seq(repeat1($.newline), item)),
+			repeat(seq($.newline, item)),
 		)
 		: optional(seq(
 			item,
-			repeat(seq(repeat1($.newline), item)),
+			repeat(seq($.newline, item)),
 		));
 
 	return seq(
@@ -1327,7 +1330,7 @@ function dotted1($, head, tail) {
 // Attribute prefix for declarations that support attributes.
 // Each attribute must be on its own line. Blank lines after attributes are allowed.
 function attribute_prefix($) {
-	return repeat(seq($.attribute, repeat1($.newline)));
+	return repeat(seq($.attribute, $.newline));
 }
 
 // Left-associative operator chain precedence helper.
@@ -1415,11 +1418,11 @@ function tuple_like($, itemRule) {
 			$.indent,
 			field("first", itemRule),
 			$.comma,
-			repeat1($.newline),
+			$.newline,
 			field("second", itemRule),
 			repeat(seq(
 				$.comma,
-				repeat1($.newline),
+				$.newline,
 				field("rest", itemRule),
 			)),
 			optional($.comma),
@@ -1464,7 +1467,7 @@ function with_call_suffix($) {
 			field("first", $.call_argument),
 			repeat(seq(
 				$.comma,
-				repeat1($.newline),
+				$.newline,
 				field("rest", $.call_argument),
 			)),
 			optional($.comma),
