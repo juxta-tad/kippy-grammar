@@ -1500,14 +1500,13 @@ function tuple_like($, itemRule) {
 // Effects are marked by ! at the end of function/value names, not on the call.
 function with_call_suffix($) {
 	return choice(
-		// Single-line: with x, y
-		// Note: no trailing comma - it belongs to the enclosing construct (record fields, lists, etc.)
+		// Single-line: with x (exactly one argument)
+		// Multi-argument with must use multiline form to avoid ambiguity in comma-delimited contexts.
 		prec.right(seq(
 			$.kw_with,
-			field("first", $.call_argument),
-			field("rest", repeat(seq($.comma, $.call_argument))),
+			field("arg", $.call_argument),
 		)),
-		// Multi-line:
+		// Multi-line: with x, y, z (one or more arguments)
 		// with
 		//   x,
 		//   y,

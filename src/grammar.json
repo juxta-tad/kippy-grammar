@@ -2152,30 +2152,10 @@
               },
               {
                 "type": "FIELD",
-                "name": "first",
+                "name": "arg",
                 "content": {
                   "type": "SYMBOL",
                   "name": "call_argument"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "rest",
-                "content": {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "comma"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "call_argument"
-                      }
-                    ]
-                  }
                 }
               }
             ]
