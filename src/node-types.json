@@ -382,6 +382,10 @@
           "named": true
         },
         {
+          "type": "lparen",
+          "named": true
+        },
+        {
           "type": "newline",
           "named": true
         },
@@ -1524,6 +1528,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "dot",
+          "named": true
+        },
         {
           "type": "name",
           "named": true
@@ -3277,6 +3285,10 @@
       "required": true,
       "types": [
         {
+          "type": "dot",
+          "named": true
+        },
+        {
           "type": "tag_name",
           "named": true
         }
@@ -3751,15 +3763,7 @@
     "named": false
   },
   {
-    "type": "(",
-    "named": false
-  },
-  {
     "type": "*",
-    "named": false
-  },
-  {
-    "type": ".",
     "named": false
   },
   {

@@ -1145,11 +1145,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "STRING",
-            "value": "("
-          }
+          "type": "SYMBOL",
+          "name": "lparen"
         },
         {
           "type": "CHOICE",
@@ -4459,11 +4456,8 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "IMMEDIATE_TOKEN",
-                "content": {
-                  "type": "STRING",
-                  "value": "."
-                }
+                "type": "SYMBOL",
+                "name": "dot"
               },
               {
                 "type": "SYMBOL",
@@ -5227,11 +5221,8 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "IMMEDIATE_TOKEN",
-                  "content": {
-                    "type": "STRING",
-                    "value": "."
-                  }
+                  "type": "SYMBOL",
+                  "name": "dot"
                 },
                 {
                   "type": "SYMBOL",

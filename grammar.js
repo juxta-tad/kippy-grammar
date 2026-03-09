@@ -321,7 +321,7 @@ module.exports = grammar({
 		// but arguments can span multiple lines if needed.
 		attribute_arguments_inline: ($) =>
 			seq(
-				token.immediate("("),
+				$.lparen,
 				optional(commaSepTrail($, $.attribute_argument, $.comma, $.newline)),
 				$.rparen,
 			),
@@ -1019,7 +1019,7 @@ module.exports = grammar({
 		// Example:
 		//   Foo
 		//   Mod.Foo
-		type_name: ($) => dotted1($.tag_name, $.tag_name),
+		type_name: ($) => dotted1($, $.tag_name, $.tag_name),
 
 		// explicit parenthesised type argument list.
 		type_argument_list: ($) =>
@@ -1206,7 +1206,7 @@ module.exports = grammar({
 		name: ($) => choice($.identifier, $.tag_name),
 
 		// dotted qualified identifier/type path.
-		long_identifier: ($) => prec.left(dotted1($.name, $.name)),
+		long_identifier: ($) => prec.left(dotted1($, $.name, $.name)),
 
 		// placeholder expression token.
 		placeholder: ($) => token("__"),
@@ -1361,10 +1361,10 @@ function inline_or_block($, rule) {
 // Dotted name helper for qualified identifiers.
 // Matches: head (. tail)*
 // Used for: type_name, long_identifier, binding_target
-function dotted1(head, tail) {
+function dotted1($, head, tail) {
 	return seq(
 		head,
-		repeat(seq(token.immediate("."), tail)),
+		repeat(seq($.dot, tail)),
 	);
 }
 
