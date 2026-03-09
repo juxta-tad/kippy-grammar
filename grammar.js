@@ -469,25 +469,64 @@ module.exports = grammar({
 				$.parenthesized_expression,
 			),
 
-		bare_postfix_expression: ($) => postfix_rule($, $.non_clause_primary, $.field_expression, $.try_expression),
+		bare_postfix_expression: ($) =>
+			choice(
+				$.non_clause_primary,
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("object", $.bare_postfix_expression),
+						$.projection_suffix,
+					),
+				),
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("value", $.bare_postfix_expression),
+						$.try_op,
+					),
+				),
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Unified postfix chain:
-		//   value.field
-		//   value?
-		//   func with x, y
-		//   get? with x .field?
-		// Postfix forms are parsed left-to-right in a single rule.
-		// Uses semantic wrapper nodes for better formatting and diagnostics.
-		postfix_chain: ($) => postfix_rule($, $.primary_expression, $.call_expression, $.field_expression, $.try_expression),
-
-		// alias for postfix_chain kept as the expression-level postfix rule.
-		postfix_expression: ($) => $.postfix_chain,
+		// Explicit postfix expression with proper call_expression nodes.
+		// Structure allows chaining: foo with x.field?, foo.bar with z, etc.
+		// Each postfix operation is explicit:
+		//   foo           → primary_expression
+		//   foo.field     → field_expression with object and field
+		//   foo with x    → call_expression with function and arguments
+		//   foo?          → try_expression with value
+		postfix_expression: ($) =>
+			choice(
+				$.primary_expression,
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("object", $.postfix_expression),
+						$.projection_suffix,
+					),
+				),
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("function", $.postfix_expression),
+						field("arguments", $.call_suffix),
+					),
+				),
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("value", $.postfix_expression),
+						$.try_op,
+					),
+				),
+			),
 
 		// Semantic wrapper nodes for postfix operations (for formatter/diagnostics support)
-		call_expression: ($) => $.call_suffix,
+		// Note: call_expression is now created directly in postfix_expression choice
+		call_expression: ($) => $.call_suffix,  // kept for compatibility, but not used in tree
 		field_expression: ($) => $.projection_suffix,
 		try_expression: ($) => $.try_op,
 
@@ -903,7 +942,31 @@ module.exports = grammar({
 				$.condition_postfix,
 			),
 
-		condition_postfix: ($) => postfix_rule($, $.non_clause_primary, $.call_expression, $.field_expression, $.try_expression),
+		condition_postfix: ($) =>
+			choice(
+				$.non_clause_primary,
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("object", $.condition_postfix),
+						$.projection_suffix,
+					),
+				),
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("function", $.condition_postfix),
+						field("arguments", $.call_suffix),
+					),
+				),
+				prec.left(
+					PREC.POSTFIX,
+					seq(
+						field("value", $.condition_postfix),
+						$.try_op,
+					),
+				),
+			),
 
 		// expression-level if/then/else.
 		if_expression: ($) =>

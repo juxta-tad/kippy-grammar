@@ -1,13 +1,30 @@
 {
-	"grammers": [
-		{
-      "name": "Kippy",
-      "camelcase": "kippy",
+  "grammars": [
+    {
+      "name": "kippy",
+      "camelcase": "Kippy",
+      "scope": "source.kippy",
       "path": ".",
-      "file-types": ["kip"]
+      "file-types": ["kip"],
+      "highlights": [
+        "queries/highlights.scm"
+      ],
+      "brackets": [
+        "queries/brackets.scm"
+      ],
+      "indents": [
+        "queries/indents.scm"
+      ],
+      "injections": [
+        "queries/injections.scm"
+      ],
+      "outline": [
+        "queries/outline.scm"
+      ],
+      "injection-regex": "kippy"
     }
-	],
-  "binding_version": 14,
+  ],
+  "binding_version": "14",
   "build": {
     "channel": "stable",
     "crate_types": ["cdylib"],
