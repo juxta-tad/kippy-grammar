@@ -103,10 +103,10 @@ module.exports = grammar({
 		source_file: ($) =>
 			seq(
 				repeat($.newline),
-				$.module_declaration,
-				repeat1($.newline),
+				optional(seq($.module_declaration, repeat1($.newline))),
 				optional(seq(
-					top_level_items($),
+					$.module_item,
+					repeat(seq(repeat($.newline), $.module_item)),
 					repeat($.newline),
 				)),
 			),
@@ -441,7 +441,7 @@ module.exports = grammar({
 			left_assoc_chain(
 				PREC.MUL,
 				$.unary_expression,
-				choice($.star, $.slash, $.double_slash, $.percent),
+				choice($.star, $.slash, $.percent),
 			),
 
 		// unary negation and logical not bind tighter than binary operators.
@@ -493,7 +493,7 @@ module.exports = grammar({
 			left_assoc_chain(
 				PREC.MUL,
 				$.bare_unary_expression,
-				choice($.star, $.slash, $.double_slash, $.percent),
+				choice($.star, $.slash, $.percent),
 			),
 
 		bare_unary_expression: ($) =>
@@ -1248,7 +1248,6 @@ module.exports = grammar({
 		minus: ($) => "-",
 		star: ($) => "*",
 		slash: ($) => "/",
-		double_slash: ($) => "//",
 		percent: ($) => "%",
 
 		//
@@ -1292,13 +1291,6 @@ function singleLineBracket(open, commaToken, item, close) {
 
 // Top-level items: module items separated by required newlines.
 // Used after module header in source_file.
-function top_level_items($) {
-	return seq(
-		$.module_item,
-		repeat(seq(repeat1($.newline), $.module_item)),
-	);
-}
-
 // Indented body: newline, indent, rule, trailing newlines, dedent.
 // Used for constructs with a single logical body (not a list of peer items).
 function indented_body($, rule) {

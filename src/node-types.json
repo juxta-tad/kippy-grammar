@@ -501,10 +501,6 @@
           "named": true
         },
         {
-          "type": "double_slash",
-          "named": true
-        },
-        {
           "type": "percent",
           "named": true
         },
@@ -1566,10 +1562,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "double_slash",
-          "named": true
-        },
         {
           "type": "percent",
           "named": true
@@ -2706,7 +2698,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "module_declaration",
@@ -3759,10 +3751,6 @@
   },
   {
     "type": "dot",
-    "named": true
-  },
-  {
-    "type": "double_slash",
     "named": true
   },
   {
