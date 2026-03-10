@@ -285,7 +285,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
 
-		call_argument: ($) => $.bare_call_argument,
+		call_argument: ($) => $.bare_or_expression,
 
 		pipe_expression: ($) =>
 			prec.right(
@@ -296,16 +296,12 @@ module.exports = grammar({
 				),
 			),
 
+		// Regular (full) expression precedence ladder
 		or_expression: ($) => or_rule($, $.and_expression),
-
 		and_expression: ($) => and_rule($, $.compare_expression),
-
 		compare_expression: ($) => compare_rule($, $.add_expression),
-
 		add_expression: ($) => add_rule($, $.mul_expression),
-
 		mul_expression: ($) => mul_rule($, $.unary_expression),
-
 		unary_expression: ($) =>
 			choice(
 				prec.right(
@@ -315,19 +311,12 @@ module.exports = grammar({
 				$.postfix_expression,
 			),
 
-		// BARE CALL ARGUMENT EXPRESSIONS
-		bare_call_argument: ($) => $.bare_or_expression,
-
+		// Bare expression precedence ladder (for call arguments - excludes call_suffix)
 		bare_or_expression: ($) => or_rule($, $.bare_and_expression),
-
 		bare_and_expression: ($) => and_rule($, $.bare_compare_expression),
-
 		bare_compare_expression: ($) => compare_rule($, $.bare_add_expression),
-
 		bare_add_expression: ($) => add_rule($, $.bare_mul_expression),
-
 		bare_mul_expression: ($) => mul_rule($, $.bare_unary_expression),
-
 		bare_unary_expression: ($) =>
 			choice(
 				prec.right(
@@ -656,62 +645,10 @@ module.exports = grammar({
 				field("body", inline_or_block($, $.expression)),
 			)),
 
-		condition_expression: ($) => $.condition_pipe,
-
-		condition_pipe: ($) =>
-			prec.right(
-				PREC.PIPE,
-				choice(
-					$.condition_or,
-					seq($.condition_pipe, $.pipe, $.condition_or),
-				),
-			),
-
-		condition_or: ($) => or_rule($, $.condition_and),
-
-		condition_and: ($) => and_rule($, $.condition_compare),
-
-		condition_compare: ($) => compare_rule($, $.condition_add),
-
-		condition_add: ($) => add_rule($, $.condition_mul),
-
-		condition_mul: ($) => mul_rule($, $.condition_unary),
-
-		condition_unary: ($) =>
-			choice(
-				prec.right(
-					PREC.UNARY,
-					seq(choice($.minus, $.kw_not, $.kw_cert), $.condition_unary),
-				),
-				$.condition_postfix,
-			),
-
-		// Condition postfix expression with left-associativity for indirectly recursive operators
-		// Condition postfix expression: base + repeating operators (no indirect recursion)
-		condition_postfix: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.non_clause_primary,
-					repeat($.condition_postfix_suffix),
-				),
-			),
-
-		condition_postfix_suffix: ($) =>
-			choice(
-				$.projection_suffix,
-				field("arguments", $.call_suffix),
-				$.try_op,
-				seq(
-					$.possessive,
-					field("field", $.field_name),
-				),
-			),
-
 		if_expression: ($) =>
 			prec.right(seq(
 				$.kw_if,
-				field("condition", $.condition_expression),
+				field("condition", $.expression),
 				$.kw_then,
 				field("then_value", $.if_branch),
 				$.kw_else,
