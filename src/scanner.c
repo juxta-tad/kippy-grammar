@@ -407,6 +407,67 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
 }
 
 /* =========================================================================
+ * Line-Start Computation and Application
+ * ========================================================================= */
+
+// Result of computing line-start information (blank line skipping + indent measurement)
+typedef struct {
+  bool has_content_line;  // True if we found a non-blank line with content
+  uint16_t indent;        // Indentation level of the content line (if has_content_line)
+  uint16_t blank_count;   // Number of blank lines skipped
+} LineStartInfo;
+
+// Compute line-start information from lexer: skip blank lines and measure indentation
+// Mutates lexer position but does NOT mutate scanner state
+static inline LineStartInfo compute_line_start_info(TSLexer *lexer) {
+  LineStartInfo info = {.has_content_line = false, .indent = 0, .blank_count = 0};
+
+  while (true) {
+    if (is_blank_line(lexer)) {
+      bool consumed_newline = false;
+
+      if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, true);
+        consumed_newline = true;
+      }
+      if (lexer->lookahead == '\n') {
+        lexer->advance(lexer, true);
+        consumed_newline = true;
+      }
+
+      if (consumed_newline) {
+        info.blank_count++;
+        continue;
+      }
+      break;
+    }
+
+    // Found non-blank line; measure its indentation
+    info.has_content_line = true;
+    info.indent = count_indent(lexer);
+    break;
+  }
+
+  return info;
+}
+
+// Apply computed line-start information to scanner state
+// Updates queued_newlines and line_indent based on the computed info
+static inline void apply_line_start_info(Scanner *s, LineStartInfo info) {
+  // Queue blank lines, respecting the pending newlines limit
+  for (uint16_t i = 0; i < info.blank_count; i++) {
+    if (s->queued_newlines < MAX_PENDING_NEWLINES) {
+      s->queued_newlines++;
+    }
+  }
+
+  // If we found a content line, set its indentation
+  if (info.has_content_line) {
+    s->line_indent = info.indent;
+  }
+}
+
+/* =========================================================================
  * Scanning Logic Helpers
  * ========================================================================= */
 
@@ -487,35 +548,10 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
     return false;
   }
 
-  // SCAN_BOL_UNSCANNED: skip blank lines and measure line indentation
+  // Measure current line: skip blank lines and determine indentation
   if (s->phase == SCAN_BOL_UNSCANNED) {
-    while (true) {
-      if (is_blank_line(lexer)) {
-        bool consumed_newline = false;
-
-        if (lexer->lookahead == '\r') {
-          lexer->advance(lexer, true);
-          consumed_newline = true;
-        }
-        if (lexer->lookahead == '\n') {
-          lexer->advance(lexer, true);
-          consumed_newline = true;
-        }
-
-        if (consumed_newline) {
-          if (s->queued_newlines < MAX_PENDING_NEWLINES) {
-            s->queued_newlines++;
-          }
-          enter_bol_unscanned(s);
-          continue;
-        }
-        break;
-      }
-
-      s->line_indent = count_indent(lexer);
-      break;
-    }
-
+    LineStartInfo info = compute_line_start_info(lexer);
+    apply_line_start_info(s, info);
     enter_bol_scanned(s);
   }
 
