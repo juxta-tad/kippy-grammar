@@ -61,22 +61,16 @@ module.exports = grammar({
 		// 3.1: TOP-LEVEL & SOURCE FILE
 		// ─────────────────────────────────────────────────────────────────────────────
 		source_file: ($) =>
-			choice(
+			seq(
 				repeat($.newline),
-				seq(
-					repeat($.newline),
+				optional(seq(
 					$.module_declaration,
-					repeat($.newline),
-				),
-				seq(
-					repeat($.newline),
-					optional(seq(
-						$.module_declaration,
-						repeat1($.newline),
-					)),
+					repeat1($.newline),
+				)),
+				repeat(seq(
 					$.module_item,
-					repeat(choice($.newline, $.module_item)),
-				),
+					repeat($.newline),
+				)),
 			),
 
 		module_item: ($) =>
