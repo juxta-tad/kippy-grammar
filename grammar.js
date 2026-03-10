@@ -11,7 +11,7 @@ const PREC = {
 	ADD: 5,
 	MUL: 6,
 	UNARY: 7,
-	POSTFIX: 8, // unified postfix chain (calls, fields, try operator)
+	POSTFIX: 8,
 };
 
 // Keyword helper: creates a keyword token with standard precedence (2)
