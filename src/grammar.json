@@ -1384,8 +1384,11 @@
                     "name": "expression"
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "newline"
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    }
                   },
                   {
                     "type": "SYMBOL",

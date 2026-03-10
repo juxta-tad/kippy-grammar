@@ -260,7 +260,7 @@ module.exports = grammar({
 				field("name", $.identifier),
 				repeat(field("param", $.identifier)),
 				$.equals,
-				field("value", inline_or_block_in_list($, $.expression)),
+				field("value", inline_or_block($, $.expression)),
 			),
 
 		ability_declaration: ($) =>

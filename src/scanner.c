@@ -212,6 +212,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // PHASE 1: EOF DEDENTS
   // ═════════════════════════════════════════════════════════════════════════
   if (lexer->lookahead == '\0') {
+    s->current_indent = 0;
     if (s->indents.size > 1 && valid_symbols[DEDENT]) {
       return emit_dedent(s, lexer, valid_symbols);
     }
@@ -221,9 +222,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 2: LINE-START LAYOUT HANDLING
   // ═════════════════════════════════════════════════════════════════════════
-  bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
-
-  if (s->at_line_start && can_do_layout) {
+  if (s->at_line_start) {
 
     if (!s->indent_scanned) {
       while (true) {
