@@ -582,8 +582,15 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     valid_symbols[INDENT], valid_symbols[DEDENT]);
 
   if (lexer->eof(lexer)) {
-    DEBUG_LOG("[EOF] queued_newlines=%u indents.size=%d\n", s->queued_newlines, s->indents.size);
+    DEBUG_LOG("[EOF] queued_newlines=%u indents.size=%d phase=%d\n", s->queued_newlines, s->indents.size, s->phase);
 
+    // When EOF occurs at beginning of line, canonicalize to indent 0
+    if (s->phase != SCAN_MIDLINE) {
+      enter_bol_scanned(s);
+      s->line_indent = 0;
+    }
+
+    // Emit any pending newlines
     if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
       s->queued_newlines--;
       log_emit("EOF_PENDING_NEWLINE", s, lexer);
@@ -591,10 +598,8 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       return true;
     }
 
-    return s->indents.size > 1 &&
-           s->line_indent < top_indent(s) &&
-           valid_symbols[DEDENT] &&
-           emit_dedent(s, lexer, valid_symbols);
+    // Emit dedents using normal logic with canonicalized line_indent
+    return valid_symbols[DEDENT] && emit_dedent(s, lexer, valid_symbols);
   }
 
   if (scan_line_start_layout(s, lexer, valid_symbols))

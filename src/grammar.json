@@ -3294,7 +3294,7 @@
             "name": "subject",
             "content": {
               "type": "SYMBOL",
-              "name": "expression"
+              "name": "pipe_expression"
             }
           },
           {

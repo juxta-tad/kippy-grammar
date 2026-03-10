@@ -543,7 +543,7 @@ module.exports = grammar({
 		when_expression: ($) =>
 			prec.right(seq(
 				$.kw_when,
-				field("subject", $.expression),
+				field("subject", $.pipe_expression),
 				$.kw_is,
 				field("arms", indented_list($, $.when_arm, { at_least_one: true })),
 			)),

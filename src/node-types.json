@@ -3911,7 +3911,7 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "pipe_expression",
             "named": true
           }
         ]
