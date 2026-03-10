@@ -133,11 +133,17 @@ static inline bool is_hspace(int32_t c) {
  * Scanner State & Memory Management
  * ========================================================================= */
 
+// Scanner state machine: explicit enum replaces coupled booleans
+typedef enum {
+  SCAN_MIDLINE,         // In the middle of a line (after first non-indent content)
+  SCAN_BOL_UNSCANNED,   // At line start, haven't scanned indentation yet
+  SCAN_BOL_SCANNED,     // At line start, indentation already scanned
+} ScanPhase;
+
 typedef struct {
   uint32_t magic; // Runtime validation signature
   Array(uint16_t) indents;
-  bool at_line_start;
-  bool indent_scanned;
+  ScanPhase phase;
   uint16_t current_indent;
   uint16_t pending_newlines;
 } Scanner;
@@ -172,8 +178,7 @@ void *tree_sitter_kippy_external_scanner_create(void) {
     return NULL;
   }
 
-  s->at_line_start = true;
-  s->indent_scanned = false;
+  s->phase = SCAN_BOL_UNSCANNED;
   s->current_indent = 0;
   s->pending_newlines = 0;
 
@@ -204,10 +209,10 @@ unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffe
 
   unsigned pos = 0;
 
-  // Pack boolean flags
+  // Encode phase into flags: bit 0 = at_line_start, bit 1 = indent_scanned
   uint8_t flags = 0;
-  if (s->at_line_start)  flags |= 0x01;
-  if (s->indent_scanned) flags |= 0x02;
+  if (s->phase != SCAN_MIDLINE)         flags |= 0x01;  // at_line_start
+  if (s->phase == SCAN_BOL_SCANNED)     flags |= 0x02;  // indent_scanned
   buffer[pos++] = (char)flags;
 
   // Serialize scalars (little-endian)
@@ -217,12 +222,13 @@ unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffe
   buffer[pos++] = (char)(s->current_indent & 0xFF);
   buffer[pos++] = (char)((s->current_indent >> 8) & 0xFF);
 
-  // Serialize stack
+  // Serialize stack (excluding the implicit base level at index 0)
+  // Only serialize the actual indentation levels (index 1 onwards)
   assert(s->indents.size <= MAX_INDENT_DEPTH);
-  uint8_t size = (uint8_t)s->indents.size;
-  buffer[pos++] = (char)size;
+  uint8_t real_depth = (uint8_t)(s->indents.size - 1);  // Count without base
+  buffer[pos++] = (char)real_depth;
 
-  for (uint32_t i = 0; i < size; i++) {
+  for (uint32_t i = 1; i < s->indents.size; i++) {
     uint16_t indent = s->indents.contents[i];
     buffer[pos++] = (char)(indent & 0xFF);
     buffer[pos++] = (char)((indent >> 8) & 0xFF);
@@ -239,8 +245,7 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
 
   // Reset to default state
   array_clear(&s->indents);
-  s->at_line_start = true;
-  s->indent_scanned = false;
+  s->phase = SCAN_BOL_UNSCANNED;
   s->current_indent = 0;
   s->pending_newlines = 0;
 
@@ -249,8 +254,12 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
 
     // Unpack boolean flags
     uint8_t flags = (uint8_t)buffer[pos++];
-    s->at_line_start  = (flags & 0x01) != 0;
-    s->indent_scanned = (flags & 0x02) != 0;
+    // Decode phase from flags: bit 0 = at_line_start, bit 1 = indent_scanned
+    bool at_line_start = (flags & 0x01) != 0;
+    bool indent_scanned = (flags & 0x02) != 0;
+    if (!at_line_start)         s->phase = SCAN_MIDLINE;
+    else if (!indent_scanned)   s->phase = SCAN_BOL_UNSCANNED;
+    else                        s->phase = SCAN_BOL_SCANNED;
 
     // Unpack scalars
     if (pos + 2 <= length) {
@@ -332,12 +341,11 @@ static inline bool is_blank_line(TSLexer *lexer) {
 
 static inline void log_emit(const char *name, Scanner *s, TSLexer *lexer) {
   DEBUG_LOG(
-    "[EMIT %s] lookahead='%c'(0x%x) at_line_start=%d indent_scanned=%d current_indent=%u top=%u size=%u pending_nl=%u\n",
+    "[EMIT %s] lookahead='%c'(0x%x) phase=%d current_indent=%u top=%u size=%u pending_nl=%u\n",
     name,
     (lexer->lookahead >= 32 && lexer->lookahead < 127) ? lexer->lookahead : '?',
     lexer->lookahead,
-    s->at_line_start,
-    s->indent_scanned,
+    s->phase,
     s->current_indent,
     s->indents.size ? *array_back(&s->indents) : 0,
     s->indents.size,
@@ -367,8 +375,7 @@ static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_sym
   if (!valid_symbols[INDENT]) return false;
 
   if (s->current_indent > *array_back(&s->indents)) {
-    // Prevent exceeding serialization capacity
-    if (s->indents.size > MAX_INDENT_DEPTH) {
+    if (s->indents.size >= MAX_INDENT_DEPTH) {
       return false;
     }
 
@@ -398,8 +405,8 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   Scanner *s = (Scanner *)payload;
   assert(s->magic == SCANNER_MAGIC);
 
-  DEBUG_LOG("[SCAN] at_line_start=%d indent_scanned=%d lookahead='%c'(0x%x) valid[INDENT]=%d valid[DEDENT]=%d\n",
-    s->at_line_start, s->indent_scanned,
+  DEBUG_LOG("[SCAN] phase=%d lookahead='%c'(0x%x) valid[INDENT]=%d valid[DEDENT]=%d\n",
+    s->phase,
     (lexer->lookahead >= 32 && lexer->lookahead < 127) ? lexer->lookahead : '?',
     lexer->lookahead,
     valid_symbols[INDENT], valid_symbols[DEDENT]);
@@ -407,10 +414,6 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 1: EOF HANDLING
   // ═════════════════════════════════════════════════════════════════════════
-  // Upon EOF:
-  // 1. Flush any pending blank-line NEWLINEs.
-  // 2. Emit DEDENT tokens to close all remaining open blocks.
-
   if (lexer->eof(lexer)) {
     DEBUG_LOG("[PHASE1] EOF: pending_newlines=%u indents.size=%d\n", s->pending_newlines, s->indents.size);
 
@@ -421,12 +424,11 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       return true;
     }
 
-    s->current_indent = 0;
-    if (s->indents.size > 1 && valid_symbols[DEDENT]) {
+    if (s->indents.size > 1 && s->current_indent < *array_back(&s->indents) && valid_symbols[DEDENT]) {
       return emit_dedent(s, lexer, valid_symbols);
     }
 
-    return false; // All operations complete
+    return false; // All tokens emitted; no more indentation to close
   }
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -434,14 +436,12 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // ═════════════════════════════════════════════════════════════════════════
 
   bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
-  DEBUG_LOG("[PHASE2] at_line_start=%d can_do_layout=%d\n", s->at_line_start, can_do_layout);
+  DEBUG_LOG("[PHASE2] phase=%d can_do_layout=%d\n", s->phase, can_do_layout);
 
-  if (s->at_line_start && can_do_layout) {
+  if (s->phase != SCAN_MIDLINE && can_do_layout) {
 
-    if (!s->indent_scanned) {
+    if (s->phase == SCAN_BOL_UNSCANNED) {
       while (true) {
-        // CRITICAL: Check for blank lines BEFORE consuming indentation characters.
-        // Consuming characters and returning false violates the scanner contract.
         if (is_blank_line(lexer)) {
           bool consumed_newline = false;
 
@@ -458,8 +458,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
             if (s->pending_newlines < MAX_PENDING_NEWLINES) {
               s->pending_newlines++;
             }
-            s->at_line_start = true;
-            s->indent_scanned = false;
+            s->phase = SCAN_BOL_UNSCANNED;
             continue;
           }
           break;
@@ -469,7 +468,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
         break;
       }
 
-      s->indent_scanned = true;
+      s->phase = SCAN_BOL_SCANNED;
     }
 
     if (emit_dedent(s, lexer, valid_symbols)) {
@@ -486,19 +485,17 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
 
     if (emit_indent(s, lexer, valid_symbols)) {
       log_emit("INDENT", s, lexer);
-      s->at_line_start = false;
+      s->phase = SCAN_MIDLINE;
       return true;
     }
 
-    s->at_line_start = false;
-    DEBUG_LOG("[PHASE2] exiting, setting at_line_start=false\n");
+    s->phase = SCAN_MIDLINE;
+    DEBUG_LOG("[PHASE2] exiting, transitioning to SCAN_MIDLINE\n");
   }
 
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 3: ORDINARY NEWLINE DETECTION
   // ═════════════════════════════════════════════════════════════════════════
-  // NOTE: Do NOT consume spaces here. If spaces are consumed and a newline
-  // is not found, the scanner contract is violated.
 
   DEBUG_LOG("[PHASE3] checking for NEWLINE\n");
   if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
@@ -510,8 +507,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     }
 
     lexer->mark_end(lexer);
-    s->at_line_start = true;
-    s->indent_scanned = false;
+    s->phase = SCAN_BOL_UNSCANNED;
     lexer->result_symbol = NEWLINE;
 
     log_emit("NEWLINE", s, lexer);
