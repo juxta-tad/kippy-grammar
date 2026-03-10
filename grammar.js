@@ -58,44 +58,9 @@ module.exports = grammar({
 	// SECTION 3: GRAMMAR RULES
 	// ═════════════════════════════════════════════════════════════════════════════
 	rules: {
-		// ═════════════════════════════════════════════════════════════════════════════
-		// FORMATTER COMMENT ATTACHMENT RULES
-		// ═════════════════════════════════════════════════════════════════════════════
-		// Comments appear in extras and can be found anywhere, but formatters should
-		// follow these predictable attachment rules:
-		//
-		// 1. Doc Comments (///) bind to the next declaration only.
-		//    Examples:
-		//      /// Computes the sum
-		//      let add x y = x + y
-		//
-		//      /// User account
-		//      type User = { name: String, age: Int }
-		//
-		// 2. End-of-line comments (//) stay trailing if short (same line or next line).
-		//    Examples:
-		//      let x = 42  // Important value
-		//      let y = f x // Result of computation
-		//
-		// 3. Block comments (</ ... />) between attributes/decorators and declarations
-		//    attach to the declaration that follows.
-		//    Examples:
-		//      @deprecated
-		//      </ Replaced by newFunction />
-		//      let oldFunction x = ...
-		//
-		// Semantic wrapper node (documented_declaration) marks declaration
-		// attachment points to help formatters make consistent decisions.
-		// ═════════════════════════════════════════════════════════════════════════════
-
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
 		// ─────────────────────────────────────────────────────────────────────────────
-		// A source file is a newline-separated list of module items.
-		// Leading and trailing blank lines are allowed.
-		// Multiple items cannot share one line.
-		// Source file: optional module header and optional declarations.
-		// Module header is optional; files can contain just declarations or be empty.
 		source_file: ($) =>
 			choice(
 				repeat($.newline),
@@ -115,18 +80,12 @@ module.exports = grammar({
 				),
 			),
 
-		// top-level declarations supported by the module.
-		// Leading comments (doc_comment, line_comment, block_comment) attached to each declaration.
-		// Formatter rule: Comments immediately before a declaration belong to that declaration.
-		// Note: module_declaration is handled separately by source_file (must be first).
 		module_item: ($) =>
 			choice(
 				$.use_statement,
 				$.documented_declaration,
 			),
 
-		// Semantic wrapper for declarations with optional leading documentation.
-		// Attaches doc comments to any declarable item.
 		documented_declaration: ($) =>
 			seq(
 				optional(seq(
@@ -147,7 +106,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.2: MODULE & USE DECLARATIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// import/reference another module path.
 		use_statement: ($) =>
 			seq(
 				$.kw_use,
@@ -162,15 +120,6 @@ module.exports = grammar({
 				)),
 			),
 
-		//
-		// Nested module declaration with an indented body.
-		// Example:
-		//   module Foo
-		//     let x = 1
-		// File-header module declaration.
-		// Declares which module this file belongs to.
-		// Optional, at most one per file, must come before other declarations.
-		// Example: module Foo.Bar
 		module_declaration: ($) =>
 			seq(
 				$.kw_module,
@@ -180,8 +129,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.3: TYPE DECLARATIONS & VARIANTS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Type alias / type declaration.
-		// Parameters are bare identifiers after the type name.
 		type_declaration: ($) =>
 			seq(
 				attribute_prefix($),
@@ -198,7 +145,6 @@ module.exports = grammar({
 				),
 			),
 
-		// Type parameter list: (A, B, C)
 		type_parameter_list: ($) =>
 			seq(
 				$.lparen,
@@ -206,14 +152,9 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// Indented variant block for type declarations:
-		//   type Maybe(A) =
-		//     | Some(A)
-		//     | None
 		type_variant_block: ($) =>
 			indented_list($, $.type_variant, { at_least_one: true }),
 
-		// one type variant: | TagName or | TagName(args)
 		type_variant: ($) =>
 			seq(
 				$.pipe_bar,
@@ -230,8 +171,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Standalone annotation node used by ability method declarations.
-		// Supports leading attributes and same-line or indented type bodies.
 		annotation: ($) =>
 			seq(
 				attribute_prefix($),
@@ -241,7 +180,6 @@ module.exports = grammar({
 				optional(field("constraints", $.constraint_clause)),
 			),
 
-		// top-level signature declaration.
 		signature: ($) =>
 			seq(
 				attribute_prefix($),
@@ -255,11 +193,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.5: VALUE BINDINGS & LET DECLARATIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Value definitions support:
-		//   let name : Type
-		//   let name = expr
-		//   let name : Type = expr
-		// Also supports attributes and pub modifiers.
 		let_binding: ($) =>
 			seq(
 				attribute_prefix($),
@@ -286,14 +219,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.6: ATTRIBUTES & METADATA
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Attributes with optional arguments.
-		// Arguments must be on the same line as the attribute name (token.immediate).
-		// Examples:
-		//   @deprecated
-		//   @inline
-		//   @optimize.inline
-		//   @deprecated("reason")
-		//   @optimize(inline: true)
 		attribute: ($) =>
 			seq(
 				"@",
@@ -301,8 +226,6 @@ module.exports = grammar({
 				optional($.attribute_arguments_inline),
 			),
 
-		// attribute argument list: opening paren must be on same line as attribute name (token.immediate),
-		// but arguments can span multiple lines if needed.
 		attribute_arguments_inline: ($) =>
 			seq(
 				$.lparen,
@@ -310,7 +233,6 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// attribute argument: either expression or named argument.
 		attribute_argument: ($) =>
 			choice(
 				$.expression,
@@ -320,7 +242,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.7: IMPLEMENTATIONS & ABILITIES
 		// ─────────────────────────────────────────────────────────────────────────────
-		// implement an ability for a concrete type.
 		implementation: ($) =>
 			seq(
 				$.kw_extend,
@@ -342,12 +263,6 @@ module.exports = grammar({
 				field("value", inline_or_block_in_list($, $.expression)),
 			),
 
-		// Ability declaration with indented method annotations.
-		// Example:
-		//   ability Writer
-		//     write: File -> Bytes -> Void
-		//   ability Reader
-		//     read: File -> Bytes
 		ability_declaration: ($) =>
 			seq(
 				attribute_prefix($),
@@ -359,20 +274,8 @@ module.exports = grammar({
 				),
 			),
 
-		// assertion/expectation form.
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
 
-		// test declaration with string name and indented body.
-		// Body supports any expression (let bindings, when/if, expect, etc).
-		// Syntax:
-		//   test "test name":
-		//     let x = 1
-		//     expect x == 1
-		//
-		//   test "conditional":
-		//     when value is
-		//       Ok x => expect x == 5
-		//       Err _ => expect false
 		test_declaration: ($) =>
 			seq(
 				attribute_prefix($),
@@ -382,24 +285,15 @@ module.exports = grammar({
 				field("body", indented_body($, $.expression)),
 			),
 
-		// Binding target is a simple lowercase identifier.
-		// No dotted paths (language is immutable - no field assignment).
 		binding_target: ($) => $.identifier,
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
 		// ─────────────────────────────────────────────────────────────────────────────
-		// expression entry point.
 		expression: ($) => $.pipe_expression,
 
-		// Argument expressions in `with` calls are restricted to prevent ambiguity.
-		// Bare arguments exclude clause-like forms (if, when, fn, block, with).
-		// Clause forms must be parenthesized: f with (if c then a else b)
-		// Example: `f with a + b` is valid, but `f with if c then a else b` requires parens.
 		call_argument: ($) => $.bare_call_argument,
 
-		// pipeline is lowest-precedence expression form.
-		// Uses explicit binary nodes for better formatter and diagnostics support.
 		pipe_expression: ($) =>
 			prec.right(
 				PREC.PIPE,
@@ -413,15 +307,12 @@ module.exports = grammar({
 
 		and_expression: ($) => and_rule($, $.compare_expression),
 
-		// Comparison allows at most one comparator per node.
-		// Chained comparisons like a < b < c are not parsed as a single expression here.
 		compare_expression: ($) => compare_rule($, $.add_expression),
 
 		add_expression: ($) => add_rule($, $.mul_expression),
 
 		mul_expression: ($) => mul_rule($, $.unary_expression),
 
-		// unary negation and logical not bind tighter than binary operators.
 		unary_expression: ($) =>
 			choice(
 				prec.right(
@@ -431,12 +322,7 @@ module.exports = grammar({
 				$.postfix_expression,
 			),
 
-		// ═════════════════════════════════════════════════════════════════════════════
-		// BARE CALL ARGUMENT EXPRESSIONS (stricter than full expressions)
-		// ═════════════════════════════════════════════════════════════════════════════
-		// Used for unparenthesized arguments in `with` calls.
-		// Excludes clause-like forms (if, when, fn, block, with) unless parenthesized.
-		// Example: `f with x + y` is valid, but `f with if c then a else b` requires parens.
+		// BARE CALL ARGUMENT EXPRESSIONS
 		bare_call_argument: ($) => $.bare_or_expression,
 
 		bare_or_expression: ($) => or_rule($, $.bare_and_expression),
@@ -449,7 +335,6 @@ module.exports = grammar({
 
 		bare_mul_expression: ($) => mul_rule($, $.bare_unary_expression),
 
-		// Unary expressions (right-associative): allows chaining like `--x`, `not not y`.
 		bare_unary_expression: ($) =>
 			choice(
 				prec.right(
@@ -459,10 +344,6 @@ module.exports = grammar({
 				$.bare_postfix_expression,
 			),
 
-		// Postfix expressions for bare arguments: allows field access and try, but NOT `with` calls.
-		// Primary expressions that exclude clause-style constructs (when, if, fn, blocks).
-		// Used by bare-call and condition expression hierarchies.
-		// These remain usable through parenthesized_expression.
 		non_clause_primary: ($) =>
 			choice(
 				$.record_builder,
@@ -483,21 +364,18 @@ module.exports = grammar({
 				$.bare_possessive_field_expression,
 			),
 
-		// Bare projection (field/tuple access): no tight binding requirements
 		bare_projection_expression: ($) =>
 			postfixOp(
 				field("object", $.bare_postfix_expression),
 				$.projection_suffix,
 			),
 
-		// Bare try operator: error handling
 		bare_try_expression: ($) =>
 			postfixOp(
 				field("value", $.bare_postfix_expression),
 				$.try_op,
 			),
 
-		// Bare possessive field: field access with 's in naked arguments
 		bare_possessive_field_expression: ($) =>
 			postfixOp(
 				field("object", $.bare_postfix_expression),
@@ -508,9 +386,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Postfix expression is a choice of four semantic operations.
-		// This allows postfix_expression to be a supertype (single visible child).
-		// Each operation (call, field, try) is a separate named node with proper fields.
 		postfix_expression: ($) =>
 			choice(
 				$.primary_expression,
@@ -520,7 +395,6 @@ module.exports = grammar({
 				$.possessive_field_expression,
 			),
 
-		// Function call with 'with' keyword and arguments
 		call_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
@@ -530,7 +404,6 @@ module.exports = grammar({
 				),
 			),
 
-		// Field/property access
 		field_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
@@ -541,7 +414,6 @@ module.exports = grammar({
 				),
 			),
 
-		// Try operator for error handling
 		try_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
@@ -551,9 +423,6 @@ module.exports = grammar({
 				),
 			),
 
-		// Possessive field access using 's syntax
-		// Syntax: object's field
-		// Example: user's name, person's age
 		possessive_field_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
@@ -564,37 +433,21 @@ module.exports = grammar({
 				),
 			),
 
-		// Semantic node for record spread field (for formatter/diagnostics support)
-		// Generic spread element: expands a collection's contents into context.
-		// Used in lists, records, and other collection literals.
-		// Example: [1, 2, ..rest], {a: 1, ..base}
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
-		// function call suffix using 'with' keyword.
-		// Syntax:
-		//   func with x, y
-		//   func with
-		//     x,
-		//     y
 		call_suffix: ($) => with_call_suffix($),
 
-		// field/property access suffix.
-		// Syntax:
-		//   obj.field
-		//   obj.0 (tuple index)
 		projection_suffix: ($) =>
 			seq(
 				$.dot,
 				field("field", choice($.field_name, $.tuple_index)),
 			),
 
-		// numeric dot-field like .0, .1.
 		tuple_index: ($) => token(/[0-9]+/),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.10: PRIMARY EXPRESSION FORMS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// primary expressions are the irreducible expression forms.
 		primary_expression: ($) =>
 			choice(
 				$.when_expression,
@@ -611,24 +464,15 @@ module.exports = grammar({
 				$.block_expression,
 			),
 
-		// list literal with single-line or layout-sensitive multiline support.
 		list_expression: ($) =>
 			layoutBracket($, $.lbracket, $.rbracket, $.list_item),
 
-		// List item: either a normal expression or spread element.
-		// Example: [1, 2, ..xs] or [..transform with list]
 		list_item: ($) =>
 			choice(
 				$.expression,
 				$.spread_element,
 			),
 
-		// Record literal:
-		//   { a: 1, b: 2 }
-		//   { a: 1, ..base }
-		//   { ..base }
-		// Shared record body: single-line or multiline format.
-		// Used by both record_expression and record_builder.
 		record_body: ($) =>
 			choice(
 				singleLineRecordExpression($, $.record_field),
@@ -637,9 +481,6 @@ module.exports = grammar({
 
 		record_expression: ($) => $.record_body,
 
-		// Record builder for applicative composition patterns.
-		// Example:
-		//   build decoder { x: dx, y: dy }
 		record_builder: ($) =>
 			seq(
 				$.kw_build,
@@ -647,12 +488,8 @@ module.exports = grammar({
 				$.record_body,
 			),
 
-		// field name - allows identifiers and contextual keywords.
 		field_name: ($) => $.identifier,
 
-		// standardised field naming for downstream tooling.
-		// Record field value: inline or multiline, but without trailing newline tolerance.
-		// Used in comma-delimited containers where the container owns the separator boundary.
 		record_field_value: ($) =>
 			choice(
 				$.expression,
@@ -671,10 +508,8 @@ module.exports = grammar({
 				field("value", $.record_field_value),
 			),
 
-		// tuple literal parser shared with type tuples.
 		tuple_expression: ($) => tuple_like($, $.expression),
 
-		// grouping expression, not tuple.
 		parenthesized_expression: ($) =>
 			seq(
 				$.lparen,
@@ -685,15 +520,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Block expression:
-		// (
-		//   let x = 1
-		//   in x + 1
-		// )
-		// or value-only:
-		// (
-		//   expr
-		// )
 		block_expression: ($) =>
 			seq(
 				$.lparen,
@@ -714,40 +540,35 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// Pattern matching expression with an indented arm list.
 		when_expression: ($) =>
-			seq(
+			prec.right(seq(
 				$.kw_when,
 				field("subject", $.expression),
 				$.kw_is,
 				field("arms", indented_list($, $.when_arm, { at_least_one: true })),
-			),
+			)),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.12: PATTERN MATCHING
 		// ─────────────────────────────────────────────────────────────────────────────
-		// full pattern plus optional guard.
 		pattern: ($) =>
 			seq(
 				$.or_pattern,
 				optional(seq($.kw_if, field("guard", $.expression))),
 			),
 
-		// alternation patterns.
 		or_pattern: ($) =>
 			prec.left(seq(
 				$.as_pattern,
 				repeat(seq($.pipe_bar, $.as_pattern)),
 			)),
 
-		// binding the matched value after a successful subpattern match.
 		as_pattern: ($) =>
 			choice(
 				seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)),
 				$.atomic_pattern,
 			),
 
-		// atomic patterns are the non-extendable pattern forms.
 		atomic_pattern: ($) =>
 			choice(
 				$.literal,
@@ -760,14 +581,8 @@ module.exports = grammar({
 				seq($.lparen, $.pattern, $.rparen),
 			),
 
-		// wildcard pattern.
 		wildcard_pattern: ($) => "_",
 
-		// Non-parenthesised patterns allowed as bare tag arguments.
-		// Deliberately excludes tuple/parenthesised forms to avoid Tag(x) ambiguity.
-		// Simple argument to tag pattern (bare form, no parens needed).
-		// Restricted to prevent ambiguity: `Some Err x` is not allowed.
-		// Must use parentheses for complex patterns: `Some (Err x)`, `Some ({ a })`.
 		simple_tag_argument_pattern: ($) =>
 			choice(
 				$.literal,
@@ -775,11 +590,6 @@ module.exports = grammar({
 				$.identifier,
 			),
 
-		// Constructor/tag patterns:
-		//   Tag
-		//   Tag(x, y)
-		//   Tag x          (only if x is literal, _, or identifier)
-		//   Tag (Err x)    (complex patterns require parens)
 		tag_pattern: ($) =>
 			seq(
 				$.tag_name,
@@ -793,11 +603,6 @@ module.exports = grammar({
 				)),
 			),
 
-		// List patterns:
-		//   []
-		//   [x, y]
-		//   [x, ..rest]
-		//   [..rest]
 		list_pattern: ($) =>
 			seq(
 				$.lbracket,
@@ -812,15 +617,12 @@ module.exports = grammar({
 				$.rbracket,
 			),
 
-		// list tail binding.
 		rest_pattern: ($) =>
 			seq(
 				"..",
 				field("binding", $.identifier),
 			),
 
-		// Tuple pattern must contain a comma so it cannot be confused with grouping.
-		// Syntax: #{x, y}
 		tuple_pattern: ($) =>
 			seq(
 				$.lbrace_hash,
@@ -830,11 +632,6 @@ module.exports = grammar({
 				$.rbrace,
 			),
 
-		// Record patterns:
-		//   { age }
-		//   { age: x }
-		//   { age, .. }
-		//   { .. }
 		record_pattern: ($) =>
 			seq(
 				$.lbrace,
@@ -849,44 +646,14 @@ module.exports = grammar({
 				$.rbrace,
 			),
 
-		// shorthand field or explicit field pattern (allows keywords).
 		record_pattern_field: ($) =>
 			choice(
 				seq($.field_name, $.colon, $.pattern),
 				$.field_name,
 			),
 
-		// ═════════════════════════════════════════════════════════════════════════════
-		// WHEN-ARM FORMATTER RULES
-		// ═════════════════════════════════════════════════════════════════════════════
-		// Semantic node for when-arm body expression. Formatters should apply these
-		// consistent indentation rules for clarity and predictability:
-		//
-		// SIMPLE ARMS (stay inline):
-		//   pattern => simple_expr
-		//   pattern => x + 1
-		//   pattern => f x
-		//
-		// BREAKING RULES (always indent once broken):
-		//   - Contains let binding: pattern => let x = ... ; expr
-		//   - Contains nested when/if: pattern => when y is ...
-		//   - Contains long postfix chains: pattern => very_long_expr.field?.method(args)
-		//   - Spans multiple lines: once broken, indent entire body
-		//
-		// INDENTED ARMS (always indented):
-		//   pattern =>
-		//     let x = y
-		//     x + 1
-		//
-		//   pattern =>
-		//     if cond then
-		//       a
-		//     else
-		//       b
-		// ═════════════════════════════════════════════════════════════════════════════
 		arm_expression: ($) => inline_or_block_in_list($, $.expression),
 
-		// one match arm and its result expression.
 		when_arm: ($) =>
 			seq(
 				field("pattern", $.pattern),
@@ -897,12 +664,8 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.13: LAMBDA & SPECIAL EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Lambda syntax:
-		//   fn x:
-		//   fn x, y, z:
-		// Body may be same-line or indented.
 		lambda_expression: ($) =>
-			seq(
+			prec.right(seq(
 				$.kw_fn,
 				field("param", $.identifier),
 				repeat(seq(
@@ -913,10 +676,8 @@ module.exports = grammar({
 				)),
 				$.colon,
 				field("body", inline_or_block($, $.expression)),
-			),
+			)),
 
-		// Primary expressions that exclude clause-style constructs (when, if, fn, blocks).
-		// These remain usable through parenthesized_expression.
 		condition_expression: ($) => $.condition_pipe,
 
 		condition_pipe: ($) =>
@@ -956,28 +717,24 @@ module.exports = grammar({
 				$.condition_possessive_field_expression,
 			),
 
-		// Condition projection (field/tuple access): for pattern matching
 		condition_projection_expression: ($) =>
 			postfixOp(
 				field("object", $.condition_postfix),
 				$.projection_suffix,
 			),
 
-		// Condition call (with-call): function calls in guards
 		condition_call_expression: ($) =>
 			postfixOp(
 				field("function", $.condition_postfix),
 				field("arguments", $.call_suffix),
 			),
 
-		// Condition try operator: error handling in conditions
 		condition_try_expression: ($) =>
 			postfixOp(
 				field("value", $.condition_postfix),
 				$.try_op,
 			),
 
-		// Condition possessive field: field access with 's in pattern guards
 		condition_possessive_field_expression: ($) =>
 			postfixOp(
 				field("object", $.condition_postfix),
@@ -985,28 +742,21 @@ module.exports = grammar({
 				field("field", $.field_name),
 			),
 
-		// expression-level if/then/else.
 		if_expression: ($) =>
-			seq(
+			prec.right(seq(
 				$.kw_if,
 				field("condition", $.condition_expression),
 				$.kw_then,
 				field("then_value", $.if_branch),
 				$.kw_else,
 				field("else_value", $.if_branch),
-			),
+			)),
 
-		// Helper for if-expression branches (supports both inline and multiline bodies).
 		if_branch: ($) => inline_or_block($, $.expression),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.14: TYPE SYSTEM
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Function types are parsed with arrow precedence lower than non-arrow types.
-		// Supports:
-		//   a -> b
-		//   a, b -> c
-		//   a -> b -> c
 		type_expression: ($) =>
 			prec.right(choice(
 				seq(
@@ -1023,10 +773,6 @@ module.exports = grammar({
 				$.non_arrow_type,
 			)),
 
-		// Restricted type expression: disallows top-level comma chains.
-		// Used in comma-delimited contexts (record fields, tuple types, generic arguments).
-		// Allows: String, A -> B, Foo(Bar, Baz), parenthesized types.
-		// Disallows: A, B without parentheses (must be A -> B or similar).
 		type_expression_no_comma: ($) =>
 			prec.right(choice(
 				seq(
@@ -1037,8 +783,6 @@ module.exports = grammar({
 				$.non_arrow_type,
 			)),
 
-		// Type function parameters: comma-separated list of types on the left of an arrow.
-		// Must have at least 2 items. Commas must follow immediately (no leading newlines).
 		type_function_params: ($) =>
 			seq(
 				field("first", $.non_arrow_type),
@@ -1049,7 +793,6 @@ module.exports = grammar({
 				)),
 			),
 
-		// simple where-clause constraint.
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
@@ -1058,7 +801,6 @@ module.exports = grammar({
 				field("constraint", $.non_arrow_type),
 			),
 
-		// non-arrow type forms (parenthesized arguments only).
 		non_arrow_type: ($) =>
 			choice(
 				$.function_type,
@@ -1067,8 +809,6 @@ module.exports = grammar({
 				$.type_record,
 			),
 
-		// Function type: requires fn keyword followed by parenthesized type expression.
-		// Example: fn(Int -> String), fn(Int, Int -> Bool)
 		function_type: ($) =>
 			seq(
 				$.kw_fn,
@@ -1077,14 +817,10 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// Semantic node for generic type application (for formatter/diagnostics support)
 		type_application: ($) => seq($.type_name, $.type_argument_list),
 
-		// Type variables: lowercase identifiers used in generic types.
-		// Example: `a` and `e` in `Maybe(a)` and `Result(a, e)`
 		type_variable: ($) => $.identifier,
 
-		// atomic type forms.
 		type_primary: ($) =>
 			choice(
 				$.type_application,
@@ -1095,16 +831,8 @@ module.exports = grammar({
 				$.parenthesized_type,
 			),
 
-		//
-		// Qualified type name without arguments (uppercase only).
-		// Arguments are handled separately by type_primary.
-		// Example:
-		//   Foo
-		//   Mod.Foo
 		type_name: ($) => dotted1($, $.tag_name, $.tag_name),
 
-		// explicit parenthesised type argument list.
-		// Uses restricted type form to avoid ambiguity with argument separator commas.
 		type_argument_list: ($) =>
 			seq(
 				$.lparen,
@@ -1119,8 +847,6 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// record type field (allows keywords as field names).
-		// Uses restricted type form to avoid ambiguity with record field comma separator.
 		record_type_field: ($) =>
 			seq(
 				$.field_name,
@@ -1128,16 +854,13 @@ module.exports = grammar({
 				inline_or_block($, $.type_expression_no_comma),
 			),
 
-		// tuple type.
 		type_tuple: ($) => tuple_like($, $.non_arrow_type),
 
-		// grouped type expression.
 		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.15: LITERALS & STRING FORMS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// literal forms available in both expressions and patterns.
 		literal: ($) =>
 			choice(
 				$.int_literal,
@@ -1147,7 +870,6 @@ module.exports = grammar({
 				$.multiline_string,
 			),
 
-		// decimal/scientific floating-point formats with optional f32/f64 suffix.
 		float_literal: ($) =>
 			token(choice(
 				/[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
@@ -1156,7 +878,6 @@ module.exports = grammar({
 				/[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?/,
 			)),
 
-		// integer literal formats with optional signed/unsigned width suffixes.
 		int_literal: ($) =>
 			token(choice(
 				/0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
@@ -1165,8 +886,6 @@ module.exports = grammar({
 				/[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
 			)),
 
-		// Normal string with escapes and interpolation.
-		// Interpolation starts with \( and ends at the matching parser-level ).
 		string: ($) =>
 			seq(
 				$.quote,
@@ -1178,7 +897,6 @@ module.exports = grammar({
 				$.quote,
 			),
 
-		// Triple-quoted multiline string with interpolation and controlled quote tokenisation.
 		multiline_string: ($) =>
 			seq(
 				$.triple_quote,
@@ -1192,19 +910,16 @@ module.exports = grammar({
 				$.triple_quote,
 			),
 
-		// Character literal: single-quoted character with escape support.
-		// Syntax: 'a', 'x', '\n', '\u0041', etc.
 		char_literal: ($) =>
 			seq(
 				$.single_quote,
 				choice(
 					$.escape_sequence,
-					/[^'\\]/, // any character except quote or backslash
+					/[^'\\]/,
 				),
 				$.single_quote,
 			),
 
-		// embedded expression interpolation in strings.
 		interpolation: ($) =>
 			seq(
 				$.interpolation_start,
@@ -1212,23 +927,16 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// token for the start of interpolation.
 		interpolation_start: ($) => token(/\\\(/),
 
-		// plain single-line string content excluding quotes, backslashes, and newlines.
 		string_text: ($) => token(/[^"\\\n]+/),
 
-		//
-		// Multiline quote token design deliberately avoids consuming the closing """ delimiter.
 		multiline_text: ($) => token(/[^\\"]+/),
 		multiline_quote: ($) => token(/"[^"]/),
 		multiline_double_quote: ($) => token(/""[^"]/),
 
-		// supported escape sequences.
 		escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
-		// Static string literal: double-quoted string without interpolation.
-		// Used for constant strings like test names.
 		static_string: ($) =>
 			seq(
 				'"',
@@ -1239,13 +947,11 @@ module.exports = grammar({
 				'"',
 			),
 
-		// Static string text content (no interpolation).
 		static_string_text: ($) => token(/[^"\\\n]+/),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.16: COMMENTS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// comment forms, all treated as extras.
 		doc_comment: (_) =>
 			token(
 				prec(
@@ -1274,33 +980,21 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.17: IDENTIFIERS & KEYWORDS
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Lowercase-style identifiers, optionally prefixed by underscores and optionally ending in !.
-		// Trailing ! marks effectful functions/values.
-		// Cannot match reserved keywords (see keyword declarations below).
-		// Token precedence 1; keywords have precedence 2 and will be preferred by the lexer.
 		identifier: ($) => token(prec(1, /(_*[a-z][a-zA-Z0-9_]*!?)/)),
 
-		// constructor/type/tag names are uppercase-initial.
 		tag_name: ($) => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
 
-		// Import name: can be identifier or tag name.
-		// Used in use_statement for selective imports.
-		// Example: use Data.Json.Decode using (run, field, Some, None)
 		import_name: ($) => choice($.identifier, $.tag_name),
 
-		// name may be lowercase identifier or uppercase tag/type name.
 		name: ($) => choice($.identifier, $.tag_name),
 
-		// dotted qualified identifier/type path.
 		long_identifier: ($) => prec.left(dotted1($, $.name, $.name)),
 
-		// placeholder expression token.
 		placeholder: ($) => token("__"),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.18: OPERATORS & PUNCTUATION
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Reserved
 		kw_pub: ($) => token(prec(2, "pub")),
 		kw_let: ($) => token(prec(2, "let")),
 		kw_cert: ($) => token(prec(2, "cert")),
@@ -1328,17 +1022,14 @@ module.exports = grammar({
 		kw_not: kw("not"),
 		kw_as: kw("as"),
 
-		// punctuation and operator tokens.
 		lparen: ($) => "(",
 		rparen: ($) => ")",
 		lbracket: ($) => "[",
 		rbracket: ($) => "]",
 		lbrace: ($) => "{",
 		rbrace: ($) => "}",
-		// tuple constructor: #{x, y}
 		lbrace_hash: ($) => token("#{"),
 
-		// Quote delimiters for pair matching
 		quote: ($) => '"',
 		triple_quote: ($) => token('"""'),
 		single_quote: ($) => "'",
@@ -1348,7 +1039,6 @@ module.exports = grammar({
 		equals: op(2, "="),
 		dot: ($) => token.immediate("."),
 
-		// |> must tokenise before plain | to avoid partial matches.
 		pipe: ($) => token("|>"),
 		pipe_bar: ($) => token("|"),
 
@@ -1362,7 +1052,6 @@ module.exports = grammar({
 		slash: ($) => "/",
 		percent: ($) => "%",
 
-		// Longer comparison operators are given higher precedence to avoid ambiguity.
 		eq_op: op(3, "=="),
 		ne_op: op(3, "!="),
 		le_op: op(4, "<="),
@@ -1374,11 +1063,9 @@ module.exports = grammar({
 		try_op: ($) => "?",
 		possessive: ($) => token.immediate("'s"),
 
-		// record type literal syntax.
 		type_record: ($) =>
 			layoutBracket($, $.lbrace, $.rbrace, $.record_type_field),
 
-		// wildcard and star type atoms.
 		type_wildcard: ($) => "_",
 		type_star: ($) => "*",
 	},
@@ -1388,7 +1075,6 @@ module.exports = grammar({
 // SECTION 4: HELPER FUNCTIONS
 // ═════════════════════════════════════════════════════════════════════════════
 
-// Generic single-line delimited list helper with optional trailing comma.
 function singleLineBracket(open, commaToken, item, close) {
 	return seq(
 		open,
@@ -1401,11 +1087,6 @@ function singleLineBracket(open, commaToken, item, close) {
 	);
 }
 
-// Top-level items: module items separated by required newlines.
-// Used after module header in source_file.
-// Indented body: newline, indent, rule, dedent.
-// Used for constructs with a single logical body (not a list of peer items).
-// Parent list owns responsibility for separator newlines between siblings.
 function indented_body($, rule) {
 	return seq(
 		$.newline,
@@ -1416,8 +1097,6 @@ function indented_body($, rule) {
 	);
 }
 
-// Used for bodies inside lists: exactly one newline separates from next sibling.
-// The parent list owns responsibility for managing separator structure.
 function indented_body_in_list($, rule) {
 	return seq(
 		$.newline,
@@ -1428,9 +1107,6 @@ function indented_body_in_list($, rule) {
 	);
 }
 
-// Indented list of items: handles zero or more items with newline separators.
-// Set at_least_one=true to require at least one item.
-// Used for constructs with a list of peer items (module items, when arms, type variants, etc).
 function indented_list($, item, { at_least_one = false } = {}) {
 	const body = at_least_one
 		? seq(
@@ -1450,9 +1126,6 @@ function indented_list($, item, { at_least_one = false } = {}) {
 	);
 }
 
-// Unified body helper for same-line or indented bodies.
-// - same line: = expr
-// - indented:  =\n  expr
 function inline_or_block($, rule) {
 	return choice(
 		rule,
@@ -1460,8 +1133,6 @@ function inline_or_block($, rule) {
 	);
 }
 
-// List-aware variant: used when the body is inside an indented_list.
-// Child owns the newline that exits its block, parent owns sibling separators.
 function inline_or_block_in_list($, rule) {
 	return choice(
 		rule,
@@ -1469,9 +1140,6 @@ function inline_or_block_in_list($, rule) {
 	);
 }
 
-// Dotted name helper for qualified identifiers.
-// Matches: head (. tail)*
-// Used for: type_name, long_identifier, binding_target
 function dotted1($, head, tail) {
 	return seq(
 		head,
@@ -1479,14 +1147,10 @@ function dotted1($, head, tail) {
 	);
 }
 
-// Attribute prefix for declarations that support attributes.
-// Each attribute must be on its own line. Blank lines after attributes are allowed.
 function attribute_prefix($) {
 	return repeat(seq($.attribute, $.newline));
 }
 
-// Left-associative operator chain precedence helper.
-// Produces a flat concrete syntax tree: operand (operator operand)*
 function left_assoc_chain(precValue, operand, operator) {
 	return prec.left(
 		precValue,
@@ -1496,12 +1160,6 @@ function left_assoc_chain(precValue, operand, operator) {
 		),
 	);
 }
-
-// ═════════════════════════════════════════════════════════════════════════════
-// Operator Ladder Helpers
-// ═════════════════════════════════════════════════════════════════════════════
-// These direct-style helpers reduce duplication across parallel expression hierarchies
-// (normal, bare-call, condition). Update once, applies to all three.
 
 function or_rule($, next_level) {
 	return left_assoc_chain(PREC.OR, next_level, $.or_op);
@@ -1536,19 +1194,12 @@ function mul_rule($, next_level) {
 	);
 }
 
-// Wrap a postfix operation pattern with precedence and associativity.
-// Eliminates repeated prec.left(PREC.POSTFIX, seq(...)) boilerplate.
 function postfixOp(...pattern) {
 	return prec.left(PREC.POSTFIX, seq(...pattern));
 }
 
-// Shared tuple parser for expression tuples and type tuples.
-// Explicitly requires at least 2 items: first, comma, second, then optional rest.
-// Syntax: #{x, y}
-// Multiline tuples enforce strict comma-before-newline ordering.
 function tuple_like($, itemRule) {
 	return choice(
-		// Single-line: #{x, y, z}
 		seq(
 			$.lbrace_hash,
 			field("first", itemRule),
@@ -1558,12 +1209,6 @@ function tuple_like($, itemRule) {
 			optional($.comma),
 			$.rbrace,
 		),
-		// Multiline with comma-newline ordering:
-		// #{
-		//   x,
-		//   y,
-		//   z
-		// }
 		seq(
 			$.lbrace_hash,
 			$.newline,
@@ -1585,32 +1230,12 @@ function tuple_like($, itemRule) {
 	);
 }
 
-// Helper: function argument list using 'with' keyword without parentheses.
-// Function call with 'with' keyword. Arguments are restricted (bare call arguments).
-// Clause-like forms (if, when, fn, blocks) must be parenthesized in unparenthesized calls.
-// Syntax:
-//   func with x, y
-//   func with (if c then a else b)
-//   func with
-//     x,
-//     y,
-//     z
-// Single-line and multiline forms are distinct: single-line has no newline after 'with',
-// multiline requires an indented block immediately after 'with'.
-// Effects are marked by ! at the end of function/value names, not on the call.
 function with_call_suffix($) {
 	return choice(
-		// Single-line: with x (exactly one argument)
-		// Multi-argument with must use multiline form to avoid ambiguity in comma-delimited contexts.
 		prec.right(seq(
 			$.kw_with,
 			field("arg", $.call_argument),
 		)),
-		// Multi-line: with x, y, z (one or more arguments)
-		// with
-		//   x,
-		//   y,
-		//   z
 		seq(
 			$.kw_with,
 			$.newline,
@@ -1628,8 +1253,6 @@ function with_call_suffix($) {
 	);
 }
 
-// Multiline delimited list helper using indentation.
-// Enforces comma followed by newlines before next item.
 function multiLineBracket($, open, commaToken, item, close) {
 	return seq(
 		open,
@@ -1642,7 +1265,6 @@ function multiLineBracket($, open, commaToken, item, close) {
 	);
 }
 
-// Layout-aware bracketed collection: single-line or indented multiline form.
 function layoutBracket($, open, close, item) {
 	return choice(
 		singleLineBracket(open, $.comma, item, close),
@@ -1650,7 +1272,6 @@ function layoutBracket($, open, close, item) {
 	);
 }
 
-// optional comma-separated sequence.
 function commaSepTrail($, rule, commaToken, sepToken) {
 	return optional(commaSep1Trail($, rule, commaToken, sepToken));
 }
@@ -1679,10 +1300,6 @@ function commaSep1TrailMultiline($, rule, commaToken, sepToken) {
 	);
 }
 
-// Single-line record literal helper supporting:
-//   { a: 1 }
-//   { a: 1, ..base }
-//   { ..base }
 function singleLineRecordExpression($, field) {
 	return seq(
 		$.lbrace,
@@ -1698,14 +1315,12 @@ function singleLineRecordExpression($, field) {
 	);
 }
 
-// Multiline record literal helper supporting fields and optional spread.
 function multiLineRecordExpression($, field) {
 	return seq(
 		$.lbrace,
 		$.newline,
 		$.indent,
 		optional(choice(
-			// Fields first, optional spread
 			seq(
 				field,
 				repeat(seq(
@@ -1720,7 +1335,6 @@ function multiLineRecordExpression($, field) {
 				)),
 				optional($.comma),
 			),
-			// Spread only
 			seq(
 				$.spread_element,
 				optional($.comma),
