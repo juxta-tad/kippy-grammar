@@ -1,3 +1,5 @@
+//DO NOT EDIT FILE
+
 #include "tree_sitter/parser.h"
 #include "tree_sitter/array.h"
 #include <assert.h>
