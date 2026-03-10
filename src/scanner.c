@@ -70,9 +70,9 @@ _Static_assert(MAX_PENDING_NEWLINES < UINT16_MAX, "Max pending newlines must fit
 _Static_assert(MAX_INDENT_DEPTH <= UINT8_MAX, "Max indent depth must fit in serialization size field");
 
 enum {
-  SERIALIZED_STACK_ENTRY_BYTES = 2,      // each indent level is uint16_t
-  SERIALIZED_SIZE_FIELD_BYTES  = 1,      // size field is uint8_t
-  SCANNER_HEADER_BYTES = 1 + 2 + 2 + 1,  // flags + pending_newlines + current_indent + size
+  SERIALIZED_STACK_ENTRY_BYTES = 2,                      // each indent level is uint16_t
+  SERIALIZED_SIZE_FIELD_BYTES  = 1,                      // size field is uint8_t
+  SCANNER_HEADER_BYTES = 1 + 2 + 2 + SERIALIZED_SIZE_FIELD_BYTES,  // flags + pending_newlines + current_indent + size
 };
 
 _Static_assert(
@@ -162,15 +162,26 @@ static inline void check_indent_invariants(const Scanner *s) {
 }
 
 void *tree_sitter_kippy_external_scanner_create(void) {
-  Scanner *s = (Scanner *)calloc(1, sizeof(Scanner));
+  Scanner *s = (Scanner *)ts_calloc(1, sizeof(Scanner));
   if (!s) {
     return NULL;  // Allocation failure
   }
 
   s->magic = SCANNER_MAGIC;
   array_init(&s->indents);
+
+  // Push the base indentation level (0 columns)
+  // array_init does NOT allocate; first real allocation happens on array_push
   uint16_t base = 0;
   array_push(&s->indents, base);
+
+  // Verify array_push succeeded (base indent was added)
+  if (s->indents.size != 1) {
+    array_delete(&s->indents);
+    ts_free(s);
+    return NULL;  // Array push failed, allocation error
+  }
+
   s->at_line_start = true;
   s->indent_scanned = false;
   s->current_indent = 0;
@@ -188,7 +199,7 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
 
   array_delete(&s->indents);
   s->magic = 0;  // Invalidate magic to catch use-after-free
-  free(s);
+  ts_free(s);
 }
 
 unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffer) {
@@ -251,22 +262,60 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
       pos += 2;
     }
 
-    if (pos < length) {
+    // First, ensure we have the base indentation level
+    if (s->indents.size == 0) {
+      uint16_t base = 0;
+      array_push(&s->indents, base);
+      if (s->indents.size != 1) {
+        // Base level push failed—allocation error, state is corrupted
+        // Abandon deserialization and reset to clean state
+        array_clear(&s->indents);
+      }
+    }
+
+    // Deserialize indent stack, validating monotonicity before accepting
+    if (pos < length && s->indents.size == 1) {  // Only proceed if base level is valid
       uint8_t stack_size = (uint8_t)buffer[pos++];
       for (uint8_t i = 0; i < stack_size && pos + 2 <= length; i++) {
         uint16_t indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
         pos += 2;
+
+        // VALIDATION: Check indent is strictly greater than previous level
+        uint16_t prev_indent = *array_back(&s->indents);
+        if (indent <= prev_indent) {
+          // Malformed serialized data: non-monotonic indent levels
+          // Reject the entire stack and reset to base level
+          DEBUG_LOG("[DESERIALIZE] Non-monotonic indent rejected: %u <= %u\n", indent, prev_indent);
+          array_clear(&s->indents);
+          uint16_t base = 0;
+          array_push(&s->indents, base);
+          break;
+        }
+
+        // Validated: push the indent
+        uint32_t size_before = s->indents.size;
         array_push(&s->indents, indent);
+        if (s->indents.size != size_before + 1) {
+          // Array push failed; clear and reset to base
+          DEBUG_LOG("[DESERIALIZE] Array push failed at indent level %u\n", indent);
+          array_clear(&s->indents);
+          uint16_t base = 0;
+          array_push(&s->indents, base);
+          break;
+        }
       }
     }
   }
 
+  // Ensure indent stack has at least the base level
   if (s->indents.size == 0) {
     uint16_t base = 0;
     array_push(&s->indents, base);
   }
 
   // Validate indent stack invariants after deserialization
+  // At this point, the stack is either valid (monotonically increasing with base 0)
+  // or has been reset to just the base level. check_indent_invariants should pass.
   check_indent_invariants(s);
 }
 
@@ -324,10 +373,21 @@ static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_sym
 
   if (s->current_indent > *array_back(&s->indents)) {
     // Prevent nesting deeper than what can be serialized
-    if (s->indents.size >= MAX_INDENT_DEPTH) {
-      return false;  // Too deeply nested, cannot emit INDENT
+    // s->indents.size includes the base level (0), so with MAX_INDENT_DEPTH = 255,
+    // we permit real nesting depth up to 254. To allow the full range, check > not >=
+    if (s->indents.size > MAX_INDENT_DEPTH) {
+      return false;  // Would exceed serialization buffer capacity
     }
+
+    // Save size before push to detect allocation failure
+    uint32_t size_before = s->indents.size;
     array_push(&s->indents, s->current_indent);
+
+    // Verify array_push succeeded
+    if (s->indents.size != size_before + 1) {
+      return false;  // Array push failed, allocation error
+    }
+
     check_indent_invariants(s);  // State after push
     lexer->result_symbol = INDENT;
     lexer->mark_end(lexer);
@@ -385,9 +445,9 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
 
     if (!s->indent_scanned) {
       while (true) {
-        s->current_indent = count_indent(lexer);
-
-        // Check if this is a purely blank line
+        // CRITICAL: Check for blank line BEFORE consuming indentation.
+        // If we consume indentation and then return false without emitting,
+        // we violate the scanner contract. So check is_blank_line() first.
         if (is_blank_line(lexer)) {
           bool consumed_newline = false;
           if (lexer->lookahead == '\r') {
@@ -409,6 +469,9 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
           }
           break;
         }
+
+        // Only measure indentation after confirming it's not a blank line
+        s->current_indent = count_indent(lexer);
 
         break;
       }
