@@ -448,11 +448,12 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.10: PRIMARY EXPRESSION FORMS
 		// ─────────────────────────────────────────────────────────────────────────────
-		primary_expression: ($) =>
+		// ─────────────────────────────────────────────────────────────────────────────
+		// 3.9A: INLINE VS BLOCK EXPRESSION HIERARCHY
+		// ─────────────────────────────────────────────────────────────────────────────
+		// Inline expressions: atoms and structures without layout
+		inline_expression: ($) =>
 			choice(
-				$.when_expression,
-				$.if_expression,
-				$.lambda_expression,
 				$.record_builder,
 				$.literal,
 				$.long_identifier,
@@ -461,6 +462,20 @@ module.exports = grammar({
 				$.record_expression,
 				$.tuple_expression,
 				$.parenthesized_expression,
+			),
+
+		// Block expressions: layout-based constructs (when, if, lambda, let-in blocks)
+		block_expression: ($) =>
+			choice(
+				$.when_expression,
+				$.if_expression,
+				$.lambda_expression,
+				$.let_block_expression,
+			),
+
+		primary_expression: ($) =>
+			choice(
+				$.inline_expression,
 				$.block_expression,
 			),
 
@@ -520,7 +535,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		block_expression: ($) =>
+		let_block_expression: ($) =>
 			seq(
 				$.lparen,
 				$.newline,

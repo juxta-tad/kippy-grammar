@@ -2496,21 +2496,9 @@
         "value": "[0-9]+"
       }
     },
-    "primary_expression": {
+    "inline_expression": {
       "type": "CHOICE",
       "members": [
-        {
-          "type": "SYMBOL",
-          "name": "when_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "if_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "lambda_expression"
-        },
         {
           "type": "SYMBOL",
           "name": "record_builder"
@@ -2542,6 +2530,36 @@
         {
           "type": "SYMBOL",
           "name": "parenthesized_expression"
+        }
+      ]
+    },
+    "block_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "when_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "if_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "lambda_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "let_block_expression"
+        }
+      ]
+    },
+    "primary_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "inline_expression"
         },
         {
           "type": "SYMBOL",
@@ -3187,7 +3205,7 @@
         }
       ]
     },
-    "block_expression": {
+    "let_block_expression": {
       "type": "SEQ",
       "members": [
         {
