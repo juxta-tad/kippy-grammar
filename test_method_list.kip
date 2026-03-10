@@ -1,0 +1,4 @@
+extend User
+  render =
+      "Box"
+  describe = "desc"

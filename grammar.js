@@ -111,7 +111,7 @@ module.exports = grammar({
 						repeat1($.newline),
 					)),
 					$.module_item,
-					repeat(seq(repeat1($.newline), $.module_item)),
+					repeat(seq(repeat($.newline), $.module_item)),
 					repeat($.newline),
 				),
 			),
@@ -328,17 +328,20 @@ module.exports = grammar({
 				field("type", $.type_name),
 				$.kw_with,
 				field("ability", $.type_name),
-				field("methods", indented_list($, $.implementation_method, { at_least_one: true })),
+				field(
+					"methods",
+					indented_list($, $.implementation_method, { at_least_one: true }),
+				),
 			),
 
-	implementation_method: ($) =>
-		seq(
-			attribute_prefix($),
-			field("name", $.identifier),
-			repeat(field("param", $.identifier)),
-			$.equals,
-			field("value", inline_or_block($, $.expression)),
-		),
+		implementation_method: ($) =>
+			seq(
+				attribute_prefix($),
+				field("name", $.identifier),
+				repeat(field("param", $.identifier)),
+				$.equals,
+				field("value", inline_or_block($, $.expression)),
+			),
 
 		// Ability declaration with indented method annotations.
 		// Example:
@@ -701,7 +704,7 @@ module.exports = grammar({
 					field("value", $.expression),
 					seq(
 						$.let_binding,
-						repeat(seq(repeat1($.newline), $.let_binding)),
+						repeat(seq(repeat($.newline), $.let_binding)),
 						repeat($.newline),
 						$.kw_in,
 						field("value", $.expression),
@@ -1346,7 +1349,6 @@ module.exports = grammar({
 		equals: op(2, "="),
 		dot: ($) => token.immediate("."),
 
-		//
 		// |> must tokenise before plain | to avoid partial matches.
 		pipe: ($) => token("|>"),
 		pipe_bar: ($) => token("|"),
@@ -1361,7 +1363,6 @@ module.exports = grammar({
 		slash: ($) => "/",
 		percent: ($) => "%",
 
-		//
 		// Longer comparison operators are given higher precedence to avoid ambiguity.
 		eq_op: op(3, "=="),
 		ne_op: op(3, "!="),
@@ -1403,14 +1404,27 @@ function singleLineBracket(open, commaToken, item, close) {
 
 // Top-level items: module items separated by required newlines.
 // Used after module header in source_file.
-// Indented body: newline, indent, rule, trailing newlines, dedent.
+// Indented body: newline, indent, rule, dedent.
 // Used for constructs with a single logical body (not a list of peer items).
+// Parent list owns responsibility for separator newlines between siblings.
 function indented_body($, rule) {
 	return seq(
 		$.newline,
 		$.indent,
 		rule,
 		repeat($.newline),
+		$.dedent,
+	);
+}
+
+// Used for bodies inside lists: exactly one newline separates from next sibling.
+// The parent list owns responsibility for managing separator structure.
+function indented_body_in_list($, rule) {
+	return seq(
+		$.newline,
+		$.indent,
+		rule,
+		$.newline,
 		$.dedent,
 	);
 }
@@ -1422,11 +1436,11 @@ function indented_list($, item, { at_least_one = false } = {}) {
 	const body = at_least_one
 		? seq(
 			item,
-			repeat(seq($.newline, item)),
+			repeat(seq(repeat($.newline), item)),
 		)
 		: optional(seq(
 			item,
-			repeat(seq($.newline, item)),
+			repeat(seq(repeat($.newline), item)),
 		));
 
 	return seq(
