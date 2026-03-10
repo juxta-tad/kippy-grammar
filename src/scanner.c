@@ -349,14 +349,28 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     valid_symbols[INDENT], valid_symbols[DEDENT]);
 
   // ═════════════════════════════════════════════════════════════════════════
-  // PHASE 1: EOF DEDENTS
+  // PHASE 1: EOF HANDLING
   // ═════════════════════════════════════════════════════════════════════════
+  // At EOF: first emit any buffered blank-line NEWLINEs, then emit DEDENT tokens
+  // to close all open indentation levels.
   if (lexer->eof(lexer)) {
-    DEBUG_LOG("[PHASE1] EOF: emitting dedents (stack size=%d)\n", s->indents.size);
+    DEBUG_LOG("[PHASE1] EOF: pending_newlines=%u indents.size=%d\n", s->pending_newlines, s->indents.size);
+
+    // Emit any trailing blank-line NEWLINEs first
+    if (s->pending_newlines > 0 && valid_symbols[NEWLINE]) {
+      s->pending_newlines--;
+      log_emit("EOF_PENDING_NEWLINE", s, lexer);
+      lexer->result_symbol = NEWLINE;
+      return true;
+    }
+
+    // Then emit DEDENT tokens to close all indentation levels
     s->current_indent = 0;
     if (s->indents.size > 1 && valid_symbols[DEDENT]) {
       return emit_dedent(s, lexer, valid_symbols);
     }
+
+    // All indents closed and no more newlines. Stop.
     return false;
   }
 
@@ -427,13 +441,13 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 3: ORDINARY NEWLINE DETECTION
   // ═════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════════
+  // PHASE 3: ORDINARY NEWLINE DETECTION
+  // ═════════════════════════════════════════════════════════════════════════
+  // NOTE: Do NOT consume spaces here. If we consume spaces and then discover
+  // the next character is not a newline, we've violated the scanner contract
+  // (return false means no input was consumed). Only consume the newline itself.
   DEBUG_LOG("[PHASE3] checking for NEWLINE\n");
-  if (valid_symbols[NEWLINE]) {
-    while (is_hspace(lexer->lookahead)) {
-      lexer->advance(lexer, true);
-    }
-  }
-
   if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
     if (lexer->lookahead == '\r') {
       lexer->advance(lexer, false);
