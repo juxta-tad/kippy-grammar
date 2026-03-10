@@ -51,7 +51,6 @@ module.exports = grammar({
 
 	supertypes: ($) => [
 		$.expression,
-		$.postfix_expression,
 	],
 
 	// ═════════════════════════════════════════════════════════════════════════════
@@ -356,78 +355,48 @@ module.exports = grammar({
 				$.parenthesized_expression,
 			),
 
+		// Bare postfix expression: base + repeating operators (no indirect recursion)
 		bare_postfix_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					$.non_clause_primary,
+					repeat($.bare_postfix_suffix),
+				),
+			),
+
+		bare_postfix_suffix: ($) =>
 			choice(
-				$.non_clause_primary,
-				$.bare_projection_expression,
-				$.bare_try_expression,
-				$.bare_possessive_field_expression,
-			),
-
-		bare_projection_expression: ($) =>
-			postfixOp(
-				field("object", $.bare_postfix_expression),
 				$.projection_suffix,
-			),
-
-		bare_try_expression: ($) =>
-			postfixOp(
-				field("value", $.bare_postfix_expression),
 				$.try_op,
-			),
-
-		bare_possessive_field_expression: ($) =>
-			postfixOp(
-				field("object", $.bare_postfix_expression),
-				$.possessive,
-				field("field", $.field_name),
+				seq(
+					$.possessive,
+					field("field", $.field_name),
+				),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
+		// Postfix expressions: base + repeating operators (no indirect recursion)
 		postfix_expression: ($) =>
-			choice(
-				$.primary_expression,
-				$.call_expression,
-				$.field_expression,
-				$.try_expression,
-				$.possessive_field_expression,
-			),
-
-		call_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
 				seq(
-					field("function", $.postfix_expression),
-					field("arguments", $.call_suffix),
+					$.primary_expression,
+					repeat($.postfix_suffix),
 				),
 			),
 
-		field_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
+		postfix_suffix: ($) =>
+			choice(
+				field("arguments", $.call_suffix),
 				seq(
-					field("object", $.postfix_expression),
 					$.dot,
 					field("field", choice($.field_name, $.tuple_index)),
 				),
-			),
-
-		try_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
+				$.try_op,
 				seq(
-					field("value", $.postfix_expression),
-					$.try_op,
-				),
-			),
-
-		possessive_field_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					field("object", $.postfix_expression),
 					$.possessive,
 					field("field", $.field_name),
 				),
@@ -723,38 +692,26 @@ module.exports = grammar({
 				$.condition_postfix,
 			),
 
+		// Condition postfix expression with left-associativity for indirectly recursive operators
+		// Condition postfix expression: base + repeating operators (no indirect recursion)
 		condition_postfix: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					$.non_clause_primary,
+					repeat($.condition_postfix_suffix),
+				),
+			),
+
+		condition_postfix_suffix: ($) =>
 			choice(
-				$.non_clause_primary,
-				$.condition_projection_expression,
-				$.condition_call_expression,
-				$.condition_try_expression,
-				$.condition_possessive_field_expression,
-			),
-
-		condition_projection_expression: ($) =>
-			postfixOp(
-				field("object", $.condition_postfix),
 				$.projection_suffix,
-			),
-
-		condition_call_expression: ($) =>
-			postfixOp(
-				field("function", $.condition_postfix),
 				field("arguments", $.call_suffix),
-			),
-
-		condition_try_expression: ($) =>
-			postfixOp(
-				field("value", $.condition_postfix),
 				$.try_op,
-			),
-
-		condition_possessive_field_expression: ($) =>
-			postfixOp(
-				field("object", $.condition_postfix),
-				$.possessive,
-				field("field", $.field_name),
+				seq(
+					$.possessive,
+					field("field", $.field_name),
+				),
 			),
 
 		if_expression: ($) =>
