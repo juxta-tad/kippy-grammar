@@ -6,13 +6,12 @@
 #include <string.h>
 #include <limits.h>
 
-/*
-  WASM Compatibility Guards
-
-  When compiling for WASM (detected by __EMSCRIPTEN__ or WASM_BUILD),
-  disable all debug logging to avoid using unavailable stdio functions.
-*/
-
+/* =========================================================================
+ * WASM Compatibility Guards
+ * =========================================================================
+ * Disable standard I/O debug logging when compiling for WebAssembly
+ * to avoid linking unavailable stdio functions.
+ */
 #if defined(__EMSCRIPTEN__) || defined(WASM_BUILD) || defined(__wasm__)
   #define IS_WASM 1
 #else
@@ -26,97 +25,89 @@
   #define DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-// ─────────────────────────────────────────────────────────────────────────
-// LAYOUT CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────
+/* =========================================================================
+ * Constants & Token Definitions
+ * ========================================================================= */
 enum {
-  SCANNER_MAGIC = 0x4B495050,    // "KIPP" - magic number for runtime validation
-  MAX_INDENT_COLUMN = 10000,      // Maximum indentation column (realistic bound)
-  MAX_PENDING_NEWLINES = 50000,   // Maximum buffered blank lines (realistic bound, fits in uint16_t)
-  MAX_INDENT_DEPTH = 255,         // Maximum nesting depth (limited by serialization uint8_t size field)
+  SCANNER_MAGIC        = 0x4B495050, // "KIPP" - runtime validation magic number
+  MAX_INDENT_COLUMN    = 10000,      // Realistic upper bound for indentation
+  MAX_PENDING_NEWLINES = 50000,      // Realistic bound, fits in uint16_t
+  MAX_INDENT_DEPTH     = 255,        // Limited by serialization (uint8_t size field)
 };
 
 enum TokenType {
-  NEWLINE,              // end of line (must match grammar externals[0])
-  INDENT,               // increased indentation level (must match grammar externals[1])
-  DEDENT,               // decreased indentation level (must match grammar externals[2])
+  NEWLINE, // End of line                (grammar externals[0])
+  INDENT,  // Increased indentation      (grammar externals[1])
+  DEDENT,  // Decreased indentation      (grammar externals[2])
 };
 
 enum {
-  VALID_SYMBOLS_MIN_SIZE = DEDENT + 1,  // valid_symbols array must have at least 3 elements
+  VALID_SYMBOLS_MIN_SIZE = DEDENT + 1, // Must cover all defined TokenTypes
 };
 
-// ─────────────────────────────────────────────────────────────────────────
-// COMPILE-TIME INVARIANTS
-// ─────────────────────────────────────────────────────────────────────────
+/* =========================================================================
+ * Compile-Time Invariants
+ * ========================================================================= */
+
+// Token Order: Must match grammar.js `externals` definition exactly.
 _Static_assert(NEWLINE == 0, "Token order must match grammar externals[0]");
 _Static_assert(INDENT  == 1, "Token order must match grammar externals[1]");
 _Static_assert(DEDENT  == 2, "Token order must match grammar externals[2]");
 _Static_assert(DEDENT == INDENT + 1, "Token order must remain contiguous");
 
-// valid_symbols array layout assumptions (enforced by tree-sitter contract, NOT checked at runtime)
-// Tree-sitter knows the count (.external_token_count in TSLanguage) but doesn't pass it to scan()
-// The scan function receives only the pointer, so we cannot validate the array size at runtime
+// Tree-sitter guarantees valid_symbols matches external_token_count, but
+// does not pass the size to scan(). We statically assert our assumptions here.
 _Static_assert(VALID_SYMBOLS_MIN_SIZE == 3, "Exactly 3 external tokens defined");
 
-_Static_assert(CHAR_BIT == 8, "Serialization assumes 8-bit bytes");
-_Static_assert(sizeof(uint16_t) == 2, "Serialization assumes 16-bit uint16_t");
-_Static_assert(sizeof(uint8_t)  == 1, "Serialization assumes 8-bit uint8_t");
-_Static_assert(UINT16_MAX == 65535, "Serialization assumes 16-bit uint16_t range");
-_Static_assert(UINT8_MAX  == 255,   "Serialization assumes 8-bit uint8_t range");
+// System Type Assumptions for Serialization
+_Static_assert(CHAR_BIT == 8,           "Serialization assumes 8-bit bytes");
+_Static_assert(sizeof(uint16_t) == 2,   "Serialization assumes 16-bit uint16_t");
+_Static_assert(sizeof(uint8_t)  == 1,   "Serialization assumes 8-bit uint8_t");
+_Static_assert(UINT16_MAX == 65535,     "Serialization assumes 16-bit uint16_t range");
+_Static_assert(UINT8_MAX  == 255,       "Serialization assumes 8-bit uint8_t range");
 
-_Static_assert(MAX_INDENT_COLUMN < UINT16_MAX, "Max indent must fit in uint16_t");
+// Scanner Limits
+_Static_assert(MAX_INDENT_COLUMN < UINT16_MAX,    "Max indent must fit in uint16_t");
 _Static_assert(MAX_PENDING_NEWLINES < UINT16_MAX, "Max pending newlines must fit in uint16_t");
-_Static_assert(MAX_INDENT_DEPTH <= UINT8_MAX, "Max indent depth must fit in serialization size field");
+_Static_assert(MAX_INDENT_DEPTH <= UINT8_MAX,     "Max indent depth must fit in serialization size field");
 
+// Serialization Buffer Layout Layout
 enum {
-  SERIALIZED_STACK_ENTRY_BYTES = 2,                      // each indent level is uint16_t
-  SERIALIZED_SIZE_FIELD_BYTES  = 1,                      // size field is uint8_t
-  SCANNER_HEADER_BYTES = 1 + 2 + 2 + SERIALIZED_SIZE_FIELD_BYTES,  // flags + pending_newlines + current_indent + size
+  SERIALIZED_STACK_ENTRY_BYTES = 2, // uint16_t per indent level
+  SERIALIZED_SIZE_FIELD_BYTES  = 1, // uint8_t for stack size
+  SCANNER_HEADER_BYTES         = 1 + 2 + 2 + SERIALIZED_SIZE_FIELD_BYTES, // flags + newlines + current_indent + size
 };
 
-_Static_assert(
-  SCANNER_HEADER_BYTES == 6,
-  "Header size must match serialization format"
-);
-
+_Static_assert(SCANNER_HEADER_BYTES == 6, "Header size must match serialization format");
 _Static_assert(
   TREE_SITTER_SERIALIZATION_BUFFER_SIZE >= SCANNER_HEADER_BYTES + SERIALIZED_STACK_ENTRY_BYTES,
   "Serialization buffer too small for base indent stack"
 );
-
 _Static_assert(
   MAX_INDENT_DEPTH * SERIALIZED_STACK_ENTRY_BYTES <= TREE_SITTER_SERIALIZATION_BUFFER_SIZE - SCANNER_HEADER_BYTES,
   "Max indent depth must fit in serialization buffer"
 );
 
-// ─────────────────────────────────────────────────────────────────────────
-// PAYLOAD LIFETIME & INTERFACE ASSUMPTIONS
-// ─────────────────────────────────────────────────────────────────────────
-/*
-  PAYLOAD LIFETIME (tree-sitter contract):
-  - create() called exactly once before any other function
-  - returned payload is passed unchanged to other functions
-  - destroy() called at most once
-  - payload is valid Scanner* (or NULL in error cases)
-
-  VALID_SYMBOLS ARRAY (from TSLanguage.external_scanner):
-  - Pointer validated with NULL check in scan()
-  - Size is GUARANTEED by tree-sitter contract to be at least EXTERNAL_TOKEN_COUNT (3)
-  - Actual size not passed to scan() function signature, so cannot be validated at runtime
-  - We safely access indices [0], [1], [2] (NEWLINE, INDENT, DEDENT) - guaranteed by contract
-  - Each element is bool (non-zero if token type is currently acceptable)
-
-  TSLEXER STRUCT (tree-sitter parser.h):
-  - lookahead: int32_t field (current character as int32_t)
-  - result_symbol: TSSymbol field (set to token type when match found)
-  - advance(lexer, skip): function pointer to advance past current char
-  - mark_end(lexer): function pointer to mark end of token
-  - eof(): function pointer to check if at end of input (PREFERRED for EOF checks)
-  - get_column(lexer): function pointer to get current column (authoritative tab/space handling)
-
-  We validate critical preconditions (NULL checks) in each function.
-*/
+/* =========================================================================
+ * Tree-Sitter Interface Contracts & Assumptions
+ * =========================================================================
+ *
+ * Payload Lifecycle:
+ * - `create()` is called exactly once before any other function.
+ * - The returned payload is passed unchanged to subsequent functions.
+ * - `destroy()` is called at most once.
+ *
+ * Valid Symbols Array (`valid_symbols`):
+ * - Evaluated safely up to index [2] (DEDENT) based on the grammar contract.
+ * - Each element is a boolean indicating if the parser accepts that token right now.
+ *
+ * TSLexer API:
+ * - `lookahead`:   Current character as int32_t.
+ * - `advance()`:   Moves to the next character. Pass `true` to skip (e.g., whitespace).
+ * - `mark_end()`:  Marks the end of the recognized token.
+ * - `eof()`:       Checks if the end of the input stream is reached.
+ * - `get_column()`: Returns the current column (handles tabs/spaces authoritatively).
+ * ========================================================================= */
 
 static const TSCharacterRange NEWLINE_CHARS[] = {
   {'\n', '\n'},
@@ -136,12 +127,12 @@ static inline bool is_hspace(int32_t c) {
   return set_contains(HSPACE_CHARS, 2, c);
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// SCANNER STATE STRUCT
-// ─────────────────────────────────────────────────────────────────────────
+/* =========================================================================
+ * Scanner State & Memory Management
+ * ========================================================================= */
 
 typedef struct {
-  uint32_t magic;                // Runtime validation: must equal SCANNER_MAGIC
+  uint32_t magic; // Runtime validation signature
   Array(uint16_t) indents;
   bool at_line_start;
   bool indent_scanned;
@@ -149,13 +140,14 @@ typedef struct {
   uint16_t pending_newlines;
 } Scanner;
 
+// Enforces structural integrity of the indentation stack
 static inline void check_indent_invariants(const Scanner *s) {
   assert(s != NULL);
-  assert(s->indents.size > 0);                     // Always has at least base level
-  assert(s->indents.contents != NULL);             // Contents pointer must be valid
-  assert(s->indents.contents[0] == 0);             // Base level is always 0
+  assert(s->indents.size > 0);         // Must contain at least the base level
+  assert(s->indents.contents != NULL);
+  assert(s->indents.contents[0] == 0); // Base level is always column 0
 
-  // Indent levels must be monotonically increasing
+  // Indent levels must be strictly monotonically increasing
   for (uint32_t i = 1; i < s->indents.size; i++) {
     assert(s->indents.contents[i] > s->indents.contents[i - 1]);
   }
@@ -163,23 +155,19 @@ static inline void check_indent_invariants(const Scanner *s) {
 
 void *tree_sitter_kippy_external_scanner_create(void) {
   Scanner *s = (Scanner *)ts_calloc(1, sizeof(Scanner));
-  if (!s) {
-    return NULL;  // Allocation failure
-  }
+  if (!s) return NULL;
 
   s->magic = SCANNER_MAGIC;
   array_init(&s->indents);
 
-  // Push the base indentation level (0 columns)
-  // array_init does NOT allocate; first real allocation happens on array_push
+  // Initialize with base indentation level (0)
   uint16_t base = 0;
   array_push(&s->indents, base);
 
-  // Verify array_push succeeded (base indent was added)
   if (s->indents.size != 1) {
     array_delete(&s->indents);
     ts_free(s);
-    return NULL;  // Array push failed, allocation error
+    return NULL;
   }
 
   s->at_line_start = true;
@@ -187,40 +175,47 @@ void *tree_sitter_kippy_external_scanner_create(void) {
   s->current_indent = 0;
   s->pending_newlines = 0;
 
-  check_indent_invariants(s);  // Validate initial state
+  check_indent_invariants(s);
   return s;
 }
 
 void tree_sitter_kippy_external_scanner_destroy(void *payload) {
-  if (!payload) return;  // NULL is safe, already freed or never created
+  if (!payload) return;
 
   Scanner *s = (Scanner *)payload;
-  assert(s->magic == SCANNER_MAGIC);  // Validate payload is valid Scanner*
+  assert(s->magic == SCANNER_MAGIC);
 
   array_delete(&s->indents);
-  s->magic = 0;  // Invalidate magic to catch use-after-free
+  s->magic = 0; // Poison the struct to catch use-after-free
   ts_free(s);
 }
 
+/* =========================================================================
+ * State Serialization & Deserialization
+ * ========================================================================= */
+
 unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffer) {
-  if (!payload || !buffer) return 0;  // Invalid arguments
+  if (!payload || !buffer) return 0;
 
   Scanner *s = (Scanner *)payload;
-  assert(s->magic == SCANNER_MAGIC);  // Validate payload is valid Scanner*
+  assert(s->magic == SCANNER_MAGIC);
+
   unsigned pos = 0;
 
+  // Pack boolean flags
   uint8_t flags = 0;
-  if (s->at_line_start) flags |= 0x01;
+  if (s->at_line_start)  flags |= 0x01;
   if (s->indent_scanned) flags |= 0x02;
   buffer[pos++] = (char)flags;
 
+  // Serialize scalars (little-endian)
   buffer[pos++] = (char)(s->pending_newlines & 0xFF);
   buffer[pos++] = (char)((s->pending_newlines >> 8) & 0xFF);
 
   buffer[pos++] = (char)(s->current_indent & 0xFF);
   buffer[pos++] = (char)((s->current_indent >> 8) & 0xFF);
 
-  // Indent stack depth is guaranteed to fit in serialization buffer by MAX_INDENT_DEPTH constraint
+  // Serialize stack
   assert(s->indents.size <= MAX_INDENT_DEPTH);
   uint8_t size = (uint8_t)s->indents.size;
   buffer[pos++] = (char)size;
@@ -230,16 +225,18 @@ unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffe
     buffer[pos++] = (char)(indent & 0xFF);
     buffer[pos++] = (char)((indent >> 8) & 0xFF);
   }
+
   return pos;
 }
 
 void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
-  if (!payload) return;  // Payload lifetime violation
+  if (!payload) return;
 
   Scanner *s = (Scanner *)payload;
-  assert(s->magic == SCANNER_MAGIC);  // Validate payload is valid Scanner*
-  array_clear(&s->indents);
+  assert(s->magic == SCANNER_MAGIC);
 
+  // Reset to default state
+  array_clear(&s->indents);
   s->at_line_start = true;
   s->indent_scanned = false;
   s->current_indent = 0;
@@ -248,10 +245,12 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   if (length > 0) {
     unsigned pos = 0;
 
+    // Unpack boolean flags
     uint8_t flags = (uint8_t)buffer[pos++];
-    s->at_line_start = (flags & 0x01) != 0;
+    s->at_line_start  = (flags & 0x01) != 0;
     s->indent_scanned = (flags & 0x02) != 0;
 
+    // Unpack scalars
     if (pos + 2 <= length) {
       s->pending_newlines = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
       pos += 2;
@@ -262,29 +261,26 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
       pos += 2;
     }
 
-    // First, ensure we have the base indentation level
+    // Restore base indent
     if (s->indents.size == 0) {
       uint16_t base = 0;
       array_push(&s->indents, base);
       if (s->indents.size != 1) {
-        // Base level push failed—allocation error, state is corrupted
-        // Abandon deserialization and reset to clean state
-        array_clear(&s->indents);
+        array_clear(&s->indents); // Allocation error; abort deserialization
       }
     }
 
-    // Deserialize indent stack, validating monotonicity before accepting
-    if (pos < length && s->indents.size == 1) {  // Only proceed if base level is valid
+    // Restore indent stack, ensuring monotonicity
+    if (pos < length && s->indents.size == 1) {
       uint8_t stack_size = (uint8_t)buffer[pos++];
+
       for (uint8_t i = 0; i < stack_size && pos + 2 <= length; i++) {
         uint16_t indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
         pos += 2;
 
-        // VALIDATION: Check indent is strictly greater than previous level
         uint16_t prev_indent = *array_back(&s->indents);
+
         if (indent <= prev_indent) {
-          // Malformed serialized data: non-monotonic indent levels
-          // Reject the entire stack and reset to base level
           DEBUG_LOG("[DESERIALIZE] Non-monotonic indent rejected: %u <= %u\n", indent, prev_indent);
           array_clear(&s->indents);
           uint16_t base = 0;
@@ -292,11 +288,10 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
           break;
         }
 
-        // Validated: push the indent
         uint32_t size_before = s->indents.size;
         array_push(&s->indents, indent);
+
         if (s->indents.size != size_before + 1) {
-          // Array push failed; clear and reset to base
           DEBUG_LOG("[DESERIALIZE] Array push failed at indent level %u\n", indent);
           array_clear(&s->indents);
           uint16_t base = 0;
@@ -307,28 +302,25 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
     }
   }
 
-  // Ensure indent stack has at least the base level
+  // Fallback to base level if stack restoration failed entirely
   if (s->indents.size == 0) {
     uint16_t base = 0;
     array_push(&s->indents, base);
   }
 
-  // Validate indent stack invariants after deserialization
-  // At this point, the stack is either valid (monotonically increasing with base 0)
-  // or has been reset to just the base level. check_indent_invariants should pass.
   check_indent_invariants(s);
 }
 
+/* =========================================================================
+ * Scanning Logic Helpers
+ * ========================================================================= */
+
 static inline uint16_t count_indent(TSLexer *lexer) {
-  // Consume all leading horizontal whitespace
   while (is_hspace(lexer->lookahead)) {
     lexer->advance(lexer, true);
   }
 
-  // Get column position from tree-sitter's lexer (authoritative tab/space handling)
   uint32_t col = lexer->get_column(lexer);
-
-  // Clamp to MAX_INDENT_COLUMN to prevent overflow
   return (col > MAX_INDENT_COLUMN) ? MAX_INDENT_COLUMN : (uint16_t)col;
 }
 
@@ -352,55 +344,57 @@ static inline void log_emit(const char *name, Scanner *s, TSLexer *lexer) {
 }
 
 static inline bool emit_dedent(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
-  check_indent_invariants(s);  // State before dedent
+  check_indent_invariants(s);
 
   if (!valid_symbols[DEDENT]) return false;
 
   if (s->indents.size > 1 && s->current_indent < *array_back(&s->indents)) {
     array_pop(&s->indents);
-    check_indent_invariants(s);  // State after pop
+    check_indent_invariants(s);
     lexer->result_symbol = DEDENT;
     lexer->mark_end(lexer);
     return true;
   }
+
   return false;
 }
 
 static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
-  check_indent_invariants(s);  // State before indent
+  check_indent_invariants(s);
 
   if (!valid_symbols[INDENT]) return false;
 
   if (s->current_indent > *array_back(&s->indents)) {
-    // Prevent nesting deeper than what can be serialized
-    // s->indents.size includes the base level (0), so with MAX_INDENT_DEPTH = 255,
-    // we permit real nesting depth up to 254. To allow the full range, check > not >=
+    // Prevent exceeding serialization capacity
     if (s->indents.size > MAX_INDENT_DEPTH) {
-      return false;  // Would exceed serialization buffer capacity
+      return false;
     }
 
-    // Save size before push to detect allocation failure
     uint32_t size_before = s->indents.size;
     array_push(&s->indents, s->current_indent);
 
-    // Verify array_push succeeded
     if (s->indents.size != size_before + 1) {
-      return false;  // Array push failed, allocation error
+      return false; // Allocation failed
     }
 
-    check_indent_invariants(s);  // State after push
+    check_indent_invariants(s);
     lexer->result_symbol = INDENT;
     lexer->mark_end(lexer);
     return true;
   }
+
   return false;
 }
 
+/* =========================================================================
+ * Main Scanner Entry Point
+ * ========================================================================= */
+
 bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
-  if (!payload || !lexer || !valid_symbols) return false;  // Invalid arguments
+  if (!payload || !lexer || !valid_symbols) return false;
 
   Scanner *s = (Scanner *)payload;
-  assert(s->magic == SCANNER_MAGIC);  // Validate payload is valid Scanner*
+  assert(s->magic == SCANNER_MAGIC);
 
   DEBUG_LOG("[SCAN] at_line_start=%d indent_scanned=%d lookahead='%c'(0x%x) valid[INDENT]=%d valid[DEDENT]=%d\n",
     s->at_line_start, s->indent_scanned,
@@ -411,12 +405,13 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 1: EOF HANDLING
   // ═════════════════════════════════════════════════════════════════════════
-  // At EOF: first emit any buffered blank-line NEWLINEs, then emit DEDENT tokens
-  // to close all open indentation levels.
+  // Upon EOF:
+  // 1. Flush any pending blank-line NEWLINEs.
+  // 2. Emit DEDENT tokens to close all remaining open blocks.
+
   if (lexer->eof(lexer)) {
     DEBUG_LOG("[PHASE1] EOF: pending_newlines=%u indents.size=%d\n", s->pending_newlines, s->indents.size);
 
-    // Emit any trailing blank-line NEWLINEs first
     if (s->pending_newlines > 0 && valid_symbols[NEWLINE]) {
       s->pending_newlines--;
       log_emit("EOF_PENDING_NEWLINE", s, lexer);
@@ -424,32 +419,30 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       return true;
     }
 
-    // Then emit DEDENT tokens to close all indentation levels
     s->current_indent = 0;
     if (s->indents.size > 1 && valid_symbols[DEDENT]) {
       return emit_dedent(s, lexer, valid_symbols);
     }
 
-    // All indents closed and no more newlines. Stop.
-    return false;
+    return false; // All operations complete
   }
 
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 2: LINE-START LAYOUT HANDLING
   // ═════════════════════════════════════════════════════════════════════════
-  bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
 
+  bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
   DEBUG_LOG("[PHASE2] at_line_start=%d can_do_layout=%d\n", s->at_line_start, can_do_layout);
 
   if (s->at_line_start && can_do_layout) {
 
     if (!s->indent_scanned) {
       while (true) {
-        // CRITICAL: Check for blank line BEFORE consuming indentation.
-        // If we consume indentation and then return false without emitting,
-        // we violate the scanner contract. So check is_blank_line() first.
+        // CRITICAL: Check for blank lines BEFORE consuming indentation characters.
+        // Consuming characters and returning false violates the scanner contract.
         if (is_blank_line(lexer)) {
           bool consumed_newline = false;
+
           if (lexer->lookahead == '\r') {
             lexer->advance(lexer, true);
             consumed_newline = true;
@@ -470,9 +463,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
           break;
         }
 
-        // Only measure indentation after confirming it's not a blank line
         s->current_indent = count_indent(lexer);
-
         break;
       }
 
@@ -504,12 +495,9 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   // ═════════════════════════════════════════════════════════════════════════
   // PHASE 3: ORDINARY NEWLINE DETECTION
   // ═════════════════════════════════════════════════════════════════════════
-  // ═════════════════════════════════════════════════════════════════════════
-  // PHASE 3: ORDINARY NEWLINE DETECTION
-  // ═════════════════════════════════════════════════════════════════════════
-  // NOTE: Do NOT consume spaces here. If we consume spaces and then discover
-  // the next character is not a newline, we've violated the scanner contract
-  // (return false means no input was consumed). Only consume the newline itself.
+  // NOTE: Do NOT consume spaces here. If spaces are consumed and a newline
+  // is not found, the scanner contract is violated.
+
   DEBUG_LOG("[PHASE3] checking for NEWLINE\n");
   if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
     if (lexer->lookahead == '\r') {
@@ -518,10 +506,12 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     if (lexer->lookahead == '\n') {
       lexer->advance(lexer, false);
     }
+
     lexer->mark_end(lexer);
     s->at_line_start = true;
     s->indent_scanned = false;
     lexer->result_symbol = NEWLINE;
+
     log_emit("NEWLINE", s, lexer);
     return true;
   }
