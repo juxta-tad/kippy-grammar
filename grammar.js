@@ -28,6 +28,33 @@ function op(p, s) {
 // SECTION 2: GRAMMAR METADATA & CONFIGURATION
 // ═════════════════════════════════════════════════════════════════════════════
 
+// Helper: Generate operator precedence ladder (regular and restricted variants)
+function buildOperatorLadder(prefix, postfixRuleName) {
+	return {
+		[`${prefix}pipe_expression`]: ($) =>
+			prec.right(
+				PREC.PIPE,
+				choice(
+					$[`${prefix}or_expression`],
+					seq($[`${prefix}pipe_expression`], $.pipe, $[`${prefix}or_expression`]),
+				),
+			),
+		[`${prefix}or_expression`]: ($) => or_rule($, $[`${prefix}and_expression`]),
+		[`${prefix}and_expression`]: ($) => and_rule($, $[`${prefix}compare_expression`]),
+		[`${prefix}compare_expression`]: ($) => compare_rule($, $[`${prefix}add_expression`]),
+		[`${prefix}add_expression`]: ($) => add_rule($, $[`${prefix}mul_expression`]),
+		[`${prefix}mul_expression`]: ($) => mul_rule($, $[`${prefix}unary_expression`]),
+		[`${prefix}unary_expression`]: ($) =>
+			choice(
+				prec.right(
+					PREC.UNARY,
+					seq(choice($.minus, $.kw_not, $.kw_cert), $[`${prefix}unary_expression`]),
+				),
+				$[postfixRuleName],
+			),
+	};
+}
+
 module.exports = grammar({
 	name: "kippy",
 
@@ -285,7 +312,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
 
-		call_argument: ($) => $.bare_or_expression,
+		call_argument: ($) => $['restricted_pipe_expression'],
 
 		pipe_expression: ($) =>
 			prec.right(
@@ -296,7 +323,6 @@ module.exports = grammar({
 				),
 			),
 
-		// Regular (full) expression precedence ladder
 		or_expression: ($) => or_rule($, $.and_expression),
 		and_expression: ($) => and_rule($, $.compare_expression),
 		compare_expression: ($) => compare_rule($, $.add_expression),
@@ -311,51 +337,27 @@ module.exports = grammar({
 				$.postfix_expression,
 			),
 
-		// Bare expression precedence ladder (for call arguments - excludes call_suffix)
-		bare_or_expression: ($) => or_rule($, $.bare_and_expression),
-		bare_and_expression: ($) => and_rule($, $.bare_compare_expression),
-		bare_compare_expression: ($) => compare_rule($, $.bare_add_expression),
-		bare_add_expression: ($) => add_rule($, $.bare_mul_expression),
-		bare_mul_expression: ($) => mul_rule($, $.bare_unary_expression),
-		bare_unary_expression: ($) =>
-			choice(
-				prec.right(
-					PREC.UNARY,
-					seq(choice($.minus, $.kw_not, $.kw_cert), $.bare_unary_expression),
-				),
-				$.bare_postfix_expression,
-			),
-
-		non_clause_primary: ($) =>
-			choice(
-				$.record_builder,
-				$.literal,
-				$.long_identifier,
-				$.placeholder,
-				$.list_expression,
-				$.record_expression,
-				$.tuple_expression,
-				$.parenthesized_expression,
-			),
-
-		// Bare postfix expression: base + repeating operators (no indirect recursion)
-		bare_postfix_expression: ($) =>
+		restricted_postfix_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
 				seq(
-					$.non_clause_primary,
-					repeat($.bare_postfix_suffix),
+					$.primary_expression,
+					repeat($.restricted_postfix_suffix),
 				),
 			),
 
-		bare_postfix_suffix: ($) =>
+		restricted_postfix_suffix: ($) =>
 			choice(
-				$.projection_suffix,
+				seq(
+					$.dot,
+					field("field", choice($.field_name, $.tuple_index)),
+				),
 				$.try_op,
 				seq(
 					$.possessive,
 					field("field", $.field_name),
 				),
+				// Note: call_suffix intentionally excluded; use parentheses for nested calls
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -971,6 +973,16 @@ module.exports = grammar({
 
 		type_wildcard: ($) => "_",
 		type_star: ($) => "*",
+
+		// ─────────────────────────────────────────────────────────────────────────────
+		// 3.8A: RESTRICTED EXPRESSION HIERARCHY FOR CALL ARGUMENTS (Generated)
+		// ─────────────────────────────────────────────────────────────────────────────
+		// Call arguments use a restricted expression ladder that prevents bare nested calls.
+		// This forces users to parenthesize nested function calls: f with (g with x)
+		// instead of f with g with x. Parenthesized expressions can contain any expression,
+		// including calls, so full expressivity is maintained.
+		// These rules are generated from buildOperatorLadder() to eliminate duplication.
+		...buildOperatorLadder('restricted_', 'restricted_postfix_expression'),
 	},
 });
 
