@@ -111,8 +111,7 @@ module.exports = grammar({
 						repeat1($.newline),
 					)),
 					$.module_item,
-					repeat(seq(repeat($.newline), $.module_item)),
-					repeat($.newline),
+					repeat(choice($.newline, $.module_item)),
 				),
 			),
 
@@ -340,7 +339,7 @@ module.exports = grammar({
 				field("name", $.identifier),
 				repeat(field("param", $.identifier)),
 				$.equals,
-				field("value", inline_or_block($, $.expression)),
+				field("value", inline_or_block_in_list($, $.expression)),
 			),
 
 		// Ability declaration with indented method annotations.
@@ -885,7 +884,7 @@ module.exports = grammar({
 		//     else
 		//       b
 		// ═════════════════════════════════════════════════════════════════════════════
-		arm_expression: ($) => inline_or_block($, $.expression),
+		arm_expression: ($) => inline_or_block_in_list($, $.expression),
 
 		// one match arm and its result expression.
 		when_arm: ($) =>
@@ -1436,18 +1435,17 @@ function indented_list($, item, { at_least_one = false } = {}) {
 	const body = at_least_one
 		? seq(
 			item,
-			repeat(seq(repeat($.newline), item)),
+			repeat(choice($.newline, item))
 		)
-		: optional(seq(
-			item,
-			repeat(seq(repeat($.newline), item)),
-		));
+		: choice(
+			seq(item, repeat(choice($.newline, item))),
+			repeat($.newline)
+		);
 
 	return seq(
 		$.newline,
 		$.indent,
 		body,
-		repeat($.newline),
 		$.dedent,
 	);
 }
@@ -1459,6 +1457,15 @@ function inline_or_block($, rule) {
 	return choice(
 		rule,
 		indented_body($, rule),
+	);
+}
+
+// List-aware variant: used when the body is inside an indented_list.
+// Child owns the newline that exits its block, parent owns sibling separators.
+function inline_or_block_in_list($, rule) {
+	return choice(
+		rule,
+		indented_body_in_list($, rule),
 	);
 }
 
@@ -1648,9 +1655,6 @@ function commaSepTrail($, rule, commaToken, sepToken) {
 	return optional(commaSep1Trail($, rule, commaToken, sepToken));
 }
 
-// one-or-more comma-separated sequence with optional trailing comma.
-// Comma comes before separator (if present): rule, comma, separator, rule
-// Works for both single-line (no separator) and multiline (separator = newlines) contexts.
 function commaSep1Trail($, rule, commaToken, sepToken) {
 	return seq(
 		rule,
@@ -1663,9 +1667,6 @@ function commaSep1Trail($, rule, commaToken, sepToken) {
 	);
 }
 
-// Strict multiline comma-separated sequence with required newlines after commas.
-// For multiline-only contexts (lists, multiline brackets, etc).
-// Enforces: comma followed by at least one separator (newline).
 function commaSep1TrailMultiline($, rule, commaToken, sepToken) {
 	return seq(
 		rule,
@@ -1698,13 +1699,6 @@ function singleLineRecordExpression($, field) {
 }
 
 // Multiline record literal helper supporting fields and optional spread.
-// Follows strict entry rule: fields/spread start immediately after indent.
-// Policy matches single-line form:
-//   - Fields first (zero or more), optionally followed by spread
-//   - Or spread only
-// Supports flexible newline placement around commas (same as commaSep1Trail).
-// Examples: { a: 1, b: 2 } or { a: 1,\n  b: 2 } or { a: 1, ..base } or { ..base }
-// NOT allowed: multiple spreads, spread before fields, fields after spread
 function multiLineRecordExpression($, field) {
 	return seq(
 		$.lbrace,
