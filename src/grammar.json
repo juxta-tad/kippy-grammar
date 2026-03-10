@@ -1263,11 +1263,11 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "kw_implement"
+          "name": "kw_extend"
         },
         {
           "type": "FIELD",
-          "name": "ability",
+          "name": "type",
           "content": {
             "type": "SYMBOL",
             "name": "type_name"
@@ -1275,11 +1275,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "kw_for"
+          "name": "kw_with"
         },
         {
           "type": "FIELD",
-          "name": "type",
+          "name": "ability",
           "content": {
             "type": "SYMBOL",
             "name": "type_name"
@@ -5793,6 +5793,17 @@
         }
       }
     },
+    "kw_extend": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "STRING",
+          "value": "extend"
+        }
+      }
+    },
     "kw_ability": {
       "type": "TOKEN",
       "content": {
@@ -5801,17 +5812,6 @@
         "content": {
           "type": "STRING",
           "value": "ability"
-        }
-      }
-    },
-    "kw_implement": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "implement"
         }
       }
     },
@@ -5856,17 +5856,6 @@
         "content": {
           "type": "STRING",
           "value": "build"
-        }
-      }
-    },
-    "kw_for": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "for"
         }
       }
     },

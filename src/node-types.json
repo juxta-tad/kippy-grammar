@@ -1602,11 +1602,11 @@
       "required": true,
       "types": [
         {
-          "type": "kw_for",
+          "type": "kw_extend",
           "named": true
         },
         {
-          "type": "kw_implement",
+          "type": "kw_with",
           "named": true
         }
       ]
@@ -4055,19 +4055,15 @@
     "named": true
   },
   {
+    "type": "kw_extend",
+    "named": true
+  },
+  {
     "type": "kw_fn",
     "named": true
   },
   {
-    "type": "kw_for",
-    "named": true
-  },
-  {
     "type": "kw_if",
-    "named": true
-  },
-  {
-    "type": "kw_implement",
     "named": true
   },
   {

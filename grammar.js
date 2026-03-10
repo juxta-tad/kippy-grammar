@@ -324,10 +324,10 @@ module.exports = grammar({
 		// implement an ability for a concrete type.
 		implementation: ($) =>
 			seq(
-				$.kw_implement,
-				field("ability", $.type_name),
-				$.kw_for,
+				$.kw_extend,
 				field("type", $.type_name),
+				$.kw_with,
+				field("ability", $.type_name),
 				field("methods", indented_list($, $.implementation_method, { at_least_one: true })),
 			),
 
@@ -1311,13 +1311,12 @@ module.exports = grammar({
 		kw_in: kw("in"),
 		kw_where: kw("where"),
 		kw_with: kw("with"),
+		kw_extend: kw("extend"),
 		kw_ability: kw("ability"),
-		kw_implement: kw("implement"),
 		kw_module: kw("module"),
 		kw_use: kw("use"),
 		kw_using: kw("using"),
 		kw_build: kw("build"),
-		kw_for: kw("for"),
 		kw_type: kw("type"),
 		kw_sig: kw("sig"),
 		kw_fn: kw("fn"),
