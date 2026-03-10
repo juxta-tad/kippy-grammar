@@ -57,6 +57,7 @@ typedef struct {
   Array(uint16_t) indents;        // dynamic stack of indentation levels (column positions)
   bool at_line_start;             // are we at the start of a logical line?
   bool seen_non_whitespace;       // have we seen non-whitespace on this line?
+  bool indent_scanned;            // have we already scanned indentation for this line?
   uint16_t current_indent;        // indentation of current line
   uint16_t pending_newlines;      // blank lines to emit after dedents
 } Scanner;
@@ -70,12 +71,13 @@ void *tree_sitter_kippy_external_scanner_create(void) {
     array_push(&s->indents, base);
     s->at_line_start = true;
     s->seen_non_whitespace = false;
+    s->indent_scanned = false;
     s->current_indent = 0;
     s->pending_newlines = 0;
 
     DEBUG_LOG("[SCANNER_STATE] >>> CREATE\n");
-    DEBUG_LOG("[SCANNER_STATE]     at_line_start=%d, seen_non_ws=%d, current_indent=%d, pending_newlines=%d\n",
-      s->at_line_start, s->seen_non_whitespace, s->current_indent, s->pending_newlines);
+    DEBUG_LOG("[SCANNER_STATE]     at_line_start=%d, seen_non_ws=%d, indent_scanned=%d, current_indent=%d, pending_newlines=%d\n",
+      s->at_line_start, s->seen_non_whitespace, s->indent_scanned, s->current_indent, s->pending_newlines);
     DEBUG_LOG("[SCANNER_STATE]     stack_size=%u, stack=[", s->indents.size);
     for (uint32_t i = 0; i < s->indents.size; i++) {
       DEBUG_LOG("%d%s", s->indents.contents[i], (i < s->indents.size-1) ? ", " : "");
@@ -98,31 +100,38 @@ unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffe
   unsigned pos = 0;
 
   DEBUG_LOG("[SCANNER_STATE] >>> SERIALIZE (before packing)\n");
-  DEBUG_LOG("[SCANNER_STATE]     at_line_start=%d, seen_non_ws=%d, current_indent=%d, pending_newlines=%d\n",
-    s->at_line_start, s->seen_non_whitespace, s->current_indent, s->pending_newlines);
+  DEBUG_LOG("[SCANNER_STATE]     at_line_start=%d, seen_non_ws=%d, indent_scanned=%d, current_indent=%d, pending_newlines=%d\n",
+    s->at_line_start, s->seen_non_whitespace, s->indent_scanned, s->current_indent, s->pending_newlines);
   DEBUG_LOG("[SCANNER_STATE]     stack_size=%u, stack=[", s->indents.size);
   for (uint32_t i = 0; i < s->indents.size; i++) {
     DEBUG_LOG("%d%s", s->indents.contents[i], (i < s->indents.size-1) ? ", " : "");
   }
   DEBUG_LOG("]\n");
 
-  // Serialize flags (1 byte): bit 0 = at_line_start, bit 1 = seen_non_whitespace
+  // Serialize flags (1 byte): bit 0 = at_line_start, bit 1 = seen_non_whitespace, bit 2 = indent_scanned
   uint8_t flags = 0;
   if (s->at_line_start) flags |= 0x01;
   if (s->seen_non_whitespace) flags |= 0x02;
+  if (s->indent_scanned) flags |= 0x04;
   buffer[pos++] = (char)flags;
 
   // Serialize pending_newlines (2 bytes, little-endian)
   buffer[pos++] = (char)(s->pending_newlines & 0xFF);
   buffer[pos++] = (char)((s->pending_newlines >> 8) & 0xFF);
 
-  DEBUG_LOG("[SCANNER_STATE]     packed flags: 0x%02x (at_line_start=%d, seen_non_ws=%d)\n",
-    flags, (flags & 0x01) != 0, (flags & 0x02) != 0);
+  // Serialize current_indent (2 bytes, little-endian)
+  buffer[pos++] = (char)(s->current_indent & 0xFF);
+  buffer[pos++] = (char)((s->current_indent >> 8) & 0xFF);
+
+  DEBUG_LOG("[SCANNER_STATE]     packed flags: 0x%02x (at_line_start=%d, seen_non_ws=%d, indent_scanned=%d)\n",
+    flags, (flags & 0x01) != 0, (flags & 0x02) != 0, (flags & 0x04) != 0);
   DEBUG_LOG("[SCANNER_STATE]     packed pending_newlines: %d (bytes: 0x%02x 0x%02x)\n",
     s->pending_newlines, (s->pending_newlines & 0xFF), ((s->pending_newlines >> 8) & 0xFF));
+  DEBUG_LOG("[SCANNER_STATE]     packed current_indent: %d (bytes: 0x%02x 0x%02x)\n",
+    s->current_indent, (s->current_indent & 0xFF), ((s->current_indent >> 8) & 0xFF));
 
-  // Calculate maximum number of entries that fit in buffer (after flags + pending_newlines)
-  uint32_t max_entries = (TREE_SITTER_SERIALIZATION_BUFFER_SIZE - 1 - 2 - 1) / 2;
+  // Calculate maximum number of entries that fit in buffer (after flags + pending_newlines + current_indent)
+  uint32_t max_entries = (TREE_SITTER_SERIALIZATION_BUFFER_SIZE - 1 - 2 - 2 - 1) / 2;
 
   // Serialize indent stack size (1 byte), clamped to both 255 and buffer capacity
   uint8_t size = (uint8_t)s->indents.size;
@@ -157,25 +166,34 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   // Default to line start state for empty buffer or fresh initialization
   s->at_line_start = true;
   s->seen_non_whitespace = false;
+  s->indent_scanned = false;
   s->current_indent = 0;
   s->pending_newlines = 0;
 
   if (length > 0) {
     unsigned pos = 0;
 
-    // Restore flags (1 byte): bit 0 = at_line_start, bit 1 = seen_non_whitespace
+    // Restore flags (1 byte): bit 0 = at_line_start, bit 1 = seen_non_whitespace, bit 2 = indent_scanned
     uint8_t flags = (uint8_t)buffer[pos++];
     s->at_line_start = (flags & 0x01) != 0;
     s->seen_non_whitespace = (flags & 0x02) != 0;
+    s->indent_scanned = (flags & 0x04) != 0;
 
-    DEBUG_LOG("[SCANNER_STATE]     restored flags: 0x%02x -> at_line_start=%d, seen_non_ws=%d\n",
-      flags, s->at_line_start, s->seen_non_whitespace);
+    DEBUG_LOG("[SCANNER_STATE]     restored flags: 0x%02x -> at_line_start=%d, seen_non_ws=%d, indent_scanned=%d\n",
+      flags, s->at_line_start, s->seen_non_whitespace, s->indent_scanned);
 
     // Restore pending_newlines (2 bytes, little-endian)
     if (pos + 2 <= length) {
       s->pending_newlines = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
       pos += 2;
       DEBUG_LOG("[SCANNER_STATE]     restored pending_newlines: %d\n", s->pending_newlines);
+    }
+
+    // Restore current_indent (2 bytes, little-endian)
+    if (pos + 2 <= length) {
+      s->current_indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
+      pos += 2;
+      DEBUG_LOG("[SCANNER_STATE]     restored current_indent: %d\n", s->current_indent);
     }
 
     if (pos < length) {
@@ -205,8 +223,8 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
     array_push(&s->indents, base);
   }
 
-  DEBUG_LOG("[SCANNER_STATE]     final state: at_line_start=%d, seen_non_ws=%d, current_indent=%d, pending_newlines=%d, stack_size=%u\n",
-    s->at_line_start, s->seen_non_whitespace, s->current_indent, s->pending_newlines, s->indents.size);
+  DEBUG_LOG("[SCANNER_STATE]     final state: at_line_start=%d, seen_non_ws=%d, indent_scanned=%d, current_indent=%d, pending_newlines=%d, stack_size=%u\n",
+    s->at_line_start, s->seen_non_whitespace, s->indent_scanned, s->current_indent, s->pending_newlines, s->indents.size);
   DEBUG_LOG("[SCANNER_STATE]     stack=[");
   for (uint32_t i = 0; i < s->indents.size; i++) {
     DEBUG_LOG("%d%s", s->indents.contents[i], (i < s->indents.size-1) ? ", " : "");
@@ -340,25 +358,13 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   Scanner *s = (Scanner *)payload;
   const char *no_token_reason = NULL;  /* Reason code for return false */
 
-  DEBUG_LOG("[SCANNER] ENTRY: col=%u, at_line_start=%d, seen_non_ws=%d, lookahead='%c' (0x%02x), stack_size=%u\n",
-    lexer->get_column(lexer), s->at_line_start, s->seen_non_whitespace,
+  DEBUG_LOG("[SCANNER] ENTRY: col=%u, at_line_start=%d, seen_non_ws=%d, indent_scanned=%d, lookahead='%c' (0x%02x), stack_size=%u\n",
+    lexer->get_column(lexer), s->at_line_start, s->seen_non_whitespace, s->indent_scanned,
     (lexer->lookahead >= 32 && lexer->lookahead < 127) ? (char)lexer->lookahead : '?',
     (unsigned char)lexer->lookahead,
     s->indents.size);
   DEBUG_LOG("[SCANNER]       valid: INDENT=%d, DEDENT=%d, NEWLINE=%d, current_indent=%d\n",
     valid_symbols[INDENT], valid_symbols[DEDENT], valid_symbols[NEWLINE], s->current_indent);
-
-  // Recompute at_line_start and seen_non_whitespace based on lexer position
-  // Serialized state cannot be trusted across resume points
-  if (lexer->get_column(lexer) > 0) {
-    s->at_line_start = false;
-  } else {
-    // At column 0: we are at line start
-    // Reset both flags to allow full indentation handling
-    // (needed to emit multiple DEDENTs without input consumption)
-    s->at_line_start = true;
-    s->seen_non_whitespace = false;
-  }
 
   /* Handle EOF: emit remaining DEDENTs to close all indented blocks */
   if (lexer->lookahead == '\0') {
@@ -376,66 +382,73 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       valid_symbols[NEWLINE], valid_symbols[DEDENT], s->indents.size, s->current_indent);
   }
 
-  // At line start, only consume indentation if INDENT or DEDENT could be emitted.
-  // Otherwise, leave whitespace to be handled by the /[ \t]/ extras rule.
-  // Also verify we're actually at column 0 (start of line), not in the middle.
-  if (s->at_line_start && !s->seen_non_whitespace && lexer->get_column(lexer) == 0) {
-    // Loop through blank lines to accumulate pending_newlines and find next non-blank line
-    while (true) {
-      // Always analyze indentation at line start, regardless of parser state
-      uint16_t old_indent = s->current_indent;
-      s->current_indent = count_indent(lexer);
-      DEBUG_LOG("[SCANNER]     Counted indent: %d (was %d), stack_top: %d, col=%u\n",
-        s->current_indent, old_indent, *array_back(&s->indents), lexer->get_column(lexer));
-      DEBUG_LOG("[SCANNER]     First non-hspace: 0x%02x ('%c')\n",
-        (unsigned char)lexer->lookahead,
-        (lexer->lookahead >= 32 && lexer->lookahead < 127) ? (char)lexer->lookahead : '?');
+  // At line start, handle indentation changes and layout tokens.
+  // Only scan indentation once per logical line (tracked by indent_scanned flag).
+  // But continue to emit DEDENT/INDENT/NEWLINE tokens while at_line_start is true.
+  if (s->at_line_start) {
+    // Scan indentation only once per line
+    if (!s->indent_scanned) {
+      // Loop through blank lines to accumulate pending_newlines and find next non-blank line
+      while (true) {
+        // Always analyze indentation at line start, regardless of parser state
+        uint16_t old_indent = s->current_indent;
+        s->current_indent = count_indent(lexer);
+        DEBUG_LOG("[SCANNER]     Counted indent: %d (was %d), stack_top: %d, col=%u\n",
+          s->current_indent, old_indent, *array_back(&s->indents), lexer->get_column(lexer));
+        DEBUG_LOG("[SCANNER]     First non-hspace: 0x%02x ('%c')\n",
+          (unsigned char)lexer->lookahead,
+          (lexer->lookahead >= 32 && lexer->lookahead < 127) ? (char)lexer->lookahead : '?');
 
-      // Check if this is a blank line (whitespace + newline/comment)
-      if (is_blank_line(lexer)) {
-        DEBUG_LOG("[SCANNER]     Line is blank (ends with newline/comment)\n");
+        // Check if this is a blank line (whitespace + newline/comment)
+        if (is_blank_line(lexer)) {
+          DEBUG_LOG("[SCANNER]     Line is blank (ends with newline/comment)\n");
 
-        // Blank line: consume through the newline and track pending newline
-        uint32_t consumed_count = 0;
-        while (!is_newline(lexer->lookahead) && lexer->lookahead != '\0') {
-          DEBUG_LOG("[SCANNER]         consuming: 0x%02x\n", (unsigned char)lexer->lookahead);
-          lexer->advance(lexer, true);
-          consumed_count++;
+          // Blank line: consume through the newline and track pending newline
+          uint32_t consumed_count = 0;
+          while (!is_newline(lexer->lookahead) && lexer->lookahead != '\0') {
+            DEBUG_LOG("[SCANNER]         consuming: 0x%02x\n", (unsigned char)lexer->lookahead);
+            lexer->advance(lexer, true);
+            consumed_count++;
+          }
+          DEBUG_LOG("[SCANNER]     consumed %u chars until EOL, now at: 0x%02x\n",
+            consumed_count, (unsigned char)lexer->lookahead);
+
+          // Consume the newline itself and track it
+          bool consumed_newline = false;
+          if (lexer->lookahead == '\r') {
+            DEBUG_LOG("[SCANNER]     consuming CR\n");
+            lexer->advance(lexer, true);
+            consumed_newline = true;
+          }
+          if (lexer->lookahead == '\n') {
+            DEBUG_LOG("[SCANNER]     consuming LF\n");
+            lexer->advance(lexer, true);
+            consumed_newline = true;
+          }
+
+          // Track blank line as pending (deferred emission after dedents)
+          if (consumed_newline) {
+            s->pending_newlines++;
+            DEBUG_LOG("[SCANNER]     blank line consumed, pending_newlines now %d (will emit after dedents)\n", s->pending_newlines);
+            s->at_line_start = true;
+            s->seen_non_whitespace = false;
+            s->indent_scanned = false;
+            // Continue loop to next line without emitting yet
+            continue;
+          }
+
+          // No newline consumed (EOF case): break out to handle pending tokens
+          DEBUG_LOG("[SCANNER]     no newline to consume (at EOF)\n");
+          break;
+        } else {
+          // Non-blank line: exit loop to process dedents/indents
+          break;
         }
-        DEBUG_LOG("[SCANNER]     consumed %u chars until EOL, now at: 0x%02x\n",
-          consumed_count, (unsigned char)lexer->lookahead);
+      } // end blank-line loop
 
-        // Consume the newline itself and track it
-        bool consumed_newline = false;
-        if (lexer->lookahead == '\r') {
-          DEBUG_LOG("[SCANNER]     consuming CR\n");
-          lexer->advance(lexer, true);
-          consumed_newline = true;
-        }
-        if (lexer->lookahead == '\n') {
-          DEBUG_LOG("[SCANNER]     consuming LF\n");
-          lexer->advance(lexer, true);
-          consumed_newline = true;
-        }
-
-        // Track blank line as pending (deferred emission after dedents)
-        if (consumed_newline) {
-          s->pending_newlines++;
-          DEBUG_LOG("[SCANNER]     blank line consumed, pending_newlines now %d (will emit after dedents)\n", s->pending_newlines);
-          s->at_line_start = true;
-          s->seen_non_whitespace = false;
-          // Continue loop to next line without emitting yet
-          continue;
-        }
-
-        // No newline consumed (EOF case): break out to handle pending tokens
-        DEBUG_LOG("[SCANNER]     no newline to consume (at EOF)\n");
-        break;
-      } else {
-        // Non-blank line: exit loop to process dedents/indents
-        break;
-      }
-    } // end blank-line loop
+      // Mark that we've scanned indentation for this line
+      s->indent_scanned = true;
+    }
 
     // Now handle dedents (must be done before indent detection)
     if (valid_symbols[INDENT] || valid_symbols[DEDENT]) {
@@ -457,29 +470,25 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     if (valid_symbols[INDENT] || valid_symbols[DEDENT]) {
       if (emit_indent(s, lexer, valid_symbols)) {
         s->at_line_start = false;
-        s->seen_non_whitespace = true;
+        s->seen_non_whitespace = false;
         return true;
       }
 
       DEBUG_LOG("[SCANNER]     No INDENT/DEDENT emitted, clearing at_line_start\n");
       s->at_line_start = false;
     } else {
-      // INDENT/DEDENT not valid in current parser state.
-      // Don't consume indentation; let /[ \t]/ extras handle it.
-      DEBUG_LOG("[SCANNER] >>> INDENTATION DECISION: EXTRAS will consume indentation\n");
-      DEBUG_LOG("[SCANNER]     Reason: INDENT=%d, DEDENT=%d (neither valid in this parser state)\n",
+      // Layout tokens not valid in current parser state.
+      // Indentation has been consumed and measured, but we can't emit INDENT/DEDENT tokens.
+      // Parser will consume remaining whitespace via /[ \t]/ extras rule.
+      DEBUG_LOG("[SCANNER] >>> INDENTATION MEASURED BUT NO TOKENS: layout not valid in parser state\n");
+      DEBUG_LOG("[SCANNER]     Reason: INDENT=%d, DEDENT=%d (neither valid)\n",
         valid_symbols[INDENT], valid_symbols[DEDENT]);
-      DEBUG_LOG("[SCANNER]     Lookahead: 0x%02x ('%c'), col=%u (indentation will be consumed by /[ \\t]/ rule)\n",
+      DEBUG_LOG("[SCANNER]     Lookahead: 0x%02x ('%c'), col=%u\n",
         (unsigned char)lexer->lookahead,
         (lexer->lookahead >= 32 && lexer->lookahead < 127) ? (char)lexer->lookahead : '?',
         lexer->get_column(lexer));
       s->at_line_start = false;
     }
-  } else if (s->at_line_start && lexer->get_column(lexer) > 0) {
-    // We're at_line_start but not at column 0 (shouldn't happen, but reset the flag just in case)
-    DEBUG_LOG("[SCANNER] !!! INCONSISTENT STATE: at_line_start=true but col=%u > 0, resetting\n",
-      lexer->get_column(lexer));
-    s->at_line_start = false;
   }
 
   // Skip trailing horizontal whitespace before checking for newline.
@@ -487,7 +496,6 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   if (valid_symbols[NEWLINE]) {
     uint32_t hspace_skipped = 0;
     while (is_hspace(lexer->lookahead)) {
-      char skipped_char = (char)lexer->lookahead;
       lexer->advance(lexer, true);  // skip as whitespace
       hspace_skipped++;
     }
@@ -513,13 +521,14 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       (unsigned char)lexer->lookahead, lexer->get_column(lexer));
     s->at_line_start = true;
     s->seen_non_whitespace = false;
+    s->indent_scanned = false;
     lexer->result_symbol = NEWLINE;
-    DEBUG_LOG("[SCANNER]     set result_symbol=NEWLINE (value=%d), at_line_start=true\n", NEWLINE);
+    DEBUG_LOG("[SCANNER]     set result_symbol=NEWLINE (value=%d), at_line_start=true, indent_scanned=false\n", NEWLINE);
     return true;
   }
 
-  DEBUG_LOG("[SCANNER] EXIT (no token): reason='%s', at_line_start=%d, seen_non_ws=%d, lookahead=0x%02x\n",
-    no_token_reason ? no_token_reason : "no_handler", s->at_line_start, s->seen_non_whitespace,
+  DEBUG_LOG("[SCANNER] EXIT (no token): reason='%s', at_line_start=%d, seen_non_ws=%d, indent_scanned=%d, lookahead=0x%02x\n",
+    no_token_reason ? no_token_reason : "no_handler", s->at_line_start, s->seen_non_whitespace, s->indent_scanned,
     (unsigned char)lexer->lookahead);
 
 return_no_token:
