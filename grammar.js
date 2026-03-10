@@ -328,8 +328,17 @@ module.exports = grammar({
 				field("ability", $.type_name),
 				$.kw_for,
 				field("type", $.type_name),
-				field("methods", indented_list($, $.let_binding)),
+				field("methods", indented_list($, $.implementation_method, { at_least_one: true })),
 			),
+
+	implementation_method: ($) =>
+		seq(
+			attribute_prefix($),
+			field("name", $.identifier),
+			repeat(field("param", $.identifier)),
+			$.equals,
+			field("value", inline_or_block($, $.expression)),
+		),
 
 		// Ability declaration with indented method annotations.
 		// Example:

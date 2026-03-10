@@ -1300,35 +1300,27 @@
                 "name": "indent"
               },
               {
-                "type": "CHOICE",
+                "type": "SEQ",
                 "members": [
                   {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "let_binding"
-                      },
-                      {
-                        "type": "REPEAT",
-                        "content": {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "newline"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "let_binding"
-                            }
-                          ]
-                        }
-                      }
-                    ]
+                    "type": "SYMBOL",
+                    "name": "implementation_method"
                   },
                   {
-                    "type": "BLANK"
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "newline"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "implementation_method"
+                        }
+                      ]
+                    }
                   }
                 ]
               },
@@ -1342,6 +1334,91 @@
               {
                 "type": "SYMBOL",
                 "name": "dedent"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "implementation_method": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "attribute"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "FIELD",
+            "name": "param",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "equals"
+        },
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "expression"
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "newline"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "indent"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "expression"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    }
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "dedent"
+                  }
+                ]
               }
             ]
           }

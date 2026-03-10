@@ -1573,11 +1573,11 @@
             "named": true
           },
           {
-            "type": "indent",
+            "type": "implementation_method",
             "named": true
           },
           {
-            "type": "let_binding",
+            "type": "indent",
             "named": true
           },
           {
@@ -1607,6 +1607,72 @@
         },
         {
           "type": "kw_implement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "implementation_method",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "param": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "equals",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
