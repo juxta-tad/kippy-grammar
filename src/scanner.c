@@ -187,7 +187,7 @@ static inline void enter_midline(Scanner *s) {
 }
 
 static inline void enter_bol_unscanned(Scanner *s) {
-  enter_bol_unscanned(s);
+  s->phase = SCAN_BOL_UNSCANNED;
 }
 
 static inline void enter_bol_scanned(Scanner *s) {
@@ -410,6 +410,10 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
  * Line-Start Computation and Application
  * ========================================================================= */
 
+// Forward declarations for helpers used in compute_line_start_info
+static inline bool is_blank_line(TSLexer *lexer);
+static inline uint16_t count_indent(TSLexer *lexer);
+
 // Result of computing line-start information (blank line skipping + indent measurement)
 typedef struct {
   bool has_content_line;  // True if we found a non-blank line with content
@@ -420,32 +424,17 @@ typedef struct {
 // Compute line-start information from lexer: skip blank lines and measure indentation
 // Mutates lexer position but does NOT mutate scanner state
 static inline LineStartInfo compute_line_start_info(TSLexer *lexer) {
-  LineStartInfo info = {.has_content_line = false, .indent = 0, .blank_count = 0};
+  LineStartInfo info = {0};
 
-  while (true) {
-    if (is_blank_line(lexer)) {
-      bool consumed_newline = false;
+  while (is_blank_line(lexer)) {
+    if (lexer->lookahead == '\r') lexer->advance(lexer, true);
+    if (lexer->lookahead == '\n') lexer->advance(lexer, true);
+    info.blank_count++;
+  }
 
-      if (lexer->lookahead == '\r') {
-        lexer->advance(lexer, true);
-        consumed_newline = true;
-      }
-      if (lexer->lookahead == '\n') {
-        lexer->advance(lexer, true);
-        consumed_newline = true;
-      }
-
-      if (consumed_newline) {
-        info.blank_count++;
-        continue;
-      }
-      break;
-    }
-
-    // Found non-blank line; measure its indentation
+  if (!is_blank_line(lexer)) {
     info.has_content_line = true;
     info.indent = count_indent(lexer);
-    break;
   }
 
   return info;
@@ -454,17 +443,12 @@ static inline LineStartInfo compute_line_start_info(TSLexer *lexer) {
 // Apply computed line-start information to scanner state
 // Updates queued_newlines and line_indent based on the computed info
 static inline void apply_line_start_info(Scanner *s, LineStartInfo info) {
-  // Queue blank lines, respecting the pending newlines limit
-  for (uint16_t i = 0; i < info.blank_count; i++) {
-    if (s->queued_newlines < MAX_PENDING_NEWLINES) {
-      s->queued_newlines++;
-    }
-  }
+  uint16_t limit = MAX_PENDING_NEWLINES - s->queued_newlines;
+  if (info.blank_count < limit) limit = info.blank_count;
+  s->queued_newlines += limit;
 
-  // If we found a content line, set its indentation
-  if (info.has_content_line) {
+  if (info.has_content_line)
     s->line_indent = info.indent;
-  }
 }
 
 /* =========================================================================
@@ -517,27 +501,20 @@ static inline bool emit_dedent(Scanner *s, TSLexer *lexer, const bool *valid_sym
 static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   check_indent_invariants(s);
 
-  if (!valid_symbols[INDENT]) return false;
+  if (!valid_symbols[INDENT] ||
+      s->line_indent <= top_indent(s) ||
+      s->indents.size >= MAX_INDENT_DEPTH)
+    return false;
 
-  if (s->line_indent > top_indent(s)) {
-    if (s->indents.size >= MAX_INDENT_DEPTH) {
-      return false;
-    }
+  uint32_t n = s->indents.size;
+  array_push(&s->indents, s->line_indent);
+  if (s->indents.size != n + 1)
+    return false;
 
-    uint32_t size_before = s->indents.size;
-    array_push(&s->indents, s->line_indent);
-
-    if (s->indents.size != size_before + 1) {
-      return false; // Allocation failed
-    }
-
-    check_indent_invariants(s);
-    lexer->result_symbol = INDENT;
-    lexer->mark_end(lexer);
-    return true;
-  }
-
-  return false;
+  check_indent_invariants(s);
+  lexer->result_symbol = INDENT;
+  lexer->mark_end(lexer);
+  return true;
 }
 
 static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
@@ -588,7 +565,7 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
 bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
   if (!payload || !lexer || !valid_symbols) return false;
 
-  Scanner *s = (Scanner *)payload;
+  Scanner *s = payload;
   assert(s->magic == SCANNER_MAGIC);
 
   DEBUG_LOG("[SCAN] phase=%d lookahead='%c'(0x%x) valid[INDENT]=%d valid[DEDENT]=%d\n",
@@ -597,11 +574,8 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     lexer->lookahead,
     valid_symbols[INDENT], valid_symbols[DEDENT]);
 
-  // ═════════════════════════════════════════════════════════════════════════
-  // PHASE 1: EOF HANDLING
-  // ═════════════════════════════════════════════════════════════════════════
   if (lexer->eof(lexer)) {
-    DEBUG_LOG("[PHASE1] EOF: queued_newlines=%u indents.size=%d\n", s->queued_newlines, s->indents.size);
+    DEBUG_LOG("[EOF] queued_newlines=%u indents.size=%d\n", s->queued_newlines, s->indents.size);
 
     if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
       s->queued_newlines--;
@@ -610,42 +584,25 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       return true;
     }
 
-    if (s->indents.size > 1 && s->line_indent < top_indent(s) && valid_symbols[DEDENT]) {
-      return emit_dedent(s, lexer, valid_symbols);
-    }
-
-    return false; // All tokens emitted; no more indentation to close
+    return s->indents.size > 1 &&
+           s->line_indent < top_indent(s) &&
+           valid_symbols[DEDENT] &&
+           emit_dedent(s, lexer, valid_symbols);
   }
 
-  // ═════════════════════════════════════════════════════════════════════════
-  // PHASE 2: LINE-START LAYOUT HANDLING
-  // ═════════════════════════════════════════════════════════════════════════
-
-  if (scan_line_start_layout(s, lexer, valid_symbols)) {
+  if (scan_line_start_layout(s, lexer, valid_symbols))
     return true;
-  }
-
-  // ═════════════════════════════════════════════════════════════════════════
-  // PHASE 3: ORDINARY NEWLINE DETECTION
-  // ═════════════════════════════════════════════════════════════════════════
 
   DEBUG_LOG("[PHASE3] checking for NEWLINE\n");
-  if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
-    if (lexer->lookahead == '\r') {
-      lexer->advance(lexer, false);
-    }
-    if (lexer->lookahead == '\n') {
-      lexer->advance(lexer, false);
-    }
+  if (!valid_symbols[NEWLINE] || !is_newline(lexer->lookahead))
+    return false;
 
-    lexer->mark_end(lexer);
-    enter_bol_unscanned(s);
-    lexer->result_symbol = NEWLINE;
+  if (lexer->lookahead == '\r') lexer->advance(lexer, false);
+  if (lexer->lookahead == '\n') lexer->advance(lexer, false);
 
-    log_emit("NEWLINE", s, lexer);
-    return true;
-  }
-
-  DEBUG_LOG("[SCAN] No token emitted\n");
-  return false;
+  lexer->mark_end(lexer);
+  enter_bol_unscanned(s);
+  lexer->result_symbol = NEWLINE;
+  log_emit("NEWLINE", s, lexer);
+  return true;
 }
