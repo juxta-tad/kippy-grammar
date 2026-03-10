@@ -426,13 +426,20 @@ typedef struct {
 static inline LineStartInfo compute_line_start_info(TSLexer *lexer) {
   LineStartInfo info = {0};
 
-  while (is_blank_line(lexer)) {
+  while (true) {
+    if (lexer->eof(lexer)) {
+      break;
+    }
+    if (!is_newline(lexer->lookahead)) {
+      break;
+    }
+
     if (lexer->lookahead == '\r') lexer->advance(lexer, true);
     if (lexer->lookahead == '\n') lexer->advance(lexer, true);
     info.blank_count++;
   }
 
-  if (!is_blank_line(lexer)) {
+  if (!lexer->eof(lexer) && !is_newline(lexer->lookahead)) {
     info.has_content_line = true;
     info.indent = count_indent(lexer);
   }
