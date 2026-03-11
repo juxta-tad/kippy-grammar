@@ -56,13 +56,13 @@ module.exports = grammar({
 	// Using tree-sitter's reserved mechanism instead of lexical precedence.
 	reserved: {
 		global: ($) => [
-			'pub', 'let', 'cert', 'expect',
-			'if', 'then', 'else',
-			'when', 'is', 'in', 'where',
-			'with', 'extend', 'ability',
-			'module', 'use', 'using',
-			'build', 'type', 'sig', 'fn', 'test',
-			'or', 'and', 'not', 'as',
+			$.kw_pub, $.kw_let, $.kw_cert, $.kw_expect,
+			$.kw_if, $.kw_then, $.kw_else,
+			$.kw_when, $.kw_is, $.kw_in, $.kw_where,
+			$.kw_with, $.kw_extend, $.kw_ability,
+			$.kw_module, $.kw_use, $.kw_using,
+			$.kw_build, $.kw_type, $.kw_sig, $.kw_fn, $.kw_test,
+			$.kw_or, $.kw_and, $.kw_not, $.kw_as,
 		],
 		// 'none' context: keywords are allowed (e.g., field names)
 		none: ($) => [],
@@ -459,7 +459,7 @@ module.exports = grammar({
 				$.record_body,
 			),
 
-		field_name: ($) => reserved('none', $.identifier),
+		field_name: ($) => reserved('global', $.identifier),
 
 		record_field_value: ($) =>
 			choice(

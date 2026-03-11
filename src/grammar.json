@@ -2551,7 +2551,7 @@
         "type": "SYMBOL",
         "name": "identifier"
       },
-      "context_name": "none"
+      "context_name": "global"
     },
     "record_field_value": {
       "type": "CHOICE",
@@ -5547,108 +5547,108 @@
   "reserved": {
     "global": [
       {
-        "type": "STRING",
-        "value": "pub"
+        "type": "SYMBOL",
+        "name": "kw_pub"
       },
       {
-        "type": "STRING",
-        "value": "let"
+        "type": "SYMBOL",
+        "name": "kw_let"
       },
       {
-        "type": "STRING",
-        "value": "cert"
+        "type": "SYMBOL",
+        "name": "kw_cert"
       },
       {
-        "type": "STRING",
-        "value": "expect"
+        "type": "SYMBOL",
+        "name": "kw_expect"
       },
       {
-        "type": "STRING",
-        "value": "if"
+        "type": "SYMBOL",
+        "name": "kw_if"
       },
       {
-        "type": "STRING",
-        "value": "then"
+        "type": "SYMBOL",
+        "name": "kw_then"
       },
       {
-        "type": "STRING",
-        "value": "else"
+        "type": "SYMBOL",
+        "name": "kw_else"
       },
       {
-        "type": "STRING",
-        "value": "when"
+        "type": "SYMBOL",
+        "name": "kw_when"
       },
       {
-        "type": "STRING",
-        "value": "is"
+        "type": "SYMBOL",
+        "name": "kw_is"
       },
       {
-        "type": "STRING",
-        "value": "in"
+        "type": "SYMBOL",
+        "name": "kw_in"
       },
       {
-        "type": "STRING",
-        "value": "where"
+        "type": "SYMBOL",
+        "name": "kw_where"
       },
       {
-        "type": "STRING",
-        "value": "with"
+        "type": "SYMBOL",
+        "name": "kw_with"
       },
       {
-        "type": "STRING",
-        "value": "extend"
+        "type": "SYMBOL",
+        "name": "kw_extend"
       },
       {
-        "type": "STRING",
-        "value": "ability"
+        "type": "SYMBOL",
+        "name": "kw_ability"
       },
       {
-        "type": "STRING",
-        "value": "module"
+        "type": "SYMBOL",
+        "name": "kw_module"
       },
       {
-        "type": "STRING",
-        "value": "use"
+        "type": "SYMBOL",
+        "name": "kw_use"
       },
       {
-        "type": "STRING",
-        "value": "using"
+        "type": "SYMBOL",
+        "name": "kw_using"
       },
       {
-        "type": "STRING",
-        "value": "build"
+        "type": "SYMBOL",
+        "name": "kw_build"
       },
       {
-        "type": "STRING",
-        "value": "type"
+        "type": "SYMBOL",
+        "name": "kw_type"
       },
       {
-        "type": "STRING",
-        "value": "sig"
+        "type": "SYMBOL",
+        "name": "kw_sig"
       },
       {
-        "type": "STRING",
-        "value": "fn"
+        "type": "SYMBOL",
+        "name": "kw_fn"
       },
       {
-        "type": "STRING",
-        "value": "test"
+        "type": "SYMBOL",
+        "name": "kw_test"
       },
       {
-        "type": "STRING",
-        "value": "or"
+        "type": "SYMBOL",
+        "name": "kw_or"
       },
       {
-        "type": "STRING",
-        "value": "and"
+        "type": "SYMBOL",
+        "name": "kw_and"
       },
       {
-        "type": "STRING",
-        "value": "not"
+        "type": "SYMBOL",
+        "name": "kw_not"
       },
       {
-        "type": "STRING",
-        "value": "as"
+        "type": "SYMBOL",
+        "name": "kw_as"
       }
     ],
     "none": []
