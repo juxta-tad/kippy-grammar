@@ -2847,7 +2847,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "equals"
+          "name": "thick_arrow"
         },
         {
           "type": "FIELD",
@@ -3876,7 +3876,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "arrow_op"
+          "name": "arrow"
         },
         {
           "type": "FIELD",
@@ -4105,7 +4105,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "arrow_op"
+                "name": "arrow"
               },
               {
                 "type": "FIELD",
@@ -4189,7 +4189,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "arrow_op"
+                "name": "arrow"
               },
               {
                 "type": "FIELD",
@@ -5548,9 +5548,13 @@
       "type": "STRING",
       "value": ">"
     },
-    "arrow_op": {
+    "arrow": {
       "type": "STRING",
       "value": "->"
+    },
+    "thick_arrow": {
+      "type": "STRING",
+      "value": "=>"
     },
     "try_op": {
       "type": "STRING",

@@ -475,7 +475,7 @@ module.exports = grammar({
 		map_entry: ($) =>
 			seq(
 				field("key", $.expression),
-				$.equals,
+				$.thick_arrow,
 				field("value", $.expression),
 			),
 
@@ -648,7 +648,7 @@ module.exports = grammar({
 		when_arm: ($) =>
 			seq(
 				field("pattern", $.pattern),
-				$.arrow_op,
+				$.arrow,
 				field("value", $.arm_expression),
 			),
 
@@ -688,7 +688,7 @@ module.exports = grammar({
 			prec.right(choice(
 				seq(
 					field("left", $.function_type_left),
-					$.arrow_op,
+					$.arrow,
 					field("right", inline_or_block($, $.type_expression)),
 				),
 				$.non_arrow_type,
@@ -699,7 +699,7 @@ module.exports = grammar({
 			prec.right(choice(
 				seq(
 					field("left", choice($.non_arrow_type, $.variadic_type)),
-					$.arrow_op,
+					$.arrow,
 					field("right", inline_or_block($, $.type_expression)),
 				),
 				$.non_arrow_type,
@@ -1007,7 +1007,8 @@ module.exports = grammar({
 		lt_op: ($) => "<",
 		gt_op: ($) => ">",
 
-		arrow_op: ($) => "->",
+		arrow: ($) => "->",
+		thick_arrow: ($) => "=>",
 		try_op: ($) => "?",
 		possessive: ($) => token.immediate("'s"),
 
