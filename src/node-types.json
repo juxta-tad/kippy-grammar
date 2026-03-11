@@ -61,6 +61,10 @@
         {
           "type": "newline",
           "named": true
+        },
+        {
+          "type": "type_parameter_list",
+          "named": true
         }
       ]
     }

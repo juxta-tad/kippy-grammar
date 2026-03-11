@@ -301,6 +301,7 @@ module.exports = grammar({
 				attribute_prefix($),
 				$.kw_ability,
 				field("name", $.type_name),
+				optional($.type_parameter_list),
 				field(
 					"methods",
 					indented_list($, $.annotation, { at_least_one: true }),
@@ -1064,7 +1065,7 @@ function indented_body_in_list($, rule) {
 		$.newline,
 		$.indent,
 		rule,
-		$.newline,
+		repeat($.newline),
 		$.dedent,
 	);
 }

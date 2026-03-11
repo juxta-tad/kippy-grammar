@@ -1400,8 +1400,11 @@
                     "name": "expression"
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "newline"
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    }
                   },
                   {
                     "type": "SYMBOL",
@@ -1444,6 +1447,18 @@
             "type": "SYMBOL",
             "name": "type_name"
           }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "type_parameter_list"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "FIELD",
@@ -3869,8 +3884,11 @@
               "name": "expression"
             },
             {
-              "type": "SYMBOL",
-              "name": "newline"
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
             },
             {
               "type": "SYMBOL",
