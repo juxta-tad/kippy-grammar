@@ -89,9 +89,8 @@ module.exports = grammar({
 			$.kw_and,
 			$.kw_not,
 			$.kw_as,
+			$.kw_self,
 		],
-		// 'none' context: keywords are allowed (e.g., field names)
-		none: ($) => [],
 	},
 
 	// layout-sensitive tokens are provided externally by the scanner.
@@ -295,7 +294,7 @@ module.exports = grammar({
 		attribute_argument: ($) =>
 			choice(
 				$.expression,
-				seq(field("name", $.identifier), $.colon, field("value", $.expression)),
+				seq(field("name", $.identifier), $.equals, field("value", $.expression)),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -317,9 +316,10 @@ module.exports = grammar({
 			seq(
 				attribute_prefix($),
 				field("name", $.identifier),
+				optional(field("receiver", $.receiver_parameter)),
 				repeat(field("param", $.identifier)),
 				$.equals,
-				field("value", inline_or_block_in_list($, $.expression)),
+				field("value", inline_or_block($, $.expression)),
 			),
 
 		ability_declaration: ($) =>
@@ -342,10 +342,13 @@ module.exports = grammar({
 				$.kw_test,
 				field("name", $.static_string),
 				$.colon,
-				field("body", indented_body($, $.expression)),
+				field("body", block_body($, $.expression)),
 			),
 
 		binding_target: ($) => reserved("global", $.identifier),
+
+
+	receiver_parameter: ($) => $.kw_self,
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
@@ -399,16 +402,15 @@ module.exports = grammar({
 				field("method", $.identifier),
 			),
 
-		restricted_postfix_suffix: ($) =>
-			choice(
-				field("indexing", $.index_suffix),
-				$.method_suffix,
-				$.try_op,
-				seq(
-					$.possessive,
-					field("field", $.field_name),
-				),
+		ability_method_suffix: ($) =>
+			seq(
+				$.at_sign,
+				field("ability", $.type_name),
+				$.dot,
+				field("method", $.identifier),
 			),
+
+		restricted_postfix_suffix: ($) => postfix_suffixes($, { allowCall: false }),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
@@ -423,17 +425,7 @@ module.exports = grammar({
 				),
 			),
 
-		postfix_suffix: ($) =>
-			choice(
-				field("arguments", $.call_suffix),
-				field("indexing", $.index_suffix),
-				$.method_suffix,
-				$.try_op,
-				seq(
-					$.possessive,
-					field("field", $.field_name),
-				),
-			),
+		postfix_suffix: ($) => postfix_suffixes($, { allowCall: true }),
 
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
@@ -484,10 +476,10 @@ module.exports = grammar({
 			),
 
 		record_body: ($) =>
-			choice(
-				singleLineRecordExpression($, $.record_field),
-				multiLineRecordExpression($, $.record_field),
-			),
+			record_like($, $.record_field, {
+				allowSpread: true,
+				spreadRule: $.spread_element,
+			}),
 
 		record_expression: ($) => $.record_body,
 
@@ -555,7 +547,7 @@ module.exports = grammar({
 					field("value", $.expression),
 					seq(
 						$.let_binding,
-						repeat(seq(repeat($.newline), $.let_binding)),
+						repeat(seq(repeat1($.newline), $.let_binding)),
 						repeat($.newline),
 						$.kw_in,
 						field("value", $.expression),
@@ -678,7 +670,7 @@ module.exports = grammar({
 				$.field_name,
 			),
 
-		arm_expression: ($) => inline_or_block_in_list($, $.expression),
+		arm_expression: ($) => inline_or_block($, $.expression),
 
 		when_arm: ($) =>
 			seq(
@@ -968,7 +960,9 @@ module.exports = grammar({
 
 		name: ($) => choice($.identifier, $.tag_name),
 
-		long_identifier: ($) => prec.left(dotted1($, $.name, $.name)),
+		value_name: ($) => choice($.identifier, $.kw_self),
+
+		long_identifier: ($) => prec.left(dotted1($, $.value_name, $.name)),
 
 		placeholder: ($) => token("__"),
 
@@ -1002,6 +996,7 @@ module.exports = grammar({
 		kw_and: ($) => "and",
 		kw_not: ($) => "not",
 		kw_as: ($) => "as",
+		kw_self: ($) => "self",
 
 		lparen: ($) => "(",
 		rparen: ($) => ")",
@@ -1048,7 +1043,7 @@ module.exports = grammar({
 		try_op: ($) => "?",
 		possessive: ($) => token.immediate("'s"),
 
-		type_record: ($) => recordType($, $.record_type_field),
+		type_record: ($) => record_like($, $.record_type_field),
 
 		type_wildcard: ($) => "_",
 
@@ -1080,17 +1075,7 @@ function singleLineBracket(open, commaToken, item, close) {
 	);
 }
 
-function indented_body($, rule) {
-	return seq(
-		$.newline,
-		$.indent,
-		rule,
-		repeat($.newline),
-		$.dedent,
-	);
-}
-
-function indented_body_in_list($, rule) {
+function block_body($, rule) {
 	return seq(
 		$.newline,
 		$.indent,
@@ -1104,10 +1089,10 @@ function indented_list($, item, { at_least_one = false } = {}) {
 	const body = at_least_one
 		? seq(
 			item,
-			repeat(choice($.newline, item)),
+			repeat(seq($.newline, item)),
 		)
 		: choice(
-			seq(item, repeat(choice($.newline, item))),
+			seq(item, repeat(seq($.newline, item))),
 			repeat($.newline),
 		);
 
@@ -1120,17 +1105,23 @@ function indented_list($, item, { at_least_one = false } = {}) {
 }
 
 function inline_or_block($, rule) {
-	return choice(
-		rule,
-		indented_body($, rule),
-	);
+	return choice(rule, block_body($, rule));
 }
 
-function inline_or_block_in_list($, rule) {
-	return choice(
-		rule,
-		indented_body_in_list($, rule),
-	);
+function postfix_suffixes($, { allowCall }) {
+	const parts = [
+		field("indexing", $.index_suffix),
+		$.method_suffix,
+		$.ability_method_suffix,
+		$.try_op,
+		seq($.possessive, field("field", $.field_name)),
+	];
+
+	if (allowCall) {
+		parts.unshift(field("arguments", $.call_suffix));
+	}
+
+	return choice(...parts);
 }
 
 function dotted1($, head, tail) {
@@ -1141,7 +1132,7 @@ function dotted1($, head, tail) {
 }
 
 function attribute_prefix($) {
-	return repeat(seq($.attribute, $.newline));
+	return repeat(seq($.attribute, optional($.newline)));
 }
 
 function left_assoc_chain(precValue, operand, operator) {
@@ -1302,87 +1293,64 @@ function commaSep1TrailMultiline($, rule, commaToken, sepToken) {
 	);
 }
 
-function multiLineRecordType($, field) {
-	return seq(
-		$.lbrace,
-		$.newline,
-		$.indent,
-		optional(seq(
-			field,
-			repeat(seq(
-				optional($.semicolon),
-				repeat1($.newline),
-				field,
-			)),
-			optional($.semicolon),
-		)),
-		repeat($.newline),
-		$.dedent,
-		$.rbrace,
-	);
-}
-
-function singleLineRecordType($, field) {
-	return seq(
-		$.lbrace,
-		optional(seq(
-			field,
-			repeat(seq($.semicolon, field)),
-			optional($.semicolon),
-		)),
-		$.rbrace,
-	);
-}
-
-function recordType($, field) {
+function record_like($, fieldRule, { allowSpread = false, spreadRule = null }) {
 	return choice(
-		singleLineRecordType($, field),
-		multiLineRecordType($, field),
-	);
-}
-
-function singleLineRecordExpression($, field) {
-	return seq(
-		$.lbrace,
-		optional(choice(
-			seq(
-				field,
-				repeat(seq($.semicolon, field)),
-				optional(seq($.semicolon, $.spread_element)),
+		seq(
+			$.lbrace,
+			optional(
+				allowSpread
+					? choice(
+							seq(
+								fieldRule,
+								repeat(seq($.semicolon, fieldRule)),
+								optional(seq($.semicolon, spreadRule)),
+							),
+							spreadRule,
+					  )
+					: seq(
+							fieldRule,
+							repeat(seq($.semicolon, fieldRule)),
+							optional($.semicolon),
+					  ),
 			),
-			$.spread_element,
-		)),
-		$.rbrace,
-	);
-}
-
-function multiLineRecordExpression($, field) {
-	return seq(
-		$.lbrace,
-		$.newline,
-		$.indent,
-		optional(choice(
-			seq(
-				field,
-				repeat(seq(
-					optional($.semicolon),
-					repeat1($.newline),
-					field,
-				)),
-				optional(seq(
-					optional($.semicolon),
-					repeat1($.newline),
-					$.spread_element,
-				)),
-				optional($.semicolon),
+			$.rbrace,
+		),
+		seq(
+			$.lbrace,
+			$.newline,
+			$.indent,
+			optional(
+				allowSpread
+					? choice(
+							seq(
+								fieldRule,
+								repeat(seq(
+									optional($.semicolon),
+									repeat1($.newline),
+									fieldRule,
+								)),
+								optional(seq(
+									optional($.semicolon),
+									repeat1($.newline),
+									spreadRule,
+								)),
+								optional($.semicolon),
+							),
+							seq(spreadRule, optional($.semicolon)),
+					  )
+					: seq(
+							fieldRule,
+							repeat(seq(
+								optional($.semicolon),
+								repeat1($.newline),
+								fieldRule,
+							)),
+							optional($.semicolon),
+					  ),
 			),
-			seq(
-				$.spread_element,
-				optional($.semicolon),
-			),
-		)),
-		repeat($.newline),
-		$.dedent,
-		$.rbrace,
+			repeat($.newline),
+			$.dedent,
+			$.rbrace,
+		),
 	);
 }
