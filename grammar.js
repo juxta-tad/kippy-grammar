@@ -221,6 +221,14 @@ module.exports = grammar({
 				optional($.kw_pub),
 				$.kw_let,
 				field("name", $.binding_target),
+				optional(seq(
+					$.kw_with,
+					field("param", $.identifier),
+					repeat(seq(
+						$.comma,
+						field("param", $.identifier),
+					)),
+				)),
 				choice(
 					seq(
 						$.colon,
@@ -436,7 +444,7 @@ module.exports = grammar({
 			),
 
 		list_expression: ($) =>
-			layoutBracket($, $.lbracket, $.rbracket, $.list_item),
+			layoutBracketWithSep($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
 
 		list_item: ($) =>
 			choice(
@@ -475,7 +483,7 @@ module.exports = grammar({
 		record_field: ($) =>
 			seq(
 				field("name", $.field_name),
-				$.colon,
+				$.equals,
 				field("value", $.record_field_value),
 			),
 
@@ -580,8 +588,8 @@ module.exports = grammar({
 				optional(choice(
 					seq(
 						$.pattern,
-						repeat(seq($.comma, $.pattern)),
-						optional(seq($.comma, $.rest_pattern)),
+						repeat(seq($.semicolon, $.pattern)),
+						optional(seq($.semicolon, $.rest_pattern)),
 					),
 					$.rest_pattern,
 				)),
@@ -598,8 +606,8 @@ module.exports = grammar({
 			seq(
 				$.lbrace_hash,
 				$.pattern,
-				$.comma,
-				commaSepTrail($, $.pattern, $.comma, $.newline),
+				$.semicolon,
+				commaSepTrail($, $.pattern, $.semicolon, $.newline),
 				$.rbrace,
 			),
 
@@ -609,8 +617,8 @@ module.exports = grammar({
 				optional(choice(
 					seq(
 						$.record_pattern_field,
-						repeat(seq($.comma, $.record_pattern_field)),
-						optional(seq($.comma, "..")),
+						repeat(seq($.semicolon, $.record_pattern_field)),
+						optional(seq($.semicolon, "..")),
 					),
 					"..",
 				)),
@@ -749,7 +757,7 @@ module.exports = grammar({
 						"rest",
 						repeat(seq($.comma, repeat($.newline), $.type_expression_no_comma)),
 					),
-					optional(seq(repeat($.newline), $.comma)),
+					optional($.comma),
 				)),
 				$.rparen,
 			),
@@ -944,6 +952,7 @@ module.exports = grammar({
 		comma: ($) => ",",
 		colon: ($) => ":",
 		equals: ($) => "=",
+		semicolon: ($) => ";",
 		dot: ($) => token.immediate("."),
 
 		pipe: ($) => token("|>"),
@@ -971,7 +980,7 @@ module.exports = grammar({
 		possessive: ($) => token.immediate("'s"),
 
 		type_record: ($) =>
-			layoutBracket($, $.lbrace, $.rbrace, $.record_type_field),
+			recordType($, $.record_type_field),
 
 		type_wildcard: ($) => "_",
 		type_star: ($) => "*",
@@ -1120,10 +1129,10 @@ function tuple_like($, itemRule) {
 		seq(
 			$.lbrace_hash,
 			field("first", itemRule),
-			$.comma,
+			$.semicolon,
 			field("second", itemRule),
-			repeat(seq($.comma, field("rest", itemRule))),
-			optional($.comma),
+			repeat(seq($.semicolon, field("rest", itemRule))),
+			optional($.semicolon),
 			$.rbrace,
 		),
 		seq(
@@ -1131,15 +1140,15 @@ function tuple_like($, itemRule) {
 			$.newline,
 			$.indent,
 			field("first", itemRule),
-			$.comma,
-			$.newline,
+			optional($.semicolon),
+			repeat1($.newline),
 			field("second", itemRule),
 			repeat(seq(
-				$.comma,
-				$.newline,
+				optional($.semicolon),
+				repeat1($.newline),
 				field("rest", itemRule),
 			)),
-			optional($.comma),
+			optional($.semicolon),
 			repeat($.newline),
 			$.dedent,
 			$.rbrace,
@@ -1152,16 +1161,22 @@ function with_call_suffix($) {
 		prec.right(seq(
 			$.kw_with,
 			field("arg", $.call_argument),
+			repeat(seq(
+				$.comma,
+				repeat($.newline),
+				field("arg", $.call_argument),
+			)),
+			optional($.comma),
 		)),
 		seq(
 			$.kw_with,
 			$.newline,
 			$.indent,
-			field("first", $.call_argument),
+			field("arg", $.call_argument),
 			repeat(seq(
 				$.comma,
 				$.newline,
-				field("rest", $.call_argument),
+				field("arg", $.call_argument),
 			)),
 			optional($.comma),
 			repeat($.newline),
@@ -1189,6 +1204,13 @@ function layoutBracket($, open, close, item) {
 	);
 }
 
+function layoutBracketWithSep($, open, close, item, sep) {
+	return choice(
+		singleLineBracket(open, sep, item, close),
+		multiLineBracket($, open, sep, item, close),
+	);
+}
+
 function commaSepTrail($, rule, commaToken, sepToken) {
 	return optional(commaSep1Trail($, rule, commaToken, sepToken));
 }
@@ -1209,11 +1231,50 @@ function commaSep1TrailMultiline($, rule, commaToken, sepToken) {
 	return seq(
 		rule,
 		repeat(seq(
-			commaToken,
+			optional(commaToken),
 			repeat1(sepToken),
 			rule,
 		)),
-		optional(commaToken),
+		optional(seq(repeat(sepToken), commaToken)),
+	);
+}
+
+function multiLineRecordType($, field) {
+	return seq(
+		$.lbrace,
+		$.newline,
+		$.indent,
+		optional(seq(
+			field,
+			repeat(seq(
+				optional($.semicolon),
+				repeat1($.newline),
+				field,
+			)),
+			optional($.semicolon),
+		)),
+		repeat($.newline),
+		$.dedent,
+		$.rbrace,
+	);
+}
+
+function singleLineRecordType($, field) {
+	return seq(
+		$.lbrace,
+		optional(seq(
+			field,
+			repeat(seq($.semicolon, field)),
+			optional($.semicolon),
+		)),
+		$.rbrace,
+	);
+}
+
+function recordType($, field) {
+	return choice(
+		singleLineRecordType($, field),
+		multiLineRecordType($, field),
 	);
 }
 
@@ -1223,8 +1284,8 @@ function singleLineRecordExpression($, field) {
 		optional(choice(
 			seq(
 				field,
-				repeat(seq($.comma, field)),
-				optional(seq($.comma, $.spread_element)),
+				repeat(seq($.semicolon, field)),
+				optional(seq($.semicolon, $.spread_element)),
 			),
 			$.spread_element,
 		)),
@@ -1241,20 +1302,20 @@ function multiLineRecordExpression($, field) {
 			seq(
 				field,
 				repeat(seq(
-					$.comma,
-					repeat($.newline),
+					optional($.semicolon),
+					repeat1($.newline),
 					field,
 				)),
 				optional(seq(
-					$.comma,
-					repeat($.newline),
+					optional($.semicolon),
+					repeat1($.newline),
 					$.spread_element,
 				)),
-				optional($.comma),
+				optional($.semicolon),
 			),
 			seq(
 				$.spread_element,
-				optional($.comma),
+				optional($.semicolon),
 			),
 		)),
 		repeat($.newline),
