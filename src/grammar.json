@@ -1117,8 +1117,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "@"
+          "type": "SYMBOL",
+          "name": "at_sign"
         },
         {
           "type": "SYMBOL",
@@ -5494,6 +5494,10 @@
         "value": "."
       }
     },
+    "at_sign": {
+      "type": "STRING",
+      "value": "@"
+    },
     "pipe": {
       "type": "TOKEN",
       "content": {
@@ -5741,10 +5745,6 @@
     "type_wildcard": {
       "type": "STRING",
       "value": "_"
-    },
-    "type_star": {
-      "type": "STRING",
-      "value": "*"
     },
     "restricted_pipe_expression": {
       "type": "PREC_LEFT",

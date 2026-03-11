@@ -280,7 +280,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		attribute: ($) =>
 			seq(
-				"@",
+				$.at_sign,
 				$.long_identifier,
 				optional($.attribute_arguments_inline),
 			),
@@ -1021,6 +1021,7 @@ module.exports = grammar({
 		equals: ($) => "=",
 		semicolon: ($) => ";",
 		dot: ($) => token.immediate("."),
+		at_sign: ($) => "@",
 
 		pipe: ($) => token("|>"),
 		pipe_bar: ($) => token("|"),
@@ -1050,7 +1051,6 @@ module.exports = grammar({
 		type_record: ($) => recordType($, $.record_type_field),
 
 		type_wildcard: ($) => "_",
-		type_star: ($) => "*",
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8A: RESTRICTED EXPRESSION HIERARCHY FOR CALL ARGUMENTS (Generated)

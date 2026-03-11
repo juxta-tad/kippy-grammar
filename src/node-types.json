@@ -309,6 +309,10 @@
       "required": true,
       "types": [
         {
+          "type": "at_sign",
+          "named": true
+        },
+        {
           "type": "attribute_arguments_inline",
           "named": true
         },
@@ -3599,15 +3603,15 @@
     "named": false
   },
   {
-    "type": "@",
-    "named": false
-  },
-  {
     "type": "_",
     "named": false
   },
   {
     "type": "arrow",
+    "named": true
+  },
+  {
+    "type": "at_sign",
     "named": true
   },
   {
