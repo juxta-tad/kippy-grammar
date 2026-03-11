@@ -428,23 +428,27 @@ static inline LineStartInfo compute_line_start_info(TSLexer *lexer) {
 
   while (true) {
     if (lexer->eof(lexer)) {
-      break;
-    }
-    if (!is_newline(lexer->lookahead)) {
-      break;
+      return info;
     }
 
-    if (lexer->lookahead == '\r') lexer->advance(lexer, true);
-    if (lexer->lookahead == '\n') lexer->advance(lexer, true);
-    info.blank_count++;
-  }
+    uint16_t indent = count_indent(lexer);
 
-  if (!lexer->eof(lexer) && !is_newline(lexer->lookahead)) {
+    if (lexer->eof(lexer)) {
+      info.blank_count++;
+      return info;
+    }
+
+    if (is_newline(lexer->lookahead)) {
+      if (lexer->lookahead == '\r') lexer->advance(lexer, true);
+      if (lexer->lookahead == '\n') lexer->advance(lexer, true);
+      info.blank_count++;
+      continue;
+    }
+
     info.has_content_line = true;
-    info.indent = count_indent(lexer);
+    info.indent = indent;
+    return info;
   }
-
-  return info;
 }
 
 // Apply computed line-start information to scanner state
@@ -454,8 +458,11 @@ static inline void apply_line_start_info(Scanner *s, LineStartInfo info) {
   if (info.blank_count < limit) limit = info.blank_count;
   s->queued_newlines += limit;
 
-  if (info.has_content_line)
+  if (info.has_content_line) {
     s->line_indent = info.indent;
+  } else {
+    s->line_indent = 0;
+  }
 }
 
 /* =========================================================================
@@ -524,6 +531,10 @@ static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_sym
   return true;
 }
 
+static inline bool is_bol_position(TSLexer *lexer) {
+  return lexer->eof(lexer) || is_newline(lexer->lookahead) || is_hspace(lexer->lookahead);
+}
+
 static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
   DEBUG_LOG("[PHASE2] phase=%d can_do_layout=%d\n", s->phase, can_do_layout);
@@ -532,20 +543,24 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
     return false;
   }
 
-  // Measure current line: skip blank lines and determine indentation
+  // If we thought we were at BOL, but the parser has already consumed part of the line,
+  // abandon BOL handling for this call.
+  if (s->phase == SCAN_BOL_UNSCANNED && !is_bol_position(lexer)) {
+    enter_midline(s);
+    return false;
+  }
+
   if (s->phase == SCAN_BOL_UNSCANNED) {
     LineStartInfo info = compute_line_start_info(lexer);
     apply_line_start_info(s, info);
     enter_bol_scanned(s);
   }
 
-  // Try to emit DEDENT
   if (emit_dedent(s, lexer, valid_symbols)) {
     log_emit("DEDENT", s, lexer);
     return true;
   }
 
-  // Try to emit queued NEWLINE
   if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
     s->queued_newlines--;
     log_emit("PENDING_NEWLINE", s, lexer);
@@ -553,7 +568,6 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
     return true;
   }
 
-  // Try to emit INDENT
   if (emit_indent(s, lexer, valid_symbols)) {
     log_emit("INDENT", s, lexer);
     enter_midline(s);
@@ -584,13 +598,9 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   if (lexer->eof(lexer)) {
     DEBUG_LOG("[EOF] queued_newlines=%u indents.size=%d phase=%d\n", s->queued_newlines, s->indents.size, s->phase);
 
-    // When EOF occurs at beginning of line, canonicalize to indent 0
-    if (s->phase != SCAN_MIDLINE) {
-      enter_bol_scanned(s);
-      s->line_indent = 0;
-    }
+    s->line_indent = 0;
+    enter_bol_scanned(s);
 
-    // Emit any pending newlines
     if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
       s->queued_newlines--;
       log_emit("EOF_PENDING_NEWLINE", s, lexer);
@@ -598,8 +608,12 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       return true;
     }
 
-    // Emit dedents using normal logic with canonicalized line_indent
-    return valid_symbols[DEDENT] && emit_dedent(s, lexer, valid_symbols);
+    if (emit_dedent(s, lexer, valid_symbols)) {
+      log_emit("EOF_DEDENT", s, lexer);
+      return true;
+    }
+
+    return false;
   }
 
   if (scan_line_start_layout(s, lexer, valid_symbols))
