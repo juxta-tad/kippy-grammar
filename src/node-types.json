@@ -874,7 +874,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "non_arrow_type",
             "named": true
           }
         ]
@@ -1523,6 +1523,32 @@
     }
   },
   {
+    "type": "method_suffix",
+    "named": true,
+    "fields": {
+      "method": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "dot",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "module_declaration",
     "named": true,
     "fields": {
@@ -1889,7 +1915,7 @@
       "required": false,
       "types": [
         {
-          "type": "dot",
+          "type": "method_suffix",
           "named": true
         },
         {
@@ -2374,7 +2400,7 @@
       "required": false,
       "types": [
         {
-          "type": "dot",
+          "type": "method_suffix",
           "named": true
         },
         {

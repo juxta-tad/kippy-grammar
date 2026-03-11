@@ -1269,7 +1269,7 @@
           "name": "type",
           "content": {
             "type": "SYMBOL",
-            "name": "type_name"
+            "name": "non_arrow_type"
           }
         },
         {
@@ -1916,6 +1916,23 @@
         }
       ]
     },
+    "method_suffix": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "dot"
+        },
+        {
+          "type": "FIELD",
+          "name": "method",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        }
+      ]
+    },
     "restricted_postfix_suffix": {
       "type": "CHOICE",
       "members": [
@@ -1928,21 +1945,8 @@
           }
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "dot"
-            },
-            {
-              "type": "FIELD",
-              "name": "field",
-              "content": {
-                "type": "SYMBOL",
-                "name": "field_name"
-              }
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "method_suffix"
         },
         {
           "type": "SYMBOL",
@@ -2007,21 +2011,8 @@
           }
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "dot"
-            },
-            {
-              "type": "FIELD",
-              "name": "field",
-              "content": {
-                "type": "SYMBOL",
-                "name": "field_name"
-              }
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "method_suffix"
         },
         {
           "type": "SYMBOL",

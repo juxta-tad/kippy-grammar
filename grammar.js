@@ -14,7 +14,6 @@ const PREC = {
 	POSTFIX: 8,
 };
 
-
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 2: GRAMMAR METADATA & CONFIGURATION
 // ═════════════════════════════════════════════════════════════════════════════
@@ -31,15 +30,22 @@ function buildOperatorLadder(prefix, postfixRuleName) {
 				),
 			),
 		[`${prefix}or_expression`]: ($) => or_rule($, $[`${prefix}and_expression`]),
-		[`${prefix}and_expression`]: ($) => and_rule($, $[`${prefix}compare_expression`]),
-		[`${prefix}compare_expression`]: ($) => compare_rule($, $[`${prefix}add_expression`]),
-		[`${prefix}add_expression`]: ($) => add_rule($, $[`${prefix}mul_expression`]),
-		[`${prefix}mul_expression`]: ($) => mul_rule($, $[`${prefix}unary_expression`]),
+		[`${prefix}and_expression`]: ($) =>
+			and_rule($, $[`${prefix}compare_expression`]),
+		[`${prefix}compare_expression`]: ($) =>
+			compare_rule($, $[`${prefix}add_expression`]),
+		[`${prefix}add_expression`]: ($) =>
+			add_rule($, $[`${prefix}mul_expression`]),
+		[`${prefix}mul_expression`]: ($) =>
+			mul_rule($, $[`${prefix}unary_expression`]),
 		[`${prefix}unary_expression`]: ($) =>
 			choice(
 				prec.right(
 					PREC.UNARY,
-					seq(choice($.minus, $.kw_not, $.kw_cert), $[`${prefix}unary_expression`]),
+					seq(
+						choice($.minus, $.kw_not, $.kw_cert),
+						$[`${prefix}unary_expression`],
+					),
 				),
 				$[postfixRuleName],
 			),
@@ -56,13 +62,33 @@ module.exports = grammar({
 	// Using tree-sitter's reserved mechanism instead of lexical precedence.
 	reserved: {
 		global: ($) => [
-			$.kw_pub, $.kw_let, $.kw_cert, $.kw_expect,
-			$.kw_if, $.kw_then, $.kw_else,
-			$.kw_when, $.kw_is, $.kw_in, $.kw_where,
-			$.kw_with, $.kw_extend, $.kw_ability,
-			$.kw_module, $.kw_use, $.kw_using,
-			$.kw_build, $.kw_type, $.kw_distinct, $.kw_sig, $.kw_fn, $.kw_test,
-			$.kw_or, $.kw_and, $.kw_not, $.kw_as,
+			$.kw_pub,
+			$.kw_let,
+			$.kw_cert,
+			$.kw_expect,
+			$.kw_if,
+			$.kw_then,
+			$.kw_else,
+			$.kw_when,
+			$.kw_is,
+			$.kw_in,
+			$.kw_where,
+			$.kw_with,
+			$.kw_extend,
+			$.kw_ability,
+			$.kw_module,
+			$.kw_use,
+			$.kw_using,
+			$.kw_build,
+			$.kw_type,
+			$.kw_distinct,
+			$.kw_sig,
+			$.kw_fn,
+			$.kw_test,
+			$.kw_or,
+			$.kw_and,
+			$.kw_not,
+			$.kw_as,
 		],
 		// 'none' context: keywords are allowed (e.g., field names)
 		none: ($) => [],
@@ -278,7 +304,7 @@ module.exports = grammar({
 		implementation: ($) =>
 			seq(
 				$.kw_extend,
-				field("type", $.type_name),
+				field("type", $.non_arrow_type),
 				$.kw_with,
 				field("ability", $.type_name),
 				field(
@@ -319,14 +345,14 @@ module.exports = grammar({
 				field("body", indented_body($, $.expression)),
 			),
 
-		binding_target: ($) => reserved('global', $.identifier),
+		binding_target: ($) => reserved("global", $.identifier),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
 		// ─────────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
 
-		call_argument: ($) => $['restricted_pipe_expression'],
+		call_argument: ($) => $["restricted_pipe_expression"],
 
 		pipe_expression: ($) =>
 			prec.left(
@@ -367,20 +393,22 @@ module.exports = grammar({
 				$.rbracket,
 			),
 
-		restricted_postfix_suffix: ($) =>
-			choice(
-				field("indexing", $.index_suffix),
-				seq(
-					$.dot,
-					field("field", $.field_name),
-				),
-				$.try_op,
-				seq(
-					$.possessive,
-					field("field", $.field_name),
-				),
-				// Note: call_suffix intentionally excluded; use parentheses for nested calls
+		method_suffix: ($) =>
+			seq(
+				$.dot,
+				field("method", $.identifier),
 			),
+
+			restricted_postfix_suffix: ($) =>
+				choice(
+					field("indexing", $.index_suffix),
+					$.method_suffix,
+					$.try_op,
+					seq(
+						$.possessive,
+						field("field", $.field_name),
+					),
+				),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
@@ -395,20 +423,17 @@ module.exports = grammar({
 				),
 			),
 
-		postfix_suffix: ($) =>
-			choice(
-				field("arguments", $.call_suffix),
-				field("indexing", $.index_suffix),
-				seq(
-					$.dot,
-					field("field", $.field_name),
+			postfix_suffix: ($) =>
+				choice(
+					field("arguments", $.call_suffix),
+					field("indexing", $.index_suffix),
+					$.method_suffix,
+					$.try_op,
+					seq(
+						$.possessive,
+						field("field", $.field_name),
+					),
 				),
-				$.try_op,
-				seq(
-					$.possessive,
-					field("field", $.field_name),
-				),
-			),
 
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
@@ -474,7 +499,13 @@ module.exports = grammar({
 			),
 
 		map_expression: ($) =>
-			layoutBracketWithSep($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
+			layoutBracketWithSep(
+				$,
+				$.lbracket_hash,
+				$.rbracket,
+				$.map_entry,
+				$.semicolon,
+			),
 
 		map_entry: ($) =>
 			seq(
@@ -483,7 +514,7 @@ module.exports = grammar({
 				field("value", $.expression),
 			),
 
-		field_name: ($) => reserved('global', $.identifier),
+		field_name: ($) => reserved("global", $.identifier),
 
 		record_field_value: ($) =>
 			choice(
@@ -769,7 +800,7 @@ module.exports = grammar({
 
 		type_application: ($) => seq($.type_name, $.type_argument_list),
 
-		type_variable: ($) => reserved('global', $.identifier),
+		type_variable: ($) => reserved("global", $.identifier),
 
 		type_primary: ($) =>
 			choice(
@@ -1016,8 +1047,7 @@ module.exports = grammar({
 		try_op: ($) => "?",
 		possessive: ($) => token.immediate("'s"),
 
-		type_record: ($) =>
-			recordType($, $.record_type_field),
+		type_record: ($) => recordType($, $.record_type_field),
 
 		type_wildcard: ($) => "_",
 		type_star: ($) => "*",
@@ -1030,7 +1060,7 @@ module.exports = grammar({
 		// instead of f with g with x. Parenthesized expressions can contain any expression,
 		// including calls, so full expressivity is maintained.
 		// These rules are generated from buildOperatorLadder() to eliminate duplication.
-		...buildOperatorLadder('restricted_', 'restricted_postfix_expression'),
+		...buildOperatorLadder("restricted_", "restricted_postfix_expression"),
 	},
 });
 
@@ -1074,11 +1104,11 @@ function indented_list($, item, { at_least_one = false } = {}) {
 	const body = at_least_one
 		? seq(
 			item,
-			repeat(choice($.newline, item))
+			repeat(choice($.newline, item)),
 		)
 		: choice(
 			seq(item, repeat(choice($.newline, item))),
-			repeat($.newline)
+			repeat($.newline),
 		);
 
 	return seq(
@@ -1156,7 +1186,6 @@ function mul_rule($, next_level) {
 		choice($.star, $.slash, $.percent),
 	);
 }
-
 
 function tuple_like($, itemRule) {
 	return choice(
