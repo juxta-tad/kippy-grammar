@@ -279,7 +279,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		attribute: ($) =>
 			seq(
-				$.at_sign,
+				$.hash_sign,
 				$.long_identifier,
 				optional($.attribute_arguments_inline),
 			),
@@ -294,7 +294,11 @@ module.exports = grammar({
 		attribute_argument: ($) =>
 			choice(
 				$.expression,
-				seq(field("name", $.identifier), $.equals, field("value", $.expression)),
+				seq(
+					field("name", $.identifier),
+					$.equals,
+					field("value", $.expression),
+				),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -347,8 +351,7 @@ module.exports = grammar({
 
 		binding_target: ($) => reserved("global", $.identifier),
 
-
-	receiver_parameter: ($) => $.kw_self,
+		receiver_parameter: ($) => $.kw_self,
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
@@ -1017,6 +1020,7 @@ module.exports = grammar({
 		semicolon: ($) => ";",
 		dot: ($) => token.immediate("."),
 		at_sign: ($) => token.immediate("@"),
+		hash_sign: ($) => token.immediate("#"),
 
 		pipe: ($) => token("|>"),
 		pipe_bar: ($) => token("|"),
@@ -1300,18 +1304,18 @@ function record_like($, fieldRule, { allowSpread = false, spreadRule = null }) {
 			optional(
 				allowSpread
 					? choice(
-							seq(
-								fieldRule,
-								repeat(seq($.semicolon, fieldRule)),
-								optional(seq($.semicolon, spreadRule)),
-							),
-							spreadRule,
-					  )
-					: seq(
+						seq(
 							fieldRule,
 							repeat(seq($.semicolon, fieldRule)),
-							optional($.semicolon),
-					  ),
+							optional(seq($.semicolon, spreadRule)),
+						),
+						spreadRule,
+					)
+					: seq(
+						fieldRule,
+						repeat(seq($.semicolon, fieldRule)),
+						optional($.semicolon),
+					),
 			),
 			$.rbrace,
 		),
@@ -1322,31 +1326,31 @@ function record_like($, fieldRule, { allowSpread = false, spreadRule = null }) {
 			optional(
 				allowSpread
 					? choice(
-							seq(
-								fieldRule,
-								repeat(seq(
-									optional($.semicolon),
-									repeat1($.newline),
-									fieldRule,
-								)),
-								optional(seq(
-									optional($.semicolon),
-									repeat1($.newline),
-									spreadRule,
-								)),
-								optional($.semicolon),
-							),
-							seq(spreadRule, optional($.semicolon)),
-					  )
-					: seq(
+						seq(
 							fieldRule,
 							repeat(seq(
 								optional($.semicolon),
 								repeat1($.newline),
 								fieldRule,
 							)),
+							optional(seq(
+								optional($.semicolon),
+								repeat1($.newline),
+								spreadRule,
+							)),
 							optional($.semicolon),
-					  ),
+						),
+						seq(spreadRule, optional($.semicolon)),
+					)
+					: seq(
+						fieldRule,
+						repeat(seq(
+							optional($.semicolon),
+							repeat1($.newline),
+							fieldRule,
+						)),
+						optional($.semicolon),
+					),
 			),
 			repeat($.newline),
 			$.dedent,

@@ -309,11 +309,11 @@
       "required": true,
       "types": [
         {
-          "type": "at_sign",
+          "type": "attribute_arguments_inline",
           "named": true
         },
         {
-          "type": "attribute_arguments_inline",
+          "type": "hash_sign",
           "named": true
         },
         {
@@ -3762,6 +3762,10 @@
   },
   {
     "type": "gt_op",
+    "named": true
+  },
+  {
+    "type": "hash_sign",
     "named": true
   },
   {

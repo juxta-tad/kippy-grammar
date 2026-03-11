@@ -1150,7 +1150,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "at_sign"
+          "name": "hash_sign"
         },
         {
           "type": "SYMBOL",
@@ -5629,6 +5629,13 @@
       "content": {
         "type": "STRING",
         "value": "@"
+      }
+    },
+    "hash_sign": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "#"
       }
     },
     "pipe": {
