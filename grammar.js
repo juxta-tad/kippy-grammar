@@ -14,15 +14,6 @@ const PREC = {
 	POSTFIX: 8,
 };
 
-// Keyword helper: creates a keyword token with standard precedence (2)
-function kw(s) {
-	return ($) => token(prec(2, s));
-}
-
-// Operator helper: creates an operator token with specified precedence
-function op(p, s) {
-	return ($) => token(prec(p, s));
-}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 2: GRAMMAR METADATA & CONFIGURATION
@@ -32,11 +23,11 @@ function op(p, s) {
 function buildOperatorLadder(prefix, postfixRuleName) {
 	return {
 		[`${prefix}pipe_expression`]: ($) =>
-			prec.right(
+			prec.left(
 				PREC.PIPE,
-				choice(
+				seq(
 					$[`${prefix}or_expression`],
-					seq($[`${prefix}pipe_expression`], $.pipe, $[`${prefix}or_expression`]),
+					repeat(seq($.pipe, $[`${prefix}or_expression`])),
 				),
 			),
 		[`${prefix}or_expression`]: ($) => or_rule($, $[`${prefix}and_expression`]),
@@ -61,6 +52,22 @@ module.exports = grammar({
 	// tree-sitter uses this for keyword extraction and error recovery.
 	word: ($) => $.identifier,
 
+	// Reserved word sets for keyword vs identifier disambiguation.
+	// Using tree-sitter's reserved mechanism instead of lexical precedence.
+	reserved: {
+		global: ($) => [
+			'pub', 'let', 'cert', 'expect',
+			'if', 'then', 'else',
+			'when', 'is', 'in', 'where',
+			'with', 'extend', 'ability',
+			'module', 'use', 'using',
+			'build', 'type', 'sig', 'fn', 'test',
+			'or', 'and', 'not', 'as',
+		],
+		// 'none' context: keywords are allowed (e.g., field names)
+		none: ($) => [],
+	},
+
 	// layout-sensitive tokens are provided externally by the scanner.
 	externals: ($) => [
 		$.newline,
@@ -68,12 +75,13 @@ module.exports = grammar({
 		$.dedent,
 	],
 
-	// whitespace and comments are ignored everywhere unless explicitly required.
-	// Comments are also explicitly handled at declaration level for predictable formatter attachment.
+	// whitespace and comments are trivia (ignored by parser).
+	// Doc comments are also trivia; attachment to declarations is handled by subsequent passes.
 	extras: ($) => [
 		/[ \t\r\f]+/,
 		$.line_comment,
 		$.block_comment,
+		$.doc_comment,
 	],
 
 	supertypes: ($) => [
@@ -107,20 +115,14 @@ module.exports = grammar({
 			),
 
 		documented_declaration: ($) =>
-			seq(
-				optional(seq(
-					field("docs", $.doc_comment),
-					$.newline,
-				)),
-				choice(
-					$.type_declaration,
-					$.signature,
-					$.let_binding,
-					$.ability_declaration,
-					$.test_declaration,
-					$.expect_statement,
-					$.implementation,
-				),
+			choice(
+				$.type_declaration,
+				$.signature,
+				$.let_binding,
+				$.ability_declaration,
+				$.test_declaration,
+				$.expect_statement,
+				$.implementation,
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
@@ -305,7 +307,7 @@ module.exports = grammar({
 				field("body", indented_body($, $.expression)),
 			),
 
-		binding_target: ($) => $.identifier,
+		binding_target: ($) => reserved('global', $.identifier),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
@@ -315,11 +317,11 @@ module.exports = grammar({
 		call_argument: ($) => $['restricted_pipe_expression'],
 
 		pipe_expression: ($) =>
-			prec.right(
+			prec.left(
 				PREC.PIPE,
-				choice(
+				seq(
 					$.or_expression,
-					seq($.pipe_expression, $.pipe, $.or_expression),
+					repeat(seq($.pipe, $.or_expression)),
 				),
 			),
 
@@ -457,7 +459,7 @@ module.exports = grammar({
 				$.record_body,
 			),
 
-		field_name: ($) => $.identifier,
+		field_name: ($) => reserved('none', $.identifier),
 
 		record_field_value: ($) =>
 			choice(
@@ -724,7 +726,7 @@ module.exports = grammar({
 
 		type_application: ($) => seq($.type_name, $.type_argument_list),
 
-		type_variable: ($) => $.identifier,
+		type_variable: ($) => reserved('global', $.identifier),
 
 		type_primary: ($) =>
 			choice(
@@ -885,7 +887,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.17: IDENTIFIERS & KEYWORDS
 		// ─────────────────────────────────────────────────────────────────────────────
-		identifier: ($) => token(prec(1, /(_*[a-z][a-zA-Z0-9_]*!?)/)),
+		identifier: ($) => /(_*[a-z][a-zA-Z0-9_]*!?)/,
 
 		tag_name: ($) => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
 
@@ -900,32 +902,32 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.18: OPERATORS & PUNCTUATION
 		// ─────────────────────────────────────────────────────────────────────────────
-		kw_pub: ($) => token(prec(2, "pub")),
-		kw_let: ($) => token(prec(2, "let")),
-		kw_cert: ($) => token(prec(2, "cert")),
-		kw_expect: ($) => token(prec(2, "expect")),
-		kw_if: ($) => token(prec(2, "if")),
-		kw_then: ($) => token(prec(2, "then")),
-		kw_else: kw("else"),
-		kw_when: kw("when"),
-		kw_is: kw("is"),
-		kw_in: kw("in"),
-		kw_where: kw("where"),
-		kw_with: kw("with"),
-		kw_extend: kw("extend"),
-		kw_ability: kw("ability"),
-		kw_module: kw("module"),
-		kw_use: kw("use"),
-		kw_using: kw("using"),
-		kw_build: kw("build"),
-		kw_type: kw("type"),
-		kw_sig: kw("sig"),
-		kw_fn: kw("fn"),
-		kw_test: kw("test"),
-		kw_or: kw("or"),
-		kw_and: kw("and"),
-		kw_not: kw("not"),
-		kw_as: kw("as"),
+		kw_pub: ($) => "pub",
+		kw_let: ($) => "let",
+		kw_cert: ($) => "cert",
+		kw_expect: ($) => "expect",
+		kw_if: ($) => "if",
+		kw_then: ($) => "then",
+		kw_else: ($) => "else",
+		kw_when: ($) => "when",
+		kw_is: ($) => "is",
+		kw_in: ($) => "in",
+		kw_where: ($) => "where",
+		kw_with: ($) => "with",
+		kw_extend: ($) => "extend",
+		kw_ability: ($) => "ability",
+		kw_module: ($) => "module",
+		kw_use: ($) => "use",
+		kw_using: ($) => "using",
+		kw_build: ($) => "build",
+		kw_type: ($) => "type",
+		kw_sig: ($) => "sig",
+		kw_fn: ($) => "fn",
+		kw_test: ($) => "test",
+		kw_or: ($) => "or",
+		kw_and: ($) => "and",
+		kw_not: ($) => "not",
+		kw_as: ($) => "as",
 
 		lparen: ($) => "(",
 		rparen: ($) => ")",
@@ -941,7 +943,7 @@ module.exports = grammar({
 
 		comma: ($) => ",",
 		colon: ($) => ":",
-		equals: op(2, "="),
+		equals: ($) => "=",
 		dot: ($) => token.immediate("."),
 
 		pipe: ($) => token("|>"),
@@ -957,12 +959,12 @@ module.exports = grammar({
 		slash: ($) => "/",
 		percent: ($) => "%",
 
-		eq_op: op(3, "=="),
-		ne_op: op(3, "!="),
-		le_op: op(4, "<="),
-		ge_op: op(4, ">="),
-		lt_op: op(3, "<"),
-		gt_op: op(3, ">"),
+		eq_op: ($) => "==",
+		ne_op: ($) => "!=",
+		le_op: ($) => "<=",
+		ge_op: ($) => ">=",
+		lt_op: ($) => "<",
+		gt_op: ($) => ">",
 
 		arrow_op: ($) => "->",
 		try_op: ($) => "?",

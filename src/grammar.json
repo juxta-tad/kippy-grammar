@@ -72,65 +72,35 @@
       ]
     },
     "documented_declaration": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "FIELD",
-                  "name": "docs",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "doc_comment"
-                  }
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "newline"
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "type_declaration"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "type_declaration"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "signature"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "let_binding"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "ability_declaration"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "test_declaration"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "expect_statement"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "implementation"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "signature"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "let_binding"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "ability_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "test_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "expect_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "implementation"
         }
       ]
     },
@@ -1528,8 +1498,12 @@
       ]
     },
     "binding_target": {
-      "type": "SYMBOL",
-      "name": "identifier"
+      "type": "RESERVED",
+      "content": {
+        "type": "SYMBOL",
+        "name": "identifier"
+      },
+      "context_name": "global"
     },
     "expression": {
       "type": "SYMBOL",
@@ -1540,31 +1514,30 @@
       "name": "restricted_pipe_expression"
     },
     "pipe_expression": {
-      "type": "PREC_RIGHT",
+      "type": "PREC_LEFT",
       "value": 1,
       "content": {
-        "type": "CHOICE",
+        "type": "SEQ",
         "members": [
           {
             "type": "SYMBOL",
             "name": "or_expression"
           },
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "pipe_expression"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "pipe"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "or_expression"
-              }
-            ]
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "pipe"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "or_expression"
+                }
+              ]
+            }
           }
         ]
       }
@@ -2573,8 +2546,12 @@
       ]
     },
     "field_name": {
-      "type": "SYMBOL",
-      "name": "identifier"
+      "type": "RESERVED",
+      "content": {
+        "type": "SYMBOL",
+        "name": "identifier"
+      },
+      "context_name": "none"
     },
     "record_field_value": {
       "type": "CHOICE",
@@ -4049,8 +4026,12 @@
       ]
     },
     "type_variable": {
-      "type": "SYMBOL",
-      "name": "identifier"
+      "type": "RESERVED",
+      "content": {
+        "type": "SYMBOL",
+        "name": "identifier"
+      },
+      "context_name": "global"
     },
     "type_primary": {
       "type": "CHOICE",
@@ -4786,15 +4767,8 @@
       }
     },
     "identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(_*[a-z][a-zA-Z0-9_]*!?)"
-        }
-      }
+      "type": "PATTERN",
+      "value": "(_*[a-z][a-zA-Z0-9_]*!?)"
     },
     "tag_name": {
       "type": "TOKEN",
@@ -4866,290 +4840,108 @@
       }
     },
     "kw_pub": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "pub"
-        }
-      }
+      "type": "STRING",
+      "value": "pub"
     },
     "kw_let": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "let"
-        }
-      }
+      "type": "STRING",
+      "value": "let"
     },
     "kw_cert": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "cert"
-        }
-      }
+      "type": "STRING",
+      "value": "cert"
     },
     "kw_expect": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "expect"
-        }
-      }
+      "type": "STRING",
+      "value": "expect"
     },
     "kw_if": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "if"
-        }
-      }
+      "type": "STRING",
+      "value": "if"
     },
     "kw_then": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "then"
-        }
-      }
+      "type": "STRING",
+      "value": "then"
     },
     "kw_else": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "else"
-        }
-      }
+      "type": "STRING",
+      "value": "else"
     },
     "kw_when": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "when"
-        }
-      }
+      "type": "STRING",
+      "value": "when"
     },
     "kw_is": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "is"
-        }
-      }
+      "type": "STRING",
+      "value": "is"
     },
     "kw_in": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "in"
-        }
-      }
+      "type": "STRING",
+      "value": "in"
     },
     "kw_where": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "where"
-        }
-      }
+      "type": "STRING",
+      "value": "where"
     },
     "kw_with": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "with"
-        }
-      }
+      "type": "STRING",
+      "value": "with"
     },
     "kw_extend": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "extend"
-        }
-      }
+      "type": "STRING",
+      "value": "extend"
     },
     "kw_ability": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "ability"
-        }
-      }
+      "type": "STRING",
+      "value": "ability"
     },
     "kw_module": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "module"
-        }
-      }
+      "type": "STRING",
+      "value": "module"
     },
     "kw_use": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "use"
-        }
-      }
+      "type": "STRING",
+      "value": "use"
     },
     "kw_using": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "using"
-        }
-      }
+      "type": "STRING",
+      "value": "using"
     },
     "kw_build": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "build"
-        }
-      }
+      "type": "STRING",
+      "value": "build"
     },
     "kw_type": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "type"
-        }
-      }
+      "type": "STRING",
+      "value": "type"
     },
     "kw_sig": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "sig"
-        }
-      }
+      "type": "STRING",
+      "value": "sig"
     },
     "kw_fn": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "fn"
-        }
-      }
+      "type": "STRING",
+      "value": "fn"
     },
     "kw_test": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "test"
-        }
-      }
+      "type": "STRING",
+      "value": "test"
     },
     "kw_or": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "or"
-        }
-      }
+      "type": "STRING",
+      "value": "or"
     },
     "kw_and": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "and"
-        }
-      }
+      "type": "STRING",
+      "value": "and"
     },
     "kw_not": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "not"
-        }
-      }
+      "type": "STRING",
+      "value": "not"
     },
     "kw_as": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "as"
-        }
-      }
+      "type": "STRING",
+      "value": "as"
     },
     "lparen": {
       "type": "STRING",
@@ -5206,15 +4998,8 @@
       "value": ":"
     },
     "equals": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "STRING",
-          "value": "="
-        }
-      }
+      "type": "STRING",
+      "value": "="
     },
     "dot": {
       "type": "IMMEDIATE_TOKEN",
@@ -5270,70 +5055,28 @@
       "value": "%"
     },
     "eq_op": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 3,
-        "content": {
-          "type": "STRING",
-          "value": "=="
-        }
-      }
+      "type": "STRING",
+      "value": "=="
     },
     "ne_op": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 3,
-        "content": {
-          "type": "STRING",
-          "value": "!="
-        }
-      }
+      "type": "STRING",
+      "value": "!="
     },
     "le_op": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 4,
-        "content": {
-          "type": "STRING",
-          "value": "<="
-        }
-      }
+      "type": "STRING",
+      "value": "<="
     },
     "ge_op": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 4,
-        "content": {
-          "type": "STRING",
-          "value": ">="
-        }
-      }
+      "type": "STRING",
+      "value": ">="
     },
     "lt_op": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 3,
-        "content": {
-          "type": "STRING",
-          "value": "<"
-        }
-      }
+      "type": "STRING",
+      "value": "<"
     },
     "gt_op": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 3,
-        "content": {
-          "type": "STRING",
-          "value": ">"
-        }
-      }
+      "type": "STRING",
+      "value": ">"
     },
     "arrow_op": {
       "type": "STRING",
@@ -5498,31 +5241,30 @@
       "value": "*"
     },
     "restricted_pipe_expression": {
-      "type": "PREC_RIGHT",
+      "type": "PREC_LEFT",
       "value": 1,
       "content": {
-        "type": "CHOICE",
+        "type": "SEQ",
         "members": [
           {
             "type": "SYMBOL",
             "name": "restricted_or_expression"
           },
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "restricted_pipe_expression"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "pipe"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "restricted_or_expression"
-              }
-            ]
+            "type": "REPEAT",
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "pipe"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "restricted_or_expression"
+                }
+              ]
+            }
           }
         ]
       }
@@ -5776,6 +5518,10 @@
     {
       "type": "SYMBOL",
       "name": "block_comment"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "doc_comment"
     }
   ],
   "conflicts": [],
@@ -5798,5 +5544,113 @@
   "supertypes": [
     "expression"
   ],
-  "reserved": {}
+  "reserved": {
+    "global": [
+      {
+        "type": "STRING",
+        "value": "pub"
+      },
+      {
+        "type": "STRING",
+        "value": "let"
+      },
+      {
+        "type": "STRING",
+        "value": "cert"
+      },
+      {
+        "type": "STRING",
+        "value": "expect"
+      },
+      {
+        "type": "STRING",
+        "value": "if"
+      },
+      {
+        "type": "STRING",
+        "value": "then"
+      },
+      {
+        "type": "STRING",
+        "value": "else"
+      },
+      {
+        "type": "STRING",
+        "value": "when"
+      },
+      {
+        "type": "STRING",
+        "value": "is"
+      },
+      {
+        "type": "STRING",
+        "value": "in"
+      },
+      {
+        "type": "STRING",
+        "value": "where"
+      },
+      {
+        "type": "STRING",
+        "value": "with"
+      },
+      {
+        "type": "STRING",
+        "value": "extend"
+      },
+      {
+        "type": "STRING",
+        "value": "ability"
+      },
+      {
+        "type": "STRING",
+        "value": "module"
+      },
+      {
+        "type": "STRING",
+        "value": "use"
+      },
+      {
+        "type": "STRING",
+        "value": "using"
+      },
+      {
+        "type": "STRING",
+        "value": "build"
+      },
+      {
+        "type": "STRING",
+        "value": "type"
+      },
+      {
+        "type": "STRING",
+        "value": "sig"
+      },
+      {
+        "type": "STRING",
+        "value": "fn"
+      },
+      {
+        "type": "STRING",
+        "value": "test"
+      },
+      {
+        "type": "STRING",
+        "value": "or"
+      },
+      {
+        "type": "STRING",
+        "value": "and"
+      },
+      {
+        "type": "STRING",
+        "value": "not"
+      },
+      {
+        "type": "STRING",
+        "value": "as"
+      }
+    ],
+    "none": []
+  }
 }

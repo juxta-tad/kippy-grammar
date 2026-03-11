@@ -606,20 +606,9 @@
   {
     "type": "documented_declaration",
     "named": true,
-    "fields": {
-      "docs": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "doc_comment",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
@@ -636,10 +625,6 @@
         },
         {
           "type": "let_binding",
-          "named": true
-        },
-        {
-          "type": "newline",
           "named": true
         },
         {
@@ -1672,10 +1657,6 @@
         {
           "type": "pipe",
           "named": true
-        },
-        {
-          "type": "pipe_expression",
-          "named": true
         }
       ]
     }
@@ -2164,10 +2145,6 @@
         },
         {
           "type": "restricted_or_expression",
-          "named": true
-        },
-        {
-          "type": "restricted_pipe_expression",
           "named": true
         }
       ]
@@ -3459,7 +3436,8 @@
   },
   {
     "type": "doc_comment",
-    "named": true
+    "named": true,
+    "extra": true
   },
   {
     "type": "dot",
