@@ -61,7 +61,7 @@ module.exports = grammar({
 			$.kw_when, $.kw_is, $.kw_in, $.kw_where,
 			$.kw_with, $.kw_extend, $.kw_ability,
 			$.kw_module, $.kw_use, $.kw_using,
-			$.kw_build, $.kw_type, $.kw_sig, $.kw_fn, $.kw_test,
+			$.kw_build, $.kw_type, $.kw_distinct, $.kw_sig, $.kw_fn, $.kw_test,
 			$.kw_or, $.kw_and, $.kw_not, $.kw_as,
 		],
 		// 'none' context: keywords are allowed (e.g., field names)
@@ -161,7 +161,10 @@ module.exports = grammar({
 				field(
 					"value",
 					choice(
-						inline_or_block($, $.type_expression),
+						seq(
+							optional($.kw_distinct),
+							inline_or_block($, $.type_expression),
+						),
 						$.type_variant_block,
 					),
 				),
@@ -960,6 +963,7 @@ module.exports = grammar({
 		kw_using: ($) => "using",
 		kw_build: ($) => "build",
 		kw_type: ($) => "type",
+		kw_distinct: ($) => "distinct",
 		kw_sig: ($) => "sig",
 		kw_fn: ($) => "fn",
 		kw_test: ($) => "test",

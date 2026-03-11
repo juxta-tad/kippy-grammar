@@ -393,37 +393,54 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "CHOICE",
+                "type": "SEQ",
                 "members": [
                   {
-                    "type": "SYMBOL",
-                    "name": "type_expression"
-                  },
-                  {
-                    "type": "SEQ",
+                    "type": "CHOICE",
                     "members": [
                       {
                         "type": "SYMBOL",
-                        "name": "newline"
+                        "name": "kw_distinct"
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "indent"
-                      },
+                        "type": "BLANK"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
                       {
                         "type": "SYMBOL",
                         "name": "type_expression"
                       },
                       {
-                        "type": "REPEAT",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "newline"
-                        }
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "dedent"
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "indent"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "type_expression"
+                          },
+                          {
+                            "type": "REPEAT",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "newline"
+                            }
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "dedent"
+                          }
+                        ]
                       }
                     ]
                   }
@@ -5374,6 +5391,10 @@
       "type": "STRING",
       "value": "type"
     },
+    "kw_distinct": {
+      "type": "STRING",
+      "value": "distinct"
+    },
     "kw_sig": {
       "type": "STRING",
       "value": "sig"
@@ -6111,6 +6132,10 @@
       {
         "type": "SYMBOL",
         "name": "kw_type"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "kw_distinct"
       },
       {
         "type": "SYMBOL",

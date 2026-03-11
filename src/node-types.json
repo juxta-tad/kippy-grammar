@@ -2903,6 +2903,10 @@
             "named": true
           },
           {
+            "type": "kw_distinct",
+            "named": true
+          },
+          {
             "type": "newline",
             "named": true
           },
@@ -3672,6 +3676,10 @@
   },
   {
     "type": "kw_cert",
+    "named": true
+  },
+  {
+    "type": "kw_distinct",
     "named": true
   },
   {
