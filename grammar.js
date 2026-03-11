@@ -775,8 +775,7 @@ module.exports = grammar({
 				$.type_application,
 				$.type_name,
 				$.type_variable,
-				alias("_", $.type_wildcard),
-				alias("*", $.type_star),
+				$.type_wildcard,
 				$.parenthesized_type,
 			),
 
@@ -1157,9 +1156,6 @@ function mul_rule($, next_level) {
 	);
 }
 
-function postfixOp(...pattern) {
-	return prec.left(PREC.POSTFIX, seq(...pattern));
-}
 
 function tuple_like($, itemRule) {
 	return choice(

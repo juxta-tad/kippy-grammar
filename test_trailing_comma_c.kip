@@ -1,5 +1,0 @@
-type User = {
-  name: String,
-  age: U8,
-  y: String
-}

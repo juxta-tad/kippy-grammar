@@ -2549,11 +2549,6 @@
     }
   },
   {
-    "type": "star",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "static_string",
     "named": true,
     "fields": {},
@@ -3135,10 +3130,6 @@
           "named": true
         },
         {
-          "type": "type_star",
-          "named": true
-        },
-        {
           "type": "type_variable",
           "named": true
         },
@@ -3341,6 +3332,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "type_wildcard",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "unary_expression",
@@ -3566,10 +3562,6 @@
   },
   {
     "type": "\"",
-    "named": false
-  },
-  {
-    "type": "*",
     "named": false
   },
   {
@@ -3872,6 +3864,10 @@
     "named": true
   },
   {
+    "type": "star",
+    "named": true
+  },
+  {
     "type": "tag_name",
     "named": true
   },
@@ -3885,14 +3881,6 @@
   },
   {
     "type": "try_op",
-    "named": true
-  },
-  {
-    "type": "type_star",
-    "named": true
-  },
-  {
-    "type": "type_wildcard",
     "named": true
   }
 ]

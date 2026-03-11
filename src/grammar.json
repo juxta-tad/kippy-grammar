@@ -4515,22 +4515,8 @@
           "name": "type_variable"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "_"
-          },
-          "named": true,
-          "value": "type_wildcard"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "*"
-          },
-          "named": true,
-          "value": "type_star"
+          "type": "SYMBOL",
+          "name": "type_wildcard"
         },
         {
           "type": "SYMBOL",
