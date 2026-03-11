@@ -1043,7 +1043,7 @@ module.exports = grammar({
 		try_op: ($) => "?",
 		possessive: ($) => token.immediate("'s"),
 
-		type_record: ($) => record_like($, $.record_type_field),
+		type_record: ($) => record_like($, $.record_type_field, {}),
 
 		type_wildcard: ($) => "_",
 
