@@ -2009,7 +2009,7 @@
         }
       ]
     },
-    "ability_method_suffix": {
+    "qualified_method_suffix": {
       "type": "SEQ",
       "members": [
         {
@@ -2021,7 +2021,7 @@
           "name": "ability",
           "content": {
             "type": "SYMBOL",
-            "name": "type_name"
+            "name": "tag_name"
           }
         },
         {
@@ -2055,7 +2055,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "ability_method_suffix"
+          "name": "qualified_method_suffix"
         },
         {
           "type": "SYMBOL",
@@ -2125,7 +2125,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "ability_method_suffix"
+          "name": "qualified_method_suffix"
         },
         {
           "type": "SYMBOL",

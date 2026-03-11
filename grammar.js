@@ -402,10 +402,10 @@ module.exports = grammar({
 				field("method", $.identifier),
 			),
 
-		ability_method_suffix: ($) =>
+		qualified_method_suffix: ($) =>
 			seq(
 				$.at_sign,
-				field("ability", $.type_name),
+				field("ability", $.tag_name),
 				$.dot,
 				field("method", $.identifier),
 			),
@@ -1112,7 +1112,7 @@ function postfix_suffixes($, { allowCall }) {
 	const parts = [
 		field("indexing", $.index_suffix),
 		$.method_suffix,
-		$.ability_method_suffix,
+		$.qualified_method_suffix,
 		$.try_op,
 		seq($.possessive, field("field", $.field_name)),
 	];

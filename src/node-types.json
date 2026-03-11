@@ -353,7 +353,7 @@
       "required": true,
       "types": [
         {
-          "type": "colon",
+          "type": "equals",
           "named": true
         },
         {
@@ -923,6 +923,16 @@
           }
         ]
       },
+      "receiver": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "receiver_parameter",
+            "named": true
+          }
+        ]
+      },
       "value": {
         "multiple": true,
         "required": true,
@@ -1447,6 +1457,10 @@
         {
           "type": "name",
           "named": true
+        },
+        {
+          "type": "value_name",
+          "named": true
         }
       ]
     }
@@ -1927,6 +1941,10 @@
           "named": true
         },
         {
+          "type": "qualified_method_suffix",
+          "named": true
+        },
+        {
           "type": "try_op",
           "named": true
         }
@@ -1953,9 +1971,64 @@
     }
   },
   {
+    "type": "qualified_method_suffix",
+    "named": true,
+    "fields": {
+      "ability": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "tag_name",
+            "named": true
+          }
+        ]
+      },
+      "method": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "at_sign",
+          "named": true
+        },
+        {
+          "type": "dot",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "quote",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "receiver_parameter",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_self",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "record_body",
@@ -2409,6 +2482,10 @@
         },
         {
           "type": "possessive",
+          "named": true
+        },
+        {
+          "type": "qualified_method_suffix",
           "named": true
         },
         {
@@ -3476,6 +3553,25 @@
     }
   },
   {
+    "type": "value_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "kw_self",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "variadic_type",
     "named": true,
     "fields": {
@@ -3754,6 +3850,10 @@
   },
   {
     "type": "kw_pub",
+    "named": true
+  },
+  {
+    "type": "kw_self",
     "named": true
   },
   {
