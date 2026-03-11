@@ -399,16 +399,16 @@ module.exports = grammar({
 				field("method", $.identifier),
 			),
 
-			restricted_postfix_suffix: ($) =>
-				choice(
-					field("indexing", $.index_suffix),
-					$.method_suffix,
-					$.try_op,
-					seq(
-						$.possessive,
-						field("field", $.field_name),
-					),
+		restricted_postfix_suffix: ($) =>
+			choice(
+				field("indexing", $.index_suffix),
+				$.method_suffix,
+				$.try_op,
+				seq(
+					$.possessive,
+					field("field", $.field_name),
 				),
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
@@ -423,17 +423,17 @@ module.exports = grammar({
 				),
 			),
 
-			postfix_suffix: ($) =>
-				choice(
-					field("arguments", $.call_suffix),
-					field("indexing", $.index_suffix),
-					$.method_suffix,
-					$.try_op,
-					seq(
-						$.possessive,
-						field("field", $.field_name),
-					),
+		postfix_suffix: ($) =>
+			choice(
+				field("arguments", $.call_suffix),
+				field("indexing", $.index_suffix),
+				$.method_suffix,
+				$.try_op,
+				seq(
+					$.possessive,
+					field("field", $.field_name),
 				),
+			),
 
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
