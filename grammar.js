@@ -356,11 +356,19 @@ module.exports = grammar({
 				),
 			),
 
+		index_suffix: ($) =>
+			seq(
+				$.lbracket,
+				field("index", $.expression),
+				$.rbracket,
+			),
+
 		restricted_postfix_suffix: ($) =>
 			choice(
+				field("indexing", $.index_suffix),
 				seq(
 					$.dot,
-					field("field", choice($.field_name, $.tuple_index)),
+					field("field", $.field_name),
 				),
 				$.try_op,
 				seq(
@@ -386,9 +394,10 @@ module.exports = grammar({
 		postfix_suffix: ($) =>
 			choice(
 				field("arguments", $.call_suffix),
+				field("indexing", $.index_suffix),
 				seq(
 					$.dot,
-					field("field", choice($.field_name, $.tuple_index)),
+					field("field", $.field_name),
 				),
 				$.try_op,
 				seq(
@@ -400,14 +409,6 @@ module.exports = grammar({
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
 		call_suffix: ($) => with_call_suffix($),
-
-		projection_suffix: ($) =>
-			seq(
-				$.dot,
-				field("field", choice($.field_name, $.tuple_index)),
-			),
-
-		tuple_index: ($) => token(/[0-9]+/),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.10: PRIMARY EXPRESSION FORMS
@@ -423,6 +424,7 @@ module.exports = grammar({
 				$.long_identifier,
 				$.placeholder,
 				$.list_expression,
+				$.map_expression,
 				$.record_expression,
 				$.tuple_expression,
 				$.parenthesized_expression,
@@ -465,6 +467,16 @@ module.exports = grammar({
 				$.kw_build,
 				field("builder", $.long_identifier),
 				$.record_body,
+			),
+
+		map_expression: ($) =>
+			layoutBracketWithSep($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
+
+		map_entry: ($) =>
+			seq(
+				field("key", $.expression),
+				$.equals,
+				field("value", $.expression),
 			),
 
 		field_name: ($) => reserved('global', $.identifier),
@@ -675,38 +687,57 @@ module.exports = grammar({
 		type_expression: ($) =>
 			prec.right(choice(
 				seq(
-					field(
-						"left",
-						choice(
-							$.type_function_params,
-							$.non_arrow_type,
-						),
-					),
+					field("left", $.function_type_left),
 					$.arrow_op,
 					field("right", inline_or_block($, $.type_expression)),
 				),
 				$.non_arrow_type,
+				$.variadic_type,
 			)),
 
 		type_expression_no_comma: ($) =>
 			prec.right(choice(
 				seq(
-					field("left", $.non_arrow_type),
+					field("left", choice($.non_arrow_type, $.variadic_type)),
 					$.arrow_op,
 					field("right", inline_or_block($, $.type_expression)),
 				),
 				$.non_arrow_type,
+				$.variadic_type,
 			)),
 
-		type_function_params: ($) =>
-			seq(
-				field("first", $.non_arrow_type),
-				repeat1(seq(
+		function_type_left: ($) =>
+			choice(
+				$.variadic_type,
+				$.non_arrow_type,
+				seq(
+					field("first", $.non_arrow_type),
+					repeat1(seq(
+						$.comma,
+						repeat($.newline),
+						field("rest", $.non_arrow_type),
+					)),
+					optional(seq(
+						$.comma,
+						repeat($.newline),
+						field("variadic", $.variadic_type),
+					)),
+				),
+				seq(
+					field("first", $.non_arrow_type),
 					$.comma,
 					repeat($.newline),
-					field("rest", $.non_arrow_type),
-				)),
+					field("variadic", $.variadic_type),
+				),
 			),
+
+		variadic_type: ($) =>
+			seq(
+				$.ellipsis,
+				field("item", $.non_arrow_type),
+			),
+
+		ellipsis: ($) => token(prec(1, "...")),
 
 		constraint_clause: ($) =>
 			seq(
@@ -944,6 +975,7 @@ module.exports = grammar({
 		lbrace: ($) => "{",
 		rbrace: ($) => "}",
 		lbrace_hash: ($) => token("#{"),
+		lbracket_hash: ($) => token("#["),
 
 		quote: ($) => '"',
 		triple_quote: ($) => token('"""'),
