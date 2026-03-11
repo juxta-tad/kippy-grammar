@@ -404,7 +404,7 @@ module.exports = grammar({
 
 		ability_method_suffix: ($) =>
 			seq(
-				$.at_sign,
+				token.immediate($.at_sign),
 				field("ability", $.type_name),
 				$.dot,
 				field("method", $.identifier),
