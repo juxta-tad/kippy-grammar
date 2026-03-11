@@ -146,6 +146,7 @@ typedef struct {
   ScanPhase phase;
   uint16_t line_indent;
   uint16_t queued_newlines;
+  uint16_t queued_dedents;
 } Scanner;
 
 // Enforces structural integrity of the indentation stack
@@ -176,6 +177,28 @@ static inline void reset_indent_stack(Scanner *s) {
   array_clear(&s->indents);
   uint16_t base = 0;
   array_push(&s->indents, base);
+}
+
+// Safe indent stack push with validation
+static inline bool safe_push_indent(Scanner *s, uint16_t indent) {
+  uint32_t n = s->indents.size;
+
+  // Pre-check: ensure we won't exceed limits
+  // MAX_INDENT_DEPTH is the max total size (1 base + 255 non-base indents = 256 total)
+  if (s->indents.size > MAX_INDENT_DEPTH) {
+    return false;
+  }
+
+  array_push(&s->indents, indent);
+
+  // Post-check: verify the push succeeded
+  if (s->indents.size != n + 1) {
+    // Array is potentially corrupted; reset to safe state
+    array_clear(&s->indents);
+    return false;
+  }
+
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -214,6 +237,7 @@ void *tree_sitter_kippy_external_scanner_create(void) {
   enter_bol_unscanned(s);
   s->line_indent = 0;
   s->queued_newlines = 0;
+  s->queued_dedents = 0;
 
   check_indent_invariants(s);
   return s;
@@ -312,7 +336,7 @@ static inline bool restore_base_indent(Scanner *s) {
     uint16_t base = 0;
     array_push(&s->indents, base);
     if (s->indents.size != 1) {
-      array_clear(&s->indents); // Allocation error
+      array_clear(&s->indents); // Allocation error; don't use safe_push to avoid recursion
       return false;
     }
   }
@@ -340,17 +364,13 @@ static inline bool restore_indent_stack(Scanner *s, const char *buffer, unsigned
       DEBUG_LOG("[DESERIALIZE] Non-monotonic indent rejected: %u <= %u\n", indent, prev_indent);
       array_clear(&s->indents);
       restore_base_indent(s);
-      return true;
+      return false;
     }
 
-    uint32_t size_before = s->indents.size;
-    array_push(&s->indents, indent);
-
-    if (s->indents.size != size_before + 1) {
+    if (!safe_push_indent(s, indent)) {
       DEBUG_LOG("[DESERIALIZE] Array push failed at indent level %u\n", indent);
-      array_clear(&s->indents);
       restore_base_indent(s);
-      return true;
+      return false;
     }
   }
 
@@ -380,6 +400,7 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   s->phase = SCAN_BOL_UNSCANNED;
   s->line_indent = 0;
   s->queued_newlines = 0;
+  s->queued_dedents = 0;
 
   if (length > 0) {
     unsigned pos = 0;
@@ -401,6 +422,10 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   if (s->indents.size == 0) {
     uint16_t base = 0;
     array_push(&s->indents, base);
+    if (s->indents.size != 1) {
+      DEBUG_LOG("[DESERIALIZE] Failed to restore base indent at end\n");
+      return; // State is corrupted, but we've already attempted recovery in restore_indent_stack
+    }
   }
 
   check_indent_invariants(s);
@@ -516,13 +541,10 @@ static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_sym
   check_indent_invariants(s);
 
   if (!valid_symbols[INDENT] ||
-      s->line_indent <= top_indent(s) ||
-      s->indents.size >= MAX_INDENT_DEPTH)
+      s->line_indent <= top_indent(s))
     return false;
 
-  uint32_t n = s->indents.size;
-  array_push(&s->indents, s->line_indent);
-  if (s->indents.size != n + 1)
+  if (!safe_push_indent(s, s->line_indent))
     return false;
 
   check_indent_invariants(s);
@@ -543,13 +565,6 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
     return false;
   }
 
-  // If we thought we were at BOL, but the parser has already consumed part of the line,
-  // abandon BOL handling for this call.
-  if (s->phase == SCAN_BOL_UNSCANNED && !is_bol_position(lexer)) {
-    enter_midline(s);
-    return false;
-  }
-
   if (s->phase == SCAN_BOL_UNSCANNED) {
     LineStartInfo info = compute_line_start_info(lexer);
     apply_line_start_info(s, info);
@@ -563,6 +578,7 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
 
   if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
     s->queued_newlines--;
+    lexer->mark_end(lexer);
     log_emit("PENDING_NEWLINE", s, lexer);
     lexer->result_symbol = NEWLINE;
     return true;
@@ -596,19 +612,29 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     valid_symbols[INDENT], valid_symbols[DEDENT]);
 
   if (lexer->eof(lexer)) {
-    DEBUG_LOG("[EOF] queued_newlines=%u indents.size=%d phase=%d\n", s->queued_newlines, s->indents.size, s->phase);
+    DEBUG_LOG("[EOF] queued_newlines=%u queued_dedents=%u indents.size=%d phase=%d\n",
+      s->queued_newlines, s->queued_dedents, s->indents.size, s->phase);
+
+    // Queue dedents if not already queued
+    if (s->queued_dedents == 0 && s->indents.size > 1) {
+      s->queued_dedents = s->indents.size - 1; // All non-base indents
+    }
 
     s->line_indent = 0;
     enter_bol_scanned(s);
 
+    // Emit queued newlines first
     if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
       s->queued_newlines--;
+      lexer->mark_end(lexer);
       log_emit("EOF_PENDING_NEWLINE", s, lexer);
       lexer->result_symbol = NEWLINE;
       return true;
     }
 
-    if (emit_dedent(s, lexer, valid_symbols)) {
+    // Then emit queued dedents
+    if (s->queued_dedents > 0 && emit_dedent(s, lexer, valid_symbols)) {
+      s->queued_dedents--;
       log_emit("EOF_DEDENT", s, lexer);
       return true;
     }
