@@ -2013,11 +2013,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "SYMBOL",
-            "name": "at_sign"
-          }
+          "type": "SYMBOL",
+          "name": "at_sign"
         },
         {
           "type": "FIELD",
@@ -5628,8 +5625,11 @@
       }
     },
     "at_sign": {
-      "type": "STRING",
-      "value": "@"
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "@"
+      }
     },
     "pipe": {
       "type": "TOKEN",
