@@ -212,7 +212,7 @@ module.exports = grammar({
 				optional(
 					seq(
 						$.lparen,
-						commaSep1Trail($, $.type_expression, $.comma, $.newline),
+						commaSep1Trail($, $.type_expression_no_comma, $.comma, $.newline),
 						$.rparen,
 					),
 				),

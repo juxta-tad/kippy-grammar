@@ -604,7 +604,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "type_expression"
+                      "name": "type_expression_no_comma"
                     },
                     {
                       "type": "REPEAT",
@@ -624,7 +624,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "type_expression"
+                            "name": "type_expression_no_comma"
                           }
                         ]
                       }

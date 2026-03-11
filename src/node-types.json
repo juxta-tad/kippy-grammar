@@ -3411,7 +3411,7 @@
           "named": true
         },
         {
-          "type": "type_expression",
+          "type": "type_expression_no_comma",
           "named": true
         }
       ]
