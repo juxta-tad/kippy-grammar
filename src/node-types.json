@@ -844,6 +844,36 @@
     }
   },
   {
+    "type": "derives_clause",
+    "named": true,
+    "fields": {
+      "ability": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "non_arrow_type",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "kw_derives",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "documented_declaration",
     "named": true,
     "fields": {},
@@ -3160,6 +3190,10 @@
           "named": true
         },
         {
+          "type": "derives_clause",
+          "named": true
+        },
+        {
           "type": "equals",
           "named": true
         },
@@ -3892,6 +3926,10 @@
   },
   {
     "type": "kw_cert",
+    "named": true
+  },
+  {
+    "type": "kw_derives",
     "named": true
   },
   {

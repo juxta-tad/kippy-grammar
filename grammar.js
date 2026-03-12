@@ -304,8 +304,13 @@ module.exports = grammar({
 				opt($.type_parameter_list),
 				$.equals,
 				field("value", choice($.variant_type_value, $.alias_type_value)),
+				opt($.derives_clause),
 			),
-
+		derives_clause: ($) =>
+			seq(
+				$.kw_derives,
+				trailingSep1(field("ability", $.non_arrow_type), $.comma),
+			),
 		variant_type_value: ($) => prec(2, $.type_variant_block),
 
 		alias_type_value: ($) =>
@@ -373,7 +378,6 @@ module.exports = grammar({
 				$.binding_core,
 			),
 
-
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.6: ATTRIBUTES & METADATA
 		// ─────────────────────────────────────────────────────────────────────────
@@ -410,7 +414,10 @@ module.exports = grammar({
 				field("type", $.non_arrow_type),
 				$.kw_with,
 				field("ability", $.type_name),
-				field("methods", block($, newlineSeparated1($, $.implementation_method))),
+				field(
+					"methods",
+					block($, newlineSeparated1($, $.implementation_method)),
+				),
 			),
 
 		implementation_method: ($) =>
@@ -597,7 +604,13 @@ module.exports = grammar({
 			tuple($, $.lbrace_hash, $.rbrace, $.expression, $.semicolon),
 
 		parenthesized_expression: ($) =>
-			seq($.lparen, many($.newline), field("value", $.expression), many($.newline), $.rparen),
+			seq(
+				$.lparen,
+				many($.newline),
+				field("value", $.expression),
+				many($.newline),
+				$.rparen,
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
@@ -654,13 +667,13 @@ module.exports = grammar({
 		unguarded_pattern: ($) => $.or_pattern,
 
 		binding_pattern: ($) =>
-		choice(
-			$.wildcard_pattern,
-			$.identifier,
-			$.binding_list_pattern,
-			$.binding_tuple_pattern,
-			$.binding_record_pattern,
-		),
+			choice(
+				$.wildcard_pattern,
+				$.identifier,
+				$.binding_list_pattern,
+				$.binding_tuple_pattern,
+				$.binding_record_pattern,
+			),
 		or_pattern: ($) => prec.left(sep1($.as_pattern, $.pipe_bar)),
 
 		as_pattern: ($) =>
@@ -919,7 +932,9 @@ module.exports = grammar({
 		name: ($) => choice($.identifier, $.tag_name),
 		value_name: ($) => choice($.identifier, $.kw_self),
 		long_identifier: ($) =>
-		prec.left(seq(choice($.name, $.kw_self), many(seq($.module_sep, $.name)))),
+			prec.left(
+				seq(choice($.name, $.kw_self), many(seq($.module_sep, $.name))),
+			),
 		placeholder: ($) => token("__"),
 
 		// Keywords
@@ -943,6 +958,7 @@ module.exports = grammar({
 		kw_build: () => "build",
 		kw_type: () => "type",
 		kw_distinct: () => "distinct",
+		kw_derives: () => "derives",
 		kw_sig: () => "sig",
 		kw_fn: () => "fn",
 		kw_test: () => "test",
