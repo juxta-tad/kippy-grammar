@@ -374,57 +374,44 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.7: IMPLEMENTATIONS & ABILITIES
 		// ─────────────────────────────────────────────────────────────────────────────
-		implementation: ($) =>
-			seq(
-				$.kw_extend,
-				field("type", $.non_arrow_type),
-				$.kw_with,
-				field("ability", $.type_name),
-				field(
-					"methods",
-					indented_adjacent_list($, $.implementation_method, {
-						at_least_one: true,
-					}),
-				),
-			),
+		implementation: ($) => seq(
+			$.kw_extend,
+			field("type", $.non_arrow_type),
+			$.kw_with,
+			field("ability", $.type_name),
+			field("methods", B.indented($, B.many1($.implementation_method)))
+		),
 
-		implementation_method: ($) =>
-			seq(
-				attribute_prefix($),
-				field("name", $.identifier),
-				optional(field("receiver", $.receiver_parameter)),
-				repeat(field("param", $.identifier)),
-				$.equals,
-				field("value", inline_or_block($, $.expression)),
-			),
+		implementation_method: ($) => seq(
+			B.attributePrefix($),
+			field("name", $.identifier),
+			B.opt(field("receiver", $.receiver_parameter)),
+			B.many(field("param", $.identifier)),
+			$.equals,
+			field("value", B.inlineOrBlock($, $.expression))
+		),
 
-		ability_declaration: ($) =>
-			seq(
-				attribute_prefix($),
-				$.kw_ability,
-				field("name", $.type_name),
-				optional($.type_parameter_list),
-				field(
-					"methods",
-					indented_adjacent_list($, $.annotation, { at_least_one: true }),
-				),
-			),
+		ability_declaration: ($) => seq(
+			B.attributePrefix($),
+			$.kw_ability,
+			field("name", $.type_name),
+			B.opt($.type_parameter_list),
+			field("methods", B.indented($, B.many1($.annotation)))
+		),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
 
-		test_declaration: ($) =>
-			seq(
-				attribute_prefix($),
-				$.kw_test,
-				field("name", $.static_string),
-				$.colon,
-				field("body", block_body($, $.expression)),
-			),
+		test_declaration: ($) => seq(
+			B.attributePrefix($),
+			$.kw_test,
+			field("name", $.static_string),
+			$.colon,
+			field("body", B.indented($, $.expression))
+		),
 
 		binding_target: ($) => reserved("global", $.identifier),
 
 		receiver_parameter: ($) => $.kw_self,
-
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
 		// ─────────────────────────────────────────────────────────────────────────────

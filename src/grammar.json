@@ -1372,20 +1372,11 @@
                 "name": "indent"
               },
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "implementation_method"
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "implementation_method"
-                    }
-                  }
-                ]
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "implementation_method"
+                }
               },
               {
                 "type": "REPEAT",
@@ -1578,20 +1569,11 @@
                 "name": "indent"
               },
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "annotation"
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "annotation"
-                    }
-                  }
-                ]
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "annotation"
+                }
               },
               {
                 "type": "REPEAT",
