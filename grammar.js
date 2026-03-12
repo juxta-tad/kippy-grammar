@@ -40,7 +40,7 @@ function trailingSep(rule, separator) {
 
 // --- Block & Layout Helpers (Your Compact Set) ---
 function block($, body) {
-	return seq($.newline, $.indent, body, $.dedent);
+	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
 
 function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
@@ -422,16 +422,13 @@ module.exports = grammar({
 		// 3.7: IMPLEMENTATIONS & ABILITIES
 		// ─────────────────────────────────────────────────────────────────────────
 		implementation: ($) =>
-			seq(
-				$.kw_extend,
-				field("type", $.non_arrow_type),
-				$.kw_with,
-				field("ability", $.type_name),
-				field(
-					"methods",
-					block($, newlineSeparated1($, $.implementation_method)),
-				),
-			),
+	  seq(
+	    $.kw_extend,
+	    field("type", $.non_arrow_type),
+	    $.kw_with,
+	    field("ability", $.type_name),
+	    field("methods", block($, many1($.implementation_method))),
+	  ),
 
 		implementation_method: ($) =>
 			seq(
