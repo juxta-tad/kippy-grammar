@@ -45,7 +45,6 @@ const B = {
 		const blockList = seq(
 			item,
 			repeat(seq(blockItemSep, item)),
-			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 
 		return choice(
@@ -68,7 +67,6 @@ const B = {
 		const blockNormal = seq(
 			item,
 			repeat(seq(blockItemSep, item)),
-			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 		const blockSpread = seq(
 			optional(seq(
@@ -77,7 +75,6 @@ const B = {
 				blockItemSep,
 			)),
 			spreadRule,
-			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 
 		return choice(
@@ -106,7 +103,6 @@ const B = {
 			blockItemSep,
 			field("second", item),
 			repeat(seq(blockItemSep, field("rest", item))),
-			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 
 		return choice(
