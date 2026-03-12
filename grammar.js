@@ -1,1421 +1,671 @@
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 1: CONSTANTS & PRECEDENCE
+// ═════════════════════════════════════════════════════════════════════════════
+
 const PREC = {
-	// Lowest to highest precedence
-	PIPE: 1,
-	OR: 2,
-	AND: 3,
-	COMPARE: 4,
-	ADD: 5,
-	MUL: 6,
-	UNARY: 7,
-	POSTFIX: 8,
+  PIPE: 1,
+  OR: 2,
+  AND: 3,
+  COMPARE: 4,
+  ADD: 5,
+  MUL: 6,
+  UNARY: 7,
+  POSTFIX: 8,
 };
 
-const B = {
-	// --- Basic Repetition ---
-	opt: optional,
-	many: repeat,
-	many1: repeat1,
-
-	// --- Separator Lists ---
-	sep1: (sep, rule) => seq(rule, repeat(seq(sep, rule))),
-	sep: (sep, rule) => optional(B.sep1(sep, rule)),
-
-	trailingSep1: (sep, rule) => seq(rule, repeat(seq(sep, rule)), optional(sep)),
-	trailingSep: (sep, rule) => optional(B.trailingSep1(sep, rule)),
-
-	// --- Inline Layout Utilities ---
-	inlineCommaList: (item, sep, newline) =>
-		seq(
-			item,
-			repeat(seq(optional(sep), repeat1(newline), item)),
-			optional(seq(repeat(newline), sep)),
-		),
-
-	// --- Indentation & Blocks ---
-	indented: ($, rule) =>
-		seq($.newline, $.indent, rule, repeat($.newline), $.dedent),
-	inlineOrBlock: ($, rule) => choice(rule, B.indented($, rule)),
-
-	// --- Multi-Layout Bracketed Structures (Records, Maps, Lists) ---
-	bracketedList: ($, open, close, item, sepToken) => {
-		const inlineList = B.trailingSep1(sepToken, item);
-
-		// Block mode: items separated by newlines, optional trailing tokens
-		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
-		const blockList = seq(
-			item,
-			repeat(seq(blockItemSep, item)),
-		);
-
-		return choice(
-			seq(open, optional(inlineList), close),
-			seq(open, B.indented($, optional(blockList)), close),
-		);
-	},
-
-	bracketedListWithSpread: ($, open, close, item, sepToken, spreadRule) => {
-		// Inline modes
-		const inlineNormal = B.trailingSep1(sepToken, item);
-		const inlineSpread = seq(
-			optional(seq(B.sep1(sepToken, item), sepToken)),
-			spreadRule,
-			optional(sepToken),
-		);
-
-		// Block modes
-		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
-		const blockNormal = seq(
-			item,
-			repeat(seq(blockItemSep, item)),
-		);
-		const blockSpread = seq(
-			optional(seq(
-				item,
-				repeat(seq(blockItemSep, item)),
-				blockItemSep,
-			)),
-			spreadRule,
-		);
-
-		return choice(
-			seq(open, optional(choice(inlineSpread, inlineNormal)), close),
-			seq(
-				open,
-				B.indented($, optional(choice(blockSpread, blockNormal))),
-				close,
-			),
-		);
-	},
-
-	bracketedTuple: ($, open, close, item, sepToken) => {
-		// Tuples explicitly demand at least 2 items
-		const inlineTuple = seq(
-			field("first", item),
-			sepToken,
-			field("second", item),
-			repeat(seq(sepToken, field("rest", item))),
-			optional(sepToken),
-		);
-
-		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
-		const blockTuple = seq(
-			field("first", item),
-			blockItemSep,
-			field("second", item),
-			repeat(seq(blockItemSep, field("rest", item))),
-		);
-
-		return choice(
-			seq(open, inlineTuple, close),
-			seq(open, B.indented($, blockTuple), close),
-		);
-	},
-
-	// --- Common Language Patterns ---
-	attributePrefix: ($) => B.many(seq($.attribute, B.opt($.newline))),
-
-	leftAssoc: (precValue, operand, operator) =>
-		prec.left(
-			precValue,
-			seq(operand, B.many(seq(operator, operand))),
-		),
-};
-
-function buildOperatorLadder(prefix, postfixRuleName) {
-	return {
-		[`${prefix}pipe_expression`]: ($) =>
-			prec.left(
-				PREC.PIPE,
-				seq(
-					$[`${prefix}or_expression`],
-					repeat(seq($.pipe, $[`${prefix}or_expression`])),
-				),
-			),
-		[`${prefix}or_expression`]: ($) => or_rule($, $[`${prefix}and_expression`]),
-		[`${prefix}and_expression`]: ($) =>
-			and_rule($, $[`${prefix}compare_expression`]),
-		[`${prefix}compare_expression`]: ($) =>
-			compare_rule($, $[`${prefix}add_expression`]),
-		[`${prefix}add_expression`]: ($) =>
-			add_rule($, $[`${prefix}mul_expression`]),
-		[`${prefix}mul_expression`]: ($) =>
-			mul_rule($, $[`${prefix}unary_expression`]),
-		[`${prefix}unary_expression`]: ($) =>
-			choice(
-				prec.right(
-					PREC.UNARY,
-					seq(
-						choice($.minus, $.kw_not, $.kw_cert),
-						$[`${prefix}unary_expression`],
-					),
-				),
-				$[postfixRuleName],
-			),
-	};
-}
-
-module.exports = grammar({
-	name: "kippy",
-
-	// tree-sitter uses this for keyword extraction and error recovery.
-	word: ($) => $.identifier,
-
-	// Reserved word sets for keyword vs identifier disambiguation.
-	// Using tree-sitter's reserved mechanism instead of lexical precedence.
-	reserved: {
-		global: ($) => [
-			$.kw_pub,
-			$.kw_let,
-			$.kw_cert,
-			$.kw_expect,
-			$.kw_if,
-			$.kw_then,
-			$.kw_else,
-			$.kw_when,
-			$.kw_is,
-			$.kw_in,
-			$.kw_where,
-			$.kw_with,
-			$.kw_extend,
-			$.kw_ability,
-			$.kw_module,
-			$.kw_use,
-			$.kw_using,
-			$.kw_build,
-			$.kw_type,
-			$.kw_distinct,
-			$.kw_sig,
-			$.kw_fn,
-			$.kw_test,
-			$.kw_or,
-			$.kw_and,
-			$.kw_not,
-			$.kw_as,
-			$.kw_self,
-		],
-	},
-
-	// layout-sensitive tokens are provided externally by the scanner.
-	externals: ($) => [
-		$.newline,
-		$.indent,
-		$.dedent,
-	],
-
-	// whitespace and comments are trivia (ignored by parser).
-	// Doc comments are also trivia; attachment to declarations is handled by subsequent passes.
-	extras: ($) => [
-		/[ \t\r\f]+/,
-		$.line_comment,
-		$.block_comment,
-		$.doc_comment,
-	],
-
-	supertypes: ($) => [
-		$.expression,
-	],
-
-	// ═════════════════════════════════════════════════════════════════════════════
-	// SECTION 3: GRAMMAR RULES
-	// ═════════════════════════════════════════════════════════════════════════════
-	rules: {
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.1: TOP-LEVEL & SOURCE FILE
-		// ─────────────────────────────────────────────────────────────────────────────
-		source_file: ($) =>
-			seq(
-				B.many($.newline),
-				B.opt(seq($.module_declaration, B.many1($.newline))),
-				B.many(seq($.module_item, B.many($.newline))),
-			),
-
-		module_item: ($) =>
-			choice(
-				$.use_statement,
-				$.documented_declaration,
-			),
-
-		documented_declaration: ($) =>
-			choice(
-				$.type_declaration,
-				$.signature,
-				$.let_binding,
-				$.ability_declaration,
-				$.test_declaration,
-				$.expect_statement,
-				$.implementation,
-			),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.2: MODULE & USE DECLARATIONS
-		// ─────────────────────────────────────────────────────────────────────────────
-		use_statement: ($) => seq(
-			$.kw_use,
-			field("module", $.type_name),
-			B.opt(seq($.kw_as, field("alias", $.tag_name))),
-			B.opt(seq($.kw_using, B.bracketedList($, $.lparen, $.rparen, $.import_name, $.comma)))
-		),
-
-		module_declaration: ($) =>
-			seq(
-				$.kw_module,
-				field("name", $.type_name),
-			),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.3: TYPE DECLARATIONS & VARIANTS
-		// ─────────────────────────────────────────────────────────────────────────────
-		type_declaration: ($) => seq(
-			B.attributePrefix($),
-			$.kw_type,
-			field("name", $.type_name),
-			B.opt($.type_parameter_list),
-			$.equals,
-			field("value", choice($.variant_type_value, $.alias_type_value))
-		),
-
-		variant_type_value: ($) => prec(2, $.type_variant_block),
-
-		alias_type_value: ($) => prec(1, seq(
-			B.opt($.kw_distinct),
-			B.inlineOrBlock($, $.type_expression)
-		)),
-
-		type_parameter_list: ($) => seq(
-			$.lparen,
-			B.inlineCommaList($.type_variable, $.comma, $.newline),
-			$.rparen
-		),
-
-		type_variant_block: ($) => B.indented($, B.sep1($.newline, $.type_variant)),
-
-		type_variant: ($) => seq(
-			$.pipe_bar,
-			field("name", $.tag_name),
-			B.opt(field("payload", $.type_variant_payload))
-		),
-
-
-		type_variant_payload: ($) => seq(
-			$.lparen,
-			B.inlineCommaList($.type_expression_no_comma, $.comma, $.newline),
-			$.rparen
-		),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.4: ANNOTATIONS & SIGNATURES
-		// ─────────────────────────────────────────────────────────────────────────────
-		annotation: ($) => seq(
-			B.attributePrefix($),
-			field("name", $.binding_target),
-			$.colon,
-			field("type", B.inlineOrBlock($, $.type_expression)),
-			B.opt(field("constraints", $.constraint_clause))
-		),
-
-		signature: ($) => seq(
-			B.attributePrefix($),
-			$.kw_sig,
-			field("name", $.identifier),
-			$.colon,
-			field("type", B.inlineOrBlock($, $.type_expression)),
-			B.opt(field("constraints", $.constraint_clause))
-		),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.5: VALUE BINDINGS & LET DECLARATIONS
-		// ─────────────────────────────────────────────────────────────────────────────
-		let_binding: ($) => seq(
-			B.attributePrefix($),
-			B.opt($.kw_pub),
-			$.kw_let,
-			field("name", $.binding_target),
-			B.opt(seq(
-				$.kw_with,
-				field("param", $.identifier),
-				B.many(seq($.comma, field("param", $.identifier)))
-			)),
-			choice(
-				// Type Annotation Form
-				seq(
-					$.colon,
-					field("type", B.inlineOrBlock($, $.type_expression)),
-					B.opt(field("constraints", $.constraint_clause))
-				),
-				// Assignment Form
-				seq(
-					B.opt(seq($.colon, field("type", B.inlineOrBlock($, $.type_expression)))),
-					$.equals,
-					field("value", B.inlineOrBlock($, $.expression))
-				)
-			)
-		),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.6: ATTRIBUTES & METADATA
-		// ─────────────────────────────────────────────────────────────────────────────
-		attribute: ($) => seq(
-			$.hash_sign,
-			$.long_identifier,
-			B.opt($.attribute_arguments_inline)
-		),
-
-		attribute_arguments_inline: ($) => seq(
-			$.lparen,
-			B.opt(B.inlineCommaList($.attribute_argument, $.comma, $.newline)),
-			$.rparen
-		),
-
-		attribute_argument: ($) => choice(
-			$.expression,
-			seq(field("name", $.identifier), $.equals, field("value", $.expression))
-		),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.7: IMPLEMENTATIONS & ABILITIES
-		// ─────────────────────────────────────────────────────────────────────────────
-		implementation: ($) => seq(
-			$.kw_extend,
-			field("type", $.non_arrow_type),
-			$.kw_with,
-			field("ability", $.type_name),
-			field("methods", B.indented($, B.many1($.implementation_method)))
-		),
-
-		implementation_method: ($) => seq(
-			B.attributePrefix($),
-			field("name", $.identifier),
-			B.opt(field("receiver", $.receiver_parameter)),
-			B.many(field("param", $.identifier)),
-			$.equals,
-			field("value", B.inlineOrBlock($, $.expression))
-		),
-
-		ability_declaration: ($) => seq(
-			B.attributePrefix($),
-			$.kw_ability,
-			field("name", $.type_name),
-			B.opt($.type_parameter_list),
-			field("methods", B.indented($, B.many1($.annotation)))
-		),
-
-		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
-
-		test_declaration: ($) => seq(
-			B.attributePrefix($),
-			$.kw_test,
-			field("name", $.static_string),
-			$.colon,
-			field("body", B.indented($, $.expression))
-		),
-
-		binding_target: ($) => reserved("global", $.identifier),
-
-		receiver_parameter: ($) => $.kw_self,
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
-		// ─────────────────────────────────────────────────────────────────────────────
-		expression: ($) => $.pipe_expression,
-
-		call_argument: ($) => $["restricted_pipe_expression"],
-
-		pipe_expression: ($) =>
-			prec.left(
-				PREC.PIPE,
-				seq(
-					$.or_expression,
-					repeat(seq($.pipe, $.or_expression)),
-				),
-			),
-
-		or_expression: ($) => or_rule($, $.and_expression),
-		and_expression: ($) => and_rule($, $.compare_expression),
-		compare_expression: ($) => compare_rule($, $.add_expression),
-		add_expression: ($) => add_rule($, $.mul_expression),
-		mul_expression: ($) => mul_rule($, $.unary_expression),
-		unary_expression: ($) =>
-			choice(
-				prec.right(
-					PREC.UNARY,
-					seq(choice($.minus, $.kw_not, $.kw_cert), $.unary_expression),
-				),
-				$.postfix_expression,
-			),
-
-		restricted_postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					repeat($.restricted_postfix_suffix),
-				),
-			),
-
-		index_suffix: ($) =>
-			seq(
-				$.lbracket,
-				field("index", $.expression),
-				$.rbracket,
-			),
-
-		method_suffix: ($) =>
-			seq(
-				$.dot,
-				field("method", $.identifier),
-			),
-
-		qualified_method_suffix: ($) =>
-			seq(
-				$.at_sign,
-				field("ability", $.tag_name),
-				$.dot,
-				field("method", $.identifier),
-			),
-
-		restricted_postfix_suffix: ($) => postfix_suffixes($, { allowCall: false }),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
-		// ─────────────────────────────────────────────────────────────────────────────
-		// Postfix expressions: base + repeating operators (no indirect recursion)
-		postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					repeat($.postfix_suffix),
-				),
-			),
-
-		postfix_suffix: ($) => postfix_suffixes($, { allowCall: true }),
-
-		spread_element: ($) => seq("..", field("base", $.expression)),
-
-		call_suffix: ($) => with_call_suffix($),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.10: PRIMARY EXPRESSION FORMS
-		// ─────────────────────────────────────────────────────────────────────────────
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.9A: INLINE VS BLOCK EXPRESSION HIERARCHY
-		// ─────────────────────────────────────────────────────────────────────────────
-		// Inline expressions: atoms and structures without layout
-		inline_expression: ($) =>
-			choice(
-				$.record_builder,
-				$.literal,
-				$.long_identifier,
-				$.placeholder,
-				$.list_expression,
-				$.map_expression,
-				$.record_expression,
-				$.tuple_expression,
-				$.parenthesized_expression,
-			),
-
-		// Block expressions: layout-based constructs (when, if, lambda, let-in blocks)
-		block_expression: ($) =>
-			choice(
-				$.when_expression,
-				$.if_expression,
-				$.lambda_expression,
-				$.let_block_expression,
-			),
-
-		primary_expression: ($) =>
-			choice(
-				$.inline_expression,
-				$.block_expression,
-			),
-
-		list_expression: ($) =>
-			layoutBracketWithSep($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
-
-		list_item: ($) =>
-			choice(
-				$.expression,
-				$.spread_element,
-			),
-
-		record_body: ($) =>
-			record_like($, $.record_field, {
-				allowSpread: true,
-				spreadRule: $.spread_element,
-			}),
-
-		record_expression: ($) => $.record_body,
-
-		record_builder: ($) =>
-			seq(
-				$.kw_build,
-				field("builder", $.long_identifier),
-				$.record_body,
-			),
-
-		map_expression: ($) =>
-			layoutBracketWithSep(
-				$,
-				$.lbracket_hash,
-				$.rbracket,
-				$.map_entry,
-				$.semicolon,
-			),
-
-		map_entry: ($) =>
-			seq(
-				field("key", $.expression),
-				$.thick_arrow,
-				field("value", $.expression),
-			),
-
-		field_name: ($) => reserved("global", $.identifier),
-
-		record_field_value: ($) =>
-			choice(
-				$.expression,
-				seq(
-					$.newline,
-					$.indent,
-					$.expression,
-					$.dedent,
-				),
-			),
-
-		record_field: ($) =>
-			seq(
-				field("name", $.field_name),
-				$.equals,
-				field("value", $.record_field_value),
-			),
-
-		tuple_expression: ($) => tuple_like($, $.expression),
-
-		parenthesized_expression: ($) =>
-			seq(
-				$.lparen,
-				field("value", $.expression),
-				$.rparen,
-			),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
-		// ─────────────────────────────────────────────────────────────────────────────
-		let_block_expression: ($) =>
-			seq(
-				$.lparen,
-				$.newline,
-				$.indent,
-				choice(
-					field("value", $.expression),
-					seq(
-						$.let_binding,
-						repeat(seq(repeat1($.newline), $.let_binding)),
-						repeat($.newline),
-						$.kw_in,
-						field("value", $.expression),
-					),
-				),
-				repeat($.newline),
-				$.dedent,
-				$.rparen,
-			),
-
-		when_expression: ($) =>
-			prec.right(seq(
-				$.kw_when,
-				field("subject", $.pipe_expression),
-				$.kw_is,
-				field("arms", indented_list($, $.when_arm, { at_least_one: true })),
-			)),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.12: PATTERN MATCHING
-		// ─────────────────────────────────────────────────────────────────────────────
-		pattern: ($) =>
-			seq(
-				$.or_pattern,
-				optional(seq($.kw_if, field("guard", $.expression))),
-			),
-
-		or_pattern: ($) =>
-			prec.left(seq(
-				$.as_pattern,
-				repeat(seq($.pipe_bar, $.as_pattern)),
-			)),
-
-		as_pattern: ($) =>
-			choice(
-				seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)),
-				$.atomic_pattern,
-			),
-
-		atomic_pattern: ($) =>
-			choice(
-				$.literal,
-				$.wildcard_pattern,
-				$.identifier,
-				$.tag_pattern,
-				$.list_pattern,
-				$.tuple_pattern,
-				$.record_pattern,
-				seq($.lparen, $.pattern, $.rparen),
-			),
-
-		wildcard_pattern: ($) => "_",
-
-		simple_tag_argument_pattern: ($) =>
-			choice(
-				$.literal,
-				$.wildcard_pattern,
-				$.identifier,
-			),
-
-		tag_pattern: ($) =>
-			seq(
-				$.tag_name,
-				optional(choice(
-					seq(
-						$.lparen,
-						commaSep1Trail($, $.pattern, $.comma, $.newline),
-						$.rparen,
-					),
-					$.simple_tag_argument_pattern,
-				)),
-			),
-
-		list_pattern: ($) =>
-			seq(
-				$.lbracket,
-				optional(choice(
-					seq(
-						$.pattern,
-						repeat(seq($.semicolon, $.pattern)),
-						optional(seq($.semicolon, $.rest_pattern)),
-					),
-					$.rest_pattern,
-				)),
-				$.rbracket,
-			),
-
-		rest_pattern: ($) =>
-			seq(
-				"..",
-				field("binding", $.identifier),
-			),
-
-		tuple_pattern: ($) =>
-			seq(
-				$.lbrace_hash,
-				$.pattern,
-				$.semicolon,
-				commaSepTrail($, $.pattern, $.semicolon, $.newline),
-				$.rbrace,
-			),
-
-		record_pattern: ($) =>
-			seq(
-				$.lbrace,
-				optional(choice(
-					seq(
-						$.record_pattern_field,
-						repeat(seq($.semicolon, $.record_pattern_field)),
-						optional(seq($.semicolon, "..")),
-					),
-					"..",
-				)),
-				$.rbrace,
-			),
-
-		record_pattern_field: ($) =>
-			choice(
-				seq($.field_name, $.colon, $.pattern),
-				$.field_name,
-			),
-
-		arm_expression: ($) => inline_or_block($, $.expression),
-
-		when_arm: ($) =>
-			seq(
-				field("pattern", $.pattern),
-				$.arrow,
-				field("value", $.arm_expression),
-			),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.13: LAMBDA & SPECIAL EXPRESSIONS
-		// ─────────────────────────────────────────────────────────────────────────────
-		lambda_expression: ($) =>
-			prec.right(seq(
-				$.kw_fn,
-				field("param", $.identifier),
-				repeat(seq(
-					optional(repeat($.newline)),
-					$.comma,
-					optional(repeat($.newline)),
-					field("param", $.identifier),
-				)),
-				$.colon,
-				field("body", inline_or_block($, $.expression)),
-			)),
-
-		if_expression: ($) =>
-			prec.right(seq(
-				$.kw_if,
-				field("condition", $.expression),
-				$.kw_then,
-				field("then_value", $.if_branch),
-				$.kw_else,
-				field("else_value", $.if_branch),
-			)),
-
-		if_branch: ($) => inline_or_block($, $.expression),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.14: TYPE SYSTEM
-		// ─────────────────────────────────────────────────────────────────────────────
-		type_expression: ($) =>
-			choice(
-				$.non_arrow_type,
-				$.variadic_type,
-			),
-
-		type_expression_no_comma: ($) =>
-			choice(
-				$.non_arrow_type,
-				$.variadic_type,
-			),
-
-		function_type_parameters: ($) =>
-			seq(
-				field("first", $.type_expression_no_comma),
-				repeat(seq(
-					$.comma,
-					repeat($.newline),
-					field("rest", $.type_expression_no_comma),
-				)),
-				optional($.comma),
-			),
-
-		function_type_left: ($) =>
-			choice(
-				$.non_arrow_type,
-				$.variadic_type,
-			),
-
-		variadic_type: ($) =>
-			seq(
-				$.ellipsis,
-				field("item", $.non_arrow_type),
-			),
-
-		ellipsis: ($) => token(prec(1, "...")),
-
-		constraint_clause: ($) =>
-			seq(
-				$.kw_where,
-				field("type_var", $.identifier),
-				$.colon,
-				field("constraint", $.non_arrow_type),
-			),
-
-		non_arrow_type: ($) =>
-			choice(
-				$.function_type,
-				$.type_primary,
-				$.type_tuple,
-				$.type_record,
-			),
-
-		function_type: ($) =>
-			seq(
-				$.kw_fn,
-				$.lparen,
-				optional($.function_type_parameters),
-				$.rparen,
-				$.arrow,
-				field("result", inline_or_block($, $.type_expression)),
-			),
-
-		type_application: ($) => seq($.type_name, $.type_argument_list),
-
-		type_variable: ($) => reserved("global", $.identifier),
-
-		type_primary: ($) =>
-			choice(
-				$.type_application,
-				$.type_name,
-				$.type_variable,
-				$.type_wildcard,
-				$.parenthesized_type,
-			),
-
-		type_name: ($) => dotted1($, $.tag_name, $.tag_name),
-
-		type_argument_list: ($) =>
-			seq(
-				$.lparen,
-				optional(seq(
-					field("first", $.type_expression_no_comma),
-					field(
-						"rest",
-						repeat(seq($.comma, repeat($.newline), $.type_expression_no_comma)),
-					),
-					optional($.comma),
-				)),
-				$.rparen,
-			),
-
-		record_type_field: ($) =>
-			seq(
-				$.field_name,
-				$.colon,
-				inline_or_block($, $.type_expression_no_comma),
-			),
-
-		type_tuple: ($) => tuple_like($, $.non_arrow_type),
-
-		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.15: LITERALS & STRING FORMS
-		// ─────────────────────────────────────────────────────────────────────────────
-		literal: ($) =>
-			choice(
-				$.int_literal,
-				$.float_literal,
-				$.char_literal,
-				$.string,
-				$.multiline_string,
-			),
-
-		float_literal: ($) =>
-			token(choice(
-				/[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
-				/[0-9][0-9_]*\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
-				/\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
-				/[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?/,
-			)),
-
-		int_literal: ($) =>
-			token(choice(
-				/0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-				/0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-				/0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-				/[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-			)),
-
-		string: ($) =>
-			seq(
-				$.quote,
-				repeat(choice(
-					$.string_text,
-					$.escape_sequence,
-					$.interpolation,
-				)),
-				$.quote,
-			),
-
-		multiline_string: ($) =>
-			seq(
-				$.triple_quote,
-				repeat(choice(
-					$.multiline_text,
-					$.escape_sequence,
-					$.interpolation,
-					$.multiline_quote,
-					$.multiline_double_quote,
-				)),
-				$.triple_quote,
-			),
-
-		char_literal: ($) =>
-			seq(
-				$.single_quote,
-				choice(
-					$.escape_sequence,
-					/[^'\\]/,
-				),
-				$.single_quote,
-			),
-
-		interpolation: ($) =>
-			seq(
-				$.interpolation_start,
-				$.expression,
-				$.rparen,
-			),
-
-		interpolation_start: ($) => token(/\\\(/),
-
-		string_text: ($) => token(/[^"\\\n]+/),
-
-		multiline_text: ($) => token(/[^\\"]+/),
-		multiline_quote: ($) => token(/"[^"]/),
-		multiline_double_quote: ($) => token(/""[^"]/),
-
-		escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
-
-		static_string: ($) =>
-			seq(
-				'"',
-				repeat(choice(
-					$.static_string_text,
-					$.escape_sequence,
-				)),
-				'"',
-			),
-
-		static_string_text: ($) => token(/[^"\\\n]+/),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.16: COMMENTS
-		// ─────────────────────────────────────────────────────────────────────────────
-		doc_comment: (_) =>
-			token(
-				prec(
-					2,
-					seq(
-						"///",
-						/[^\n]*/,
-						repeat(seq("\n", "///", /[^\n]*/)),
-					),
-				),
-			),
-		line_comment: (_) => token(prec(1, /\/\/[^\n]*/)),
-		block_comment: ($) =>
-			token(prec(
-				-3,
-				seq(
-					"</",
-					repeat(choice(
-						/[^/]/,
-						/\/[^>]/,
-					)),
-					"/>",
-				),
-			)),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.17: IDENTIFIERS & KEYWORDS
-		// ─────────────────────────────────────────────────────────────────────────────
-		identifier: ($) => /(_*[a-z][a-zA-Z0-9_]*!?)/,
-
-		tag_name: ($) => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
-
-		import_name: ($) => choice($.identifier, $.tag_name),
-
-		name: ($) => choice($.identifier, $.tag_name),
-
-		value_name: ($) => choice($.identifier, $.kw_self),
-
-		long_identifier: ($) => prec.left(dotted1($, $.value_name, $.name)),
-
-		placeholder: ($) => token("__"),
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.18: OPERATORS & PUNCTUATION
-		// ─────────────────────────────────────────────────────────────────────────────
-		kw_pub: ($) => "pub",
-		kw_let: ($) => "let",
-		kw_cert: ($) => "cert",
-		kw_expect: ($) => "expect",
-		kw_if: ($) => "if",
-		kw_then: ($) => "then",
-		kw_else: ($) => "else",
-		kw_when: ($) => "when",
-		kw_is: ($) => "is",
-		kw_in: ($) => "in",
-		kw_where: ($) => "where",
-		kw_with: ($) => "with",
-		kw_extend: ($) => "extend",
-		kw_ability: ($) => "ability",
-		kw_module: ($) => "module",
-		kw_use: ($) => "use",
-		kw_using: ($) => "using",
-		kw_build: ($) => "build",
-		kw_type: ($) => "type",
-		kw_distinct: ($) => "distinct",
-		kw_sig: ($) => "sig",
-		kw_fn: ($) => "fn",
-		kw_test: ($) => "test",
-		kw_or: ($) => "or",
-		kw_and: ($) => "and",
-		kw_not: ($) => "not",
-		kw_as: ($) => "as",
-		kw_self: ($) => "self",
-
-		lparen: ($) => "(",
-		rparen: ($) => ")",
-		lbracket: ($) => "[",
-		rbracket: ($) => "]",
-		lbrace: ($) => "{",
-		rbrace: ($) => "}",
-		lbrace_hash: ($) => token("#{"),
-		lbracket_hash: ($) => token("#["),
-
-		quote: ($) => '"',
-		triple_quote: ($) => token('"""'),
-		single_quote: ($) => "'",
-
-		comma: ($) => ",",
-		colon: ($) => ":",
-		equals: ($) => "=",
-		semicolon: ($) => ";",
-		dot: ($) => token.immediate("."),
-		at_sign: ($) => token.immediate("@"),
-		hash_sign: ($) => token.immediate("#"),
-
-		pipe: ($) => token("|>"),
-		pipe_bar: ($) => token("|"),
-
-		or_op: ($) => $.kw_or,
-		and_op: ($) => $.kw_and,
-		not_kw: ($) => $.kw_not,
-
-		plus: ($) => "+",
-		minus: ($) => "-",
-		star: ($) => "*",
-		slash: ($) => "/",
-		percent: ($) => "%",
-
-		eq_op: ($) => "==",
-		ne_op: ($) => "!=",
-		le_op: ($) => "<=",
-		ge_op: ($) => ">=",
-		lt_op: ($) => "<",
-		gt_op: ($) => ">",
-
-		arrow: ($) => "->",
-		thick_arrow: ($) => "=>",
-		try_op: ($) => "?",
-		possessive: ($) => token.immediate("'s"),
-
-		type_record: ($) => record_like($, $.record_type_field, {}),
-
-		type_wildcard: ($) => "_",
-
-		// ─────────────────────────────────────────────────────────────────────────────
-		// 3.8A: RESTRICTED EXPRESSION HIERARCHY FOR CALL ARGUMENTS (Generated)
-		// ─────────────────────────────────────────────────────────────────────────────
-		// Call arguments use a restricted expression ladder that prevents bare nested calls.
-		// This forces users to parenthesize nested function calls: f with (g with x)
-		// instead of f with g with x. Parenthesized expressions can contain any expression,
-		// including calls, so full expressivity is maintained.
-		// These rules are generated from buildOperatorLadder() to eliminate duplication.
-		...buildOperatorLadder("restricted_", "restricted_postfix_expression"),
-	},
-});
-
 // ═════════════════════════════════════════════════════════════════════════════
-// SECTION 4: HELPER FUNCTIONS
+// SECTION 2: HELPER FUNCTIONS
 // ═════════════════════════════════════════════════════════════════════════════
 
-function singleLineBracket(open, commaToken, item, close) {
-	return seq(
-		open,
-		optional(seq(
-			item,
-			repeat(seq(commaToken, item)),
-			optional(commaToken),
-		)),
-		close,
-	);
+const opt = optional;
+const many = repeat;
+const many1 = repeat1;
+
+// --- Basic Separators ---
+function sep1(rule, separator) {
+  return seq(rule, many(seq(separator, rule)));
 }
 
-function block_body($, rule) {
-	return seq(
-		$.newline,
-		$.indent,
-		rule,
-		repeat($.newline),
-		$.dedent,
-	);
+function sep(rule, separator) {
+  return opt(sep1(rule, separator));
 }
 
-function separated_items(item, sep, { at_least_one = false } = {}) {
-	const items = at_least_one
-		? seq(item, repeat(seq(sep, item)))
-		: optional(seq(item, repeat(seq(sep, item))));
-	return items;
+function trailingSep1(rule, separator) {
+  return seq(rule, many(seq(separator, rule)), opt(separator));
 }
 
-function indented_block($, body) {
-	return seq(
-		$.newline,
-		$.indent,
-		body,
-		repeat($.newline),
-		$.dedent,
-	);
+function trailingSep(rule, separator) {
+  return opt(trailingSep1(rule, separator));
 }
 
-// Legacy helper: wraps separated_items for newline-separated lists in indented blocks
-function indented_list($, item, { at_least_one = false } = {}) {
-	return indented_block(
-		$,
-		separated_items(item, $.newline, { at_least_one }),
-	);
+// --- Layout & Indentation ---
+function block($, rule) {
+  return seq($.newline, $.indent, rule, many($.newline), $.dedent);
 }
 
-// For layout-terminated items (no explicit separator, just adjacent items)
-function adjacent_items(item, { at_least_one = false } = {}) {
-	return at_least_one ? seq(item, repeat(item)) : repeat(item);
+function inlineOrBlock($, rule) {
+  return choice(rule, block($, rule));
 }
 
-function indented_adjacent_list($, item, { at_least_one = false } = {}) {
-	return indented_block(
-		$,
-		adjacent_items(item, { at_least_one }),
-	);
+// --- Bracketed Collections (Lists, Records, Maps) ---
+// Handles both inline `[a, b]` and block-level indented items
+function collection($, open, close, item, sepToken, { allowSpread = false, spreadRule = null } = {}) {
+  // Inline rules
+  const inlineList = trailingSep1(item, sepToken);
+  let inlineBody = inlineList;
+  if (allowSpread) {
+    inlineBody = choice(
+      seq(opt(seq(sep1(item, sepToken), sepToken)), spreadRule, opt(sepToken)),
+      inlineList
+    );
+  }
+
+  // Block rules (items separated by newlines, optional sepToken)
+  const blockItemSep = seq(opt(sepToken), many1($.newline));
+  const blockList = seq(item, many(seq(blockItemSep, item)), opt(blockItemSep));
+  let blockBody = blockList;
+  if (allowSpread) {
+    blockBody = choice(
+      seq(opt(seq(item, many(seq(blockItemSep, item)), blockItemSep)), spreadRule, opt(blockItemSep)),
+      blockList
+    );
+  }
+
+  return choice(
+    seq(open, opt(inlineBody), close),
+    seq(open, block($, opt(blockBody)), close)
+  );
 }
 
-function inline_or_block($, rule) {
-	return choice(rule, block_body($, rule));
+// --- Tuples (Must have at least 2 items) ---
+function tuple($, open, close, item, sepToken) {
+  // Inline: { a ; b }
+  const inlineTuple = seq(
+    field("first", item), sepToken, field("second", item),
+    many(seq(sepToken, field("rest", item))), opt(sepToken)
+  );
+
+  // Block: Indented items separated by newlines
+  const blockItemSep = seq(opt(sepToken), many1($.newline));
+  const blockTuple = seq(
+    field("first", item), blockItemSep, field("second", item),
+    many(seq(blockItemSep, field("rest", item))), opt(blockItemSep)
+  );
+
+  return choice(
+    seq(open, inlineTuple, close),
+    seq(open, block($, blockTuple), close)
+  );
 }
 
-function postfix_suffixes($, { allowCall }) {
-	const parts = [
-		field("indexing", $.index_suffix),
-		$.method_suffix,
-		$.qualified_method_suffix,
-		$.try_op,
-		seq($.possessive, field("field", $.field_name)),
-	];
-
-	if (allowCall) {
-		parts.unshift(field("arguments", $.call_suffix));
-	}
-
-	return choice(...parts);
+// --- Common Patterns ---
+function attrPrefix($) {
+  return many(seq($.attribute, opt($.newline)));
 }
 
 function dotted1($, head, tail) {
-	return seq(
-		head,
-		repeat(seq($.dot, tail)),
-	);
+  return seq(head, many(seq($.dot, tail)));
 }
 
-function attribute_prefix($) {
-	return repeat(seq($.attribute, optional($.newline)));
+// --- Expression Ladder Generator ---
+// Generates both normal expressions and restricted (call argument) expressions
+function buildExpressionLadder(prefix, baseRule) {
+  return {
+    [`${prefix}pipe_expression`]: ($) => prec.left(PREC.PIPE, seq(
+      $[`${prefix}or_expression`],
+      many(seq($.pipe, $[`${prefix}or_expression`]))
+    )),
+    [`${prefix}or_expression`]: ($) => prec.left(PREC.OR, seq(
+      $[`${prefix}and_expression`],
+      many(seq($.or_op, $[`${prefix}and_expression`]))
+    )),
+    [`${prefix}and_expression`]: ($) => prec.left(PREC.AND, seq(
+      $[`${prefix}compare_expression`],
+      many(seq($.and_op, $[`${prefix}compare_expression`]))
+    )),
+    [`${prefix}compare_expression`]: ($) => prec.left(PREC.COMPARE, seq(
+      $[`${prefix}add_expression`],
+      opt(seq(
+        choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
+        $[`${prefix}add_expression`]
+      ))
+    )),
+    [`${prefix}add_expression`]: ($) => prec.left(PREC.ADD, seq(
+      $[`${prefix}mul_expression`],
+      many(seq(choice($.plus, $.minus), $[`${prefix}mul_expression`]))
+    )),
+    [`${prefix}mul_expression`]: ($) => prec.left(PREC.MUL, seq(
+      $[`${prefix}unary_expression`],
+      many(seq(choice($.star, $.slash, $.percent), $[`${prefix}unary_expression`]))
+    )),
+    [`${prefix}unary_expression`]: ($) => choice(
+      prec.right(PREC.UNARY, seq(
+        choice($.minus, $.kw_not, $.kw_cert),
+        $[`${prefix}unary_expression`]
+      )),
+      $[baseRule]
+    ),
+  };
 }
 
-function left_assoc_chain(precValue, operand, operator) {
-	return prec.left(
-		precValue,
-		seq(
-			operand,
-			repeat(seq(operator, operand)),
-		),
-	);
-}
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 3: GRAMMAR DEFINITION
+// ═════════════════════════════════════════════════════════════════════════════
 
-function or_rule($, next_level) {
-	return left_assoc_chain(PREC.OR, next_level, $.or_op);
-}
+module.exports = grammar({
+  name: "kippy",
 
-function and_rule($, next_level) {
-	return left_assoc_chain(PREC.AND, next_level, $.and_op);
-}
+  word: ($) => $.identifier,
 
-function compare_rule($, next_level) {
-	return prec.left(
-		PREC.COMPARE,
-		seq(
-			next_level,
-			optional(seq(
-				choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-				next_level,
-			)),
-		),
-	);
-}
+  reserved: {
+    global: ($) => [
+      $.kw_pub, $.kw_let, $.kw_cert, $.kw_expect, $.kw_if, $.kw_then, $.kw_else,
+      $.kw_when, $.kw_is, $.kw_in, $.kw_where, $.kw_with, $.kw_extend,
+      $.kw_ability, $.kw_module, $.kw_use, $.kw_using, $.kw_build, $.kw_type,
+      $.kw_distinct, $.kw_sig, $.kw_fn, $.kw_test, $.kw_or, $.kw_and, $.kw_not,
+      $.kw_as, $.kw_self,
+    ],
+  },
 
-function add_rule($, next_level) {
-	return left_assoc_chain(PREC.ADD, next_level, choice($.plus, $.minus));
-}
+  externals: ($) => [
+    $.newline,
+    $.indent,
+    $.dedent,
+  ],
 
-function mul_rule($, next_level) {
-	return left_assoc_chain(
-		PREC.MUL,
-		next_level,
-		choice($.star, $.slash, $.percent),
-	);
-}
+  extras: ($) => [
+    /[ \t\r\f]+/,
+    $.line_comment,
+    $.block_comment,
+    $.doc_comment,
+  ],
 
-function tuple_like($, itemRule) {
-	return choice(
-		seq(
-			$.lbrace_hash,
-			field("first", itemRule),
-			$.semicolon,
-			field("second", itemRule),
-			repeat(seq($.semicolon, field("rest", itemRule))),
-			optional($.semicolon),
-			$.rbrace,
-		),
-		seq(
-			$.lbrace_hash,
-			$.newline,
-			$.indent,
-			field("first", itemRule),
-			optional($.semicolon),
-			repeat1($.newline),
-			field("second", itemRule),
-			repeat(seq(
-				optional($.semicolon),
-				repeat1($.newline),
-				field("rest", itemRule),
-			)),
-			optional($.semicolon),
-			repeat($.newline),
-			$.dedent,
-			$.rbrace,
-		),
-	);
-}
+  supertypes: ($) => [
+    $.expression,
+  ],
 
-function with_call_suffix($) {
-	return choice(
-		prec.right(seq(
-			$.kw_with,
-			field("arg", $.call_argument),
-			repeat(seq(
-				$.comma,
-				repeat($.newline),
-				field("arg", $.call_argument),
-			)),
-			optional($.comma),
-		)),
-		seq(
-			$.kw_with,
-			$.newline,
-			$.indent,
-			field("arg", $.call_argument),
-			repeat(seq(
-				$.comma,
-				$.newline,
-				field("arg", $.call_argument),
-			)),
-			optional($.comma),
-			repeat($.newline),
-			$.dedent,
-		),
-	);
-}
+  rules: {
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.1: TOP-LEVEL & SOURCE FILE
+    // ─────────────────────────────────────────────────────────────────────────
+    source_file: ($) => seq(
+      many($.newline),
+      opt(seq($.module_declaration, many1($.newline))),
+      many(seq($.module_item, many($.newline))),
+    ),
 
-function multiLineBracket($, open, commaToken, item, close) {
-	return seq(
-		open,
-		$.newline,
-		$.indent,
-		commaSep1TrailMultiline($, item, commaToken, $.newline),
-		repeat($.newline),
-		$.dedent,
-		close,
-	);
-}
+    module_item: ($) => choice(
+      $.use_statement,
+      $.documented_declaration,
+    ),
 
-function layoutBracket($, open, close, item) {
-	return choice(
-		singleLineBracket(open, $.comma, item, close),
-		multiLineBracket($, open, $.comma, item, close),
-	);
-}
+    documented_declaration: ($) => choice(
+      $.type_declaration,
+      $.signature,
+      $.let_binding,
+      $.ability_declaration,
+      $.test_declaration,
+      $.expect_statement,
+      $.implementation,
+    ),
 
-function layoutBracketWithSep($, open, close, item, sep) {
-	return choice(
-		singleLineBracket(open, sep, item, close),
-		multiLineBracket($, open, sep, item, close),
-	);
-}
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.2: MODULE & USE DECLARATIONS
+    // ─────────────────────────────────────────────────────────────────────────
+    use_statement: ($) => seq(
+      $.kw_use,
+      field("module", $.type_name),
+      opt(seq($.kw_as, field("alias", $.tag_name))),
+      opt(seq($.kw_using, collection($, $.lparen, $.rparen, $.import_name, $.comma)))
+    ),
 
-function commaSepTrail($, rule, commaToken, sepToken) {
-	return optional(commaSep1Trail($, rule, commaToken, sepToken));
-}
+    module_declaration: ($) => seq(
+      $.kw_module,
+      field("name", $.type_name),
+    ),
 
-function commaSep1Trail($, rule, commaToken, sepToken) {
-	return seq(
-		rule,
-		repeat(seq(
-			commaToken,
-			repeat(sepToken),
-			rule,
-		)),
-		optional(seq(repeat(sepToken), commaToken)),
-	);
-}
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.3: TYPE DECLARATIONS & VARIANTS
+    // ─────────────────────────────────────────────────────────────────────────
+    type_declaration: ($) => seq(
+      attrPrefix($),
+      $.kw_type,
+      field("name", $.type_name),
+      opt($.type_parameter_list),
+      $.equals,
+      field("value", choice($.variant_type_value, $.alias_type_value))
+    ),
 
-function commaSep1TrailMultiline($, rule, commaToken, sepToken) {
-	return seq(
-		rule,
-		repeat(seq(
-			optional(commaToken),
-			repeat1(sepToken),
-			rule,
-		)),
-		optional(seq(repeat(sepToken), commaToken)),
-	);
-}
+    variant_type_value: ($) => prec(2, $.type_variant_block),
 
-function record_like($, fieldRule, { allowSpread = false, spreadRule = null }) {
-	return choice(
-		seq(
-			$.lbrace,
-			optional(
-				allowSpread
-					? choice(
-						seq(
-							fieldRule,
-							repeat(seq($.semicolon, fieldRule)),
-							optional(seq($.semicolon, spreadRule)),
-						),
-						spreadRule,
-					)
-					: seq(
-						fieldRule,
-						repeat(seq($.semicolon, fieldRule)),
-						optional($.semicolon),
-					),
-			),
-			$.rbrace,
-		),
-		seq(
-			$.lbrace,
-			$.newline,
-			$.indent,
-			optional(
-				allowSpread
-					? choice(
-						seq(
-							fieldRule,
-							repeat(seq(
-								optional($.semicolon),
-								repeat1($.newline),
-								fieldRule,
-							)),
-							optional(seq(
-								optional($.semicolon),
-								repeat1($.newline),
-								spreadRule,
-							)),
-							optional($.semicolon),
-						),
-						seq(spreadRule, optional($.semicolon)),
-					)
-					: seq(
-						fieldRule,
-						repeat(seq(
-							optional($.semicolon),
-							repeat1($.newline),
-							fieldRule,
-						)),
-						optional($.semicolon),
-					),
-			),
-			repeat($.newline),
-			$.dedent,
-			$.rbrace,
-		),
-	);
-}
+    alias_type_value: ($) => prec(1, seq(
+      opt($.kw_distinct),
+      inlineOrBlock($, $.type_expression)
+    )),
+
+    type_parameter_list: ($) => seq(
+      $.lparen,
+      opt(trailingSep1($.type_variable, $.comma)), // simplified inline list
+      $.rparen
+    ),
+
+    type_variant_block: ($) => block($, sep1($.type_variant, $.newline)),
+
+    type_variant: ($) => seq(
+      $.pipe_bar,
+      field("name", $.tag_name),
+      opt(field("payload", $.type_variant_payload))
+    ),
+
+    type_variant_payload: ($) => seq(
+      $.lparen,
+      opt(trailingSep1($.type_expression_no_comma, $.comma)),
+      $.rparen
+    ),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.4: ANNOTATIONS & SIGNATURES
+    // ─────────────────────────────────────────────────────────────────────────
+    annotation: ($) => seq(
+      attrPrefix($),
+      field("name", $.binding_target),
+      $.colon,
+      field("type", inlineOrBlock($, $.type_expression)),
+      opt(field("constraints", $.constraint_clause))
+    ),
+
+    signature: ($) => seq(
+      attrPrefix($),
+      $.kw_sig,
+      field("name", $.identifier),
+      $.colon,
+      field("type", inlineOrBlock($, $.type_expression)),
+      opt(field("constraints", $.constraint_clause))
+    ),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.5: VALUE BINDINGS & LET DECLARATIONS
+    // ─────────────────────────────────────────────────────────────────────────
+    let_binding: ($) => seq(
+      attrPrefix($),
+      opt($.kw_pub),
+      $.kw_let,
+      field("name", $.binding_target),
+      opt(seq(
+        $.kw_with,
+        sep1(field("param", $.identifier), $.comma)
+      )),
+      choice(
+        seq($.colon, field("type", inlineOrBlock($, $.type_expression)), opt(field("constraints", $.constraint_clause))),
+        seq(opt(seq($.colon, field("type", inlineOrBlock($, $.type_expression)))), $.equals, field("value", inlineOrBlock($, $.expression)))
+      )
+    ),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.6: ATTRIBUTES & METADATA
+    // ─────────────────────────────────────────────────────────────────────────
+    attribute: ($) => seq(
+      $.hash_sign,
+      $.long_identifier,
+      opt($.attribute_arguments_inline)
+    ),
+
+    attribute_arguments_inline: ($) => seq(
+      $.lparen,
+      opt(trailingSep1($.attribute_argument, $.comma)),
+      $.rparen
+    ),
+
+    attribute_argument: ($) => choice(
+      $.expression,
+      seq(field("name", $.identifier), $.equals, field("value", $.expression))
+    ),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.7: IMPLEMENTATIONS & ABILITIES
+    // ─────────────────────────────────────────────────────────────────────────
+    implementation: ($) => seq(
+      $.kw_extend,
+      field("type", $.non_arrow_type),
+      $.kw_with,
+      field("ability", $.type_name),
+      field("methods", block($, many1($.implementation_method)))
+    ),
+
+    implementation_method: ($) => seq(
+      attrPrefix($),
+      field("name", $.identifier),
+      opt(field("receiver", $.receiver_parameter)),
+      many(field("param", $.identifier)),
+      $.equals,
+      field("value", inlineOrBlock($, $.expression))
+    ),
+
+    ability_declaration: ($) => seq(
+      attrPrefix($),
+      $.kw_ability,
+      field("name", $.type_name),
+      opt($.type_parameter_list),
+      field("methods", block($, many1($.annotation)))
+    ),
+
+    expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
+
+    test_declaration: ($) => seq(
+      attrPrefix($),
+      $.kw_test,
+      field("name", $.static_string),
+      $.colon,
+      field("body", block($, $.expression))
+    ),
+
+    binding_target: ($) => reserved("global", $.identifier),
+    receiver_parameter: ($) => $.kw_self,
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.8: EXPRESSION HIERARCHY
+    // ─────────────────────────────────────────────────────────────────────────
+    expression: ($) => $.pipe_expression,
+    call_argument: ($) => $["restricted_pipe_expression"],
+
+    // Standard Operators
+    ...buildExpressionLadder("", "postfix_expression"),
+
+    // Restricted Operators (for nested call arguments)
+    ...buildExpressionLadder("restricted_", "restricted_postfix_expression"),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.9: POSTFIX EXPRESSIONS
+    // ─────────────────────────────────────────────────────────────────────────
+    postfix_expression: ($) => prec.left(PREC.POSTFIX, seq(
+      $.primary_expression,
+      many($.postfix_suffix),
+    )),
+
+    restricted_postfix_expression: ($) => prec.left(PREC.POSTFIX, seq(
+      $.primary_expression,
+      many($.restricted_postfix_suffix),
+    )),
+
+    postfix_suffix: ($) => choice(
+      field("arguments", $.call_suffix),
+      field("indexing", $.index_suffix),
+      $.method_suffix,
+      $.qualified_method_suffix,
+      $.try_op,
+      seq($.possessive, field("field", $.field_name))
+    ),
+
+    restricted_postfix_suffix: ($) => choice(
+      field("indexing", $.index_suffix),
+      $.method_suffix,
+      $.qualified_method_suffix,
+      $.try_op,
+      seq($.possessive, field("field", $.field_name))
+    ),
+
+    index_suffix: ($) => seq($.lbracket, field("index", $.expression), $.rbracket),
+    method_suffix: ($) => seq($.dot, field("method", $.identifier)),
+    qualified_method_suffix: ($) => seq($.at_sign, field("ability", $.tag_name), $.dot, field("method", $.identifier)),
+
+    call_suffix: ($) => choice(
+      // Inline
+      prec.right(seq($.kw_with, sep1(field("arg", $.call_argument), $.comma), opt($.comma))),
+      // Block
+      seq($.kw_with, block($, sep1(field("arg", $.call_argument), seq($.comma, $.newline))))
+    ),
+
+    spread_element: ($) => seq("..", field("base", $.expression)),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.10: PRIMARY EXPRESSION FORMS
+    // ─────────────────────────────────────────────────────────────────────────
+    primary_expression: ($) => choice(
+      $.inline_expression,
+      $.block_expression,
+    ),
+
+    inline_expression: ($) => choice(
+      $.record_builder,
+      $.literal,
+      $.long_identifier,
+      $.placeholder,
+      $.list_expression,
+      $.map_expression,
+      $.record_expression,
+      $.tuple_expression,
+      $.parenthesized_expression,
+    ),
+
+    block_expression: ($) => choice(
+      $.when_expression,
+      $.if_expression,
+      $.lambda_expression,
+      $.let_block_expression,
+    ),
+
+    // Collections
+    list_expression: ($) => collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
+    list_item: ($) => choice($.expression, $.spread_element),
+
+    map_expression: ($) => collection($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
+    map_entry: ($) => seq(field("key", $.expression), $.thick_arrow, field("value", $.expression)),
+
+    record_expression: ($) => $.record_body,
+    record_builder: ($) => seq($.kw_build, field("builder", $.long_identifier), $.record_body),
+    record_body: ($) => collection($, $.lbrace, $.rbrace, $.record_field, $.semicolon, { allowSpread: true, spreadRule: $.spread_element }),
+    record_field: ($) => seq(field("name", $.field_name), $.equals, field("value", inlineOrBlock($, $.expression))),
+    field_name: ($) => reserved("global", $.identifier),
+
+    tuple_expression: ($) => tuple($, $.lbrace_hash, $.rbrace, $.expression, $.semicolon),
+
+    parenthesized_expression: ($) => seq($.lparen, field("value", $.expression), $.rparen),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
+    // ─────────────────────────────────────────────────────────────────────────
+    let_block_expression: ($) => seq(
+      $.lparen,
+      block($, choice(
+        field("value", $.expression),
+        seq(
+          sep1($.let_binding, many1($.newline)),
+          many1($.newline),
+          $.kw_in,
+          field("value", $.expression),
+        )
+      )),
+      $.rparen,
+    ),
+
+    when_expression: ($) => prec.right(seq(
+      $.kw_when, field("subject", $.pipe_expression), $.kw_is,
+      field("arms", block($, sep1($.when_arm, $.newline))),
+    )),
+
+    when_arm: ($) => seq(field("pattern", $.pattern), $.arrow, field("value", inlineOrBlock($, $.expression))),
+
+    lambda_expression: ($) => prec.right(seq(
+      $.kw_fn,
+      sep1(field("param", $.identifier), $.comma),
+      $.colon,
+      field("body", inlineOrBlock($, $.expression)),
+    )),
+
+    if_expression: ($) => prec.right(seq(
+      $.kw_if, field("condition", $.expression),
+      $.kw_then, field("then_value", inlineOrBlock($, $.expression)),
+      $.kw_else, field("else_value", inlineOrBlock($, $.expression)),
+    )),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.12: PATTERN MATCHING
+    // ─────────────────────────────────────────────────────────────────────────
+    pattern: ($) => seq($.or_pattern, opt(seq($.kw_if, field("guard", $.expression)))),
+    or_pattern: ($) => prec.left(sep1($.as_pattern, $.pipe_bar)),
+    as_pattern: ($) => choice(seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)), $.atomic_pattern),
+
+    atomic_pattern: ($) => choice(
+      $.literal, $.wildcard_pattern, $.identifier, $.tag_pattern,
+      $.list_pattern, $.tuple_pattern, $.record_pattern, seq($.lparen, $.pattern, $.rparen),
+    ),
+
+    wildcard_pattern: ($) => "_",
+    simple_tag_argument_pattern: ($) => choice($.literal, $.wildcard_pattern, $.identifier),
+
+    tag_pattern: ($) => seq(
+      $.tag_name,
+      opt(choice(
+        seq($.lparen, trailingSep1($.pattern, $.comma), $.rparen),
+        $.simple_tag_argument_pattern
+      ))
+    ),
+
+    list_pattern: ($) => seq(
+      $.lbracket,
+      opt(choice(
+        seq(sep1($.pattern, $.semicolon), opt(seq($.semicolon, $.rest_pattern))),
+        $.rest_pattern
+      )),
+      $.rbracket
+    ),
+
+    rest_pattern: ($) => seq("..", field("binding", $.identifier)),
+
+    tuple_pattern: ($) => seq($.lbrace_hash, $.pattern, $.semicolon, trailingSep($.pattern, $.semicolon), $.rbrace),
+
+    record_pattern: ($) => seq(
+      $.lbrace,
+      opt(choice(
+        seq(sep1($.record_pattern_field, $.semicolon), opt(seq($.semicolon, ".."))),
+        ".."
+      )),
+      $.rbrace
+    ),
+
+    record_pattern_field: ($) => choice(seq($.field_name, $.colon, $.pattern), $.field_name),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.13: TYPE SYSTEM
+    // ─────────────────────────────────────────────────────────────────────────
+    type_expression: ($) => choice($.non_arrow_type, $.variadic_type),
+    type_expression_no_comma: ($) => choice($.non_arrow_type, $.variadic_type),
+
+    function_type_parameters: ($) => trailingSep1(field("param", $.type_expression_no_comma), $.comma),
+
+    variadic_type: ($) => seq($.ellipsis, field("item", $.non_arrow_type)),
+    ellipsis: ($) => token(prec(1, "...")),
+
+    constraint_clause: ($) => seq($.kw_where, field("type_var", $.identifier), $.colon, field("constraint", $.non_arrow_type)),
+
+    non_arrow_type: ($) => choice($.function_type, $.type_primary, $.type_tuple, $.type_record),
+
+    function_type: ($) => seq(
+      $.kw_fn, $.lparen, opt($.function_type_parameters), $.rparen, $.arrow,
+      field("result", inlineOrBlock($, $.type_expression))
+    ),
+
+    type_application: ($) => seq($.type_name, $.type_argument_list),
+    type_variable: ($) => reserved("global", $.identifier),
+
+    type_primary: ($) => choice($.type_application, $.type_name, $.type_variable, $.type_wildcard, $.parenthesized_type),
+    type_name: ($) => dotted1($, $.tag_name, $.tag_name),
+
+    type_argument_list: ($) => seq($.lparen, opt(trailingSep1($.type_expression_no_comma, $.comma)), $.rparen),
+
+    record_type_field: ($) => seq($.field_name, $.colon, inlineOrBlock($, $.type_expression_no_comma)),
+    type_record: ($) => collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
+    type_tuple: ($) => tuple($, $.lbrace_hash, $.rbrace, $.non_arrow_type, $.semicolon),
+    type_wildcard: ($) => "_",
+    parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.14: LITERALS & STRINGS
+    // ─────────────────────────────────────────────────────────────────────────
+    literal: ($) => choice($.int_literal, $.float_literal, $.char_literal, $.string, $.multiline_string),
+
+    float_literal: ($) => token(choice(
+      /[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
+      /[0-9][0-9_]*\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
+      /\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
+      /[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?/,
+    )),
+
+    int_literal: ($) => token(choice(
+      /0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
+      /0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
+      /0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
+      /[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
+    )),
+
+    string: ($) => seq($.quote, many(choice($.string_text, $.escape_sequence, $.interpolation)), $.quote),
+    multiline_string: ($) => seq($.triple_quote, many(choice($.multiline_text, $.escape_sequence, $.interpolation, $.multiline_quote, $.multiline_double_quote)), $.triple_quote),
+    char_literal: ($) => seq($.single_quote, choice($.escape_sequence, /[^'\\]/), $.single_quote),
+
+    interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
+    interpolation_start: ($) => token(/\\\(/),
+
+    string_text: ($) => token(/[^"\\\n]+/),
+    multiline_text: ($) => token(/[^\\"]+/),
+    multiline_quote: ($) => token(/"[^"]/),
+    multiline_double_quote: ($) => token(/""[^"]/),
+
+    escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
+
+    static_string: ($) => seq('"', many(choice($.static_string_text, $.escape_sequence)), '"'),
+    static_string_text: ($) => token(/[^"\\\n]+/),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.15: COMMENTS
+    // ─────────────────────────────────────────────────────────────────────────
+    doc_comment: (_) => token(prec(2, seq("///", /[^\n]*/, many(seq("\n", "///", /[^\n]*/))))),
+    line_comment: (_) => token(prec(1, /\/\/[^\n]*/)),
+    block_comment: (_) => token(prec(-3, seq("</", many(choice(/[^/]/, /\/[^>]/)), "/>"))),
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3.16: IDENTIFIERS & OPERATORS
+    // ─────────────────────────────────────────────────────────────────────────
+    identifier: ($) => /(_*[a-z][a-zA-Z0-9_]*!?)/,
+    tag_name: ($) => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
+    import_name: ($) => choice($.identifier, $.tag_name),
+    name: ($) => choice($.identifier, $.tag_name),
+    value_name: ($) => choice($.identifier, $.kw_self),
+    long_identifier: ($) => prec.left(dotted1($, $.value_name, $.name)),
+    placeholder: ($) => token("__"),
+
+    // Keywords
+    kw_pub: () => "pub", kw_let: () => "let", kw_cert: () => "cert",
+    kw_expect: () => "expect", kw_if: () => "if", kw_then: () => "then",
+    kw_else: () => "else", kw_when: () => "when", kw_is: () => "is",
+    kw_in: () => "in", kw_where: () => "where", kw_with: () => "with",
+    kw_extend: () => "extend", kw_ability: () => "ability", kw_module: () => "module",
+    kw_use: () => "use", kw_using: () => "using", kw_build: () => "build",
+    kw_type: () => "type", kw_distinct: () => "distinct", kw_sig: () => "sig",
+    kw_fn: () => "fn", kw_test: () => "test", kw_or: () => "or",
+    kw_and: () => "and", kw_not: () => "not", kw_as: () => "as", kw_self: () => "self",
+
+    // Punctuation
+    lparen: () => "(", rparen: () => ")",
+    lbracket: () => "[", rbracket: () => "]",
+    lbrace: () => "{", rbrace: () => "}",
+    lbrace_hash: () => token("#{"), lbracket_hash: () => token("#["),
+
+    quote: () => '"', triple_quote: () => token('"""'), single_quote: () => "'",
+
+    comma: () => ",", colon: () => ":", equals: () => "=", semicolon: () => ";",
+    dot: () => token.immediate("."), at_sign: () => token.immediate("@"),
+    hash_sign: () => token.immediate("#"),
+
+    pipe: () => token("|>"), pipe_bar: () => token("|"),
+
+    or_op: ($) => $.kw_or, and_op: ($) => $.kw_and, not_kw: ($) => $.kw_not,
+
+    plus: () => "+", minus: () => "-", star: () => "*", slash: () => "/", percent: () => "%",
+
+    eq_op: () => "==", ne_op: () => "!=", le_op: () => "<=", ge_op: () => ">=",
+    lt_op: () => "<", gt_op: () => ">",
+
+    arrow: () => "->", thick_arrow: () => "=>", try_op: () => "?",
+    possessive: () => token.immediate("'s"),
+  },
+});
