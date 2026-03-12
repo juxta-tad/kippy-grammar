@@ -416,82 +416,39 @@ module.exports = grammar({
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
 		// ─────────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
-
 		call_argument: ($) => $["restricted_pipe_expression"],
 
-		pipe_expression: ($) =>
-			prec.left(
-				PREC.PIPE,
-				seq(
-					$.or_expression,
-					repeat(seq($.pipe, $.or_expression)),
-				),
-			),
-
-		or_expression: ($) => or_rule($, $.and_expression),
-		and_expression: ($) => and_rule($, $.compare_expression),
-		compare_expression: ($) => compare_rule($, $.add_expression),
-		add_expression: ($) => add_rule($, $.mul_expression),
-		mul_expression: ($) => mul_rule($, $.unary_expression),
-		unary_expression: ($) =>
-			choice(
-				prec.right(
-					PREC.UNARY,
-					seq(choice($.minus, $.kw_not, $.kw_cert), $.unary_expression),
-				),
-				$.postfix_expression,
-			),
-
-		restricted_postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					repeat($.restricted_postfix_suffix),
-				),
-			),
-
-		index_suffix: ($) =>
-			seq(
-				$.lbracket,
-				field("index", $.expression),
-				$.rbracket,
-			),
-
-		method_suffix: ($) =>
-			seq(
-				$.dot,
-				field("method", $.identifier),
-			),
-
-		qualified_method_suffix: ($) =>
-			seq(
-				$.at_sign,
-				field("ability", $.tag_name),
-				$.dot,
-				field("method", $.identifier),
-			),
-
+		restricted_postfix_expression: ($) => prec.left(PREC.POSTFIX, seq($.primary_expression, B.many($.restricted_postfix_suffix))),
 		restricted_postfix_suffix: ($) => postfix_suffixes($, { allowCall: false }),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
-		// Postfix expressions: base + repeating operators (no indirect recursion)
-		postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					repeat($.postfix_suffix),
-				),
-			),
-
+		postfix_expression: ($) => prec.left(PREC.POSTFIX, seq($.primary_expression, B.many($.postfix_suffix))),
 		postfix_suffix: ($) => postfix_suffixes($, { allowCall: true }),
+
+		index_suffix: ($) => seq($.lbracket, field("index", $.expression), $.rbracket),
+		method_suffix: ($) => seq($.dot, field("method", $.identifier)),
+		qualified_method_suffix: ($) => seq($.at_sign, field("ability", $.tag_name), $.dot, field("method", $.identifier)),
 
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
-		call_suffix: ($) => with_call_suffix($),
+		call_suffix: ($) => choice(
+			// Inline Calls
+			prec.right(seq(
+				$.kw_with,
+				field("arg", $.call_argument),
+				B.many(seq($.comma, B.many($.newline), field("arg", $.call_argument))),
+				B.opt($.comma)
+			)),
+			// Block Calls
+			seq(
+				$.kw_with,
+				B.indented($, B.trailingSep1(seq($.comma, $.newline), field("arg", $.call_argument)))
+			)
+		),
+
+
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.10: PRIMARY EXPRESSION FORMS
