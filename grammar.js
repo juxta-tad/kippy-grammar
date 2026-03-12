@@ -176,24 +176,28 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.3: TYPE DECLARATIONS & VARIANTS
 		// ─────────────────────────────────────────────────────────────────────────────
-		type_declaration: ($) =>
+	type_declaration: ($) =>
+		seq(
+			attribute_prefix($),
+			$.kw_type,
+			field("name", $.type_name),
+			optional($.type_parameter_list),
+			$.equals,
+			field("value", choice(
+				$.variant_type_value,
+				$.alias_type_value,
+			)),
+		),
+
+	variant_type_value: ($) => prec(2, $.type_variant_block),
+
+	alias_type_value: ($) =>
+		prec(1,
 			seq(
-				attribute_prefix($),
-				$.kw_type,
-				field("name", $.type_name),
-				optional($.type_parameter_list),
-				$.equals,
-				field(
-					"value",
-					choice(
-						seq(
-							optional($.kw_distinct),
-							inline_or_block($, $.type_expression),
-						),
-						$.type_variant_block,
-					),
-				),
+				optional($.kw_distinct),
+				inline_or_block($, $.type_expression),
 			),
+		),
 
 		type_parameter_list: ($) =>
 			seq(
@@ -205,18 +209,19 @@ module.exports = grammar({
 		type_variant_block: ($) =>
 			indented_list($, $.type_variant, { at_least_one: true }),
 
-		type_variant: ($) =>
-			seq(
-				$.pipe_bar,
-				field("name", $.tag_name),
-				optional(
-					seq(
-						$.lparen,
-						commaSep1Trail($, $.type_expression_no_comma, $.comma, $.newline),
-						$.rparen,
-					),
-				),
-			),
+	type_variant: ($) =>
+		seq(
+			$.pipe_bar,
+			field("name", $.tag_name),
+			optional(field("payload", $.type_variant_payload)),
+		),
+
+	type_variant_payload: ($) =>
+		seq(
+			$.lparen,
+			commaSep1Trail($, $.type_expression_no_comma, $.comma, $.newline),
+			$.rparen,
+		),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
@@ -715,51 +720,33 @@ module.exports = grammar({
 		// 3.14: TYPE SYSTEM
 		// ─────────────────────────────────────────────────────────────────────────────
 		type_expression: ($) =>
-			prec.right(choice(
-				seq(
-					field("left", $.function_type_left),
-					$.arrow,
-					field("right", inline_or_block($, $.type_expression)),
-				),
+			choice(
 				$.non_arrow_type,
 				$.variadic_type,
-			)),
+			),
 
 		type_expression_no_comma: ($) =>
-			prec.right(choice(
-				seq(
-					field("left", choice($.non_arrow_type, $.variadic_type)),
-					$.arrow,
-					field("right", inline_or_block($, $.type_expression)),
-				),
-				$.non_arrow_type,
-				$.variadic_type,
-			)),
-
-		function_type_left: ($) =>
 			choice(
-				$.variadic_type,
 				$.non_arrow_type,
-				seq(
-					field("first", $.non_arrow_type),
-					repeat1(seq(
-						$.comma,
-						repeat($.newline),
-						field("rest", $.non_arrow_type),
-					)),
-					optional(seq(
-						$.comma,
-						repeat($.newline),
-						field("variadic", $.variadic_type),
-					)),
-				),
-				seq(
-					field("first", $.non_arrow_type),
-					$.comma,
-					repeat($.newline),
-					field("variadic", $.variadic_type),
-				),
+				$.variadic_type,
 			),
+
+	function_type_parameters: ($) =>
+		seq(
+			field("first", $.type_expression_no_comma),
+			repeat(seq(
+				$.comma,
+				repeat($.newline),
+				field("rest", $.type_expression_no_comma),
+			)),
+			optional($.comma),
+		),
+
+	function_type_left: ($) =>
+		choice(
+			$.non_arrow_type,
+			$.variadic_type,
+		),
 
 		variadic_type: ($) =>
 			seq(
@@ -789,8 +776,10 @@ module.exports = grammar({
 			seq(
 				$.kw_fn,
 				$.lparen,
-				$.type_expression,
+				optional($.function_type_parameters),
 				$.rparen,
+				$.arrow,
+				field("result", inline_or_block($, $.type_expression)),
 			),
 
 		type_application: ($) => seq($.type_name, $.type_argument_list),
@@ -1104,6 +1093,7 @@ function indented_list($, item, { at_least_one = false } = {}) {
 		$.newline,
 		$.indent,
 		body,
+		repeat($.newline),
 		$.dedent,
 	);
 }

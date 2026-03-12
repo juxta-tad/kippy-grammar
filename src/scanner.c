@@ -77,10 +77,10 @@ _Static_assert(MAX_INDENT_DEPTH <= UINT8_MAX,     "Max indent depth must fit in 
 enum {
   SERIALIZED_STACK_ENTRY_BYTES = 2, // uint16_t per indent level
   SERIALIZED_SIZE_FIELD_BYTES  = 1, // uint8_t for stack size
-  SCANNER_HEADER_BYTES         = 1 + 2 + 2 + SERIALIZED_SIZE_FIELD_BYTES, // flags + newlines + line_indent + size
+  SCANNER_HEADER_BYTES         = 1 + 2 + SERIALIZED_SIZE_FIELD_BYTES, // flags + line_indent + size
 };
 
-_Static_assert(SCANNER_HEADER_BYTES == 6, "Header size must match serialization format");
+_Static_assert(SCANNER_HEADER_BYTES == 4, "Header size must match serialization format");
 _Static_assert(
   TREE_SITTER_SERIALIZATION_BUFFER_SIZE >= SCANNER_HEADER_BYTES + SERIALIZED_STACK_ENTRY_BYTES,
   "Serialization buffer too small for base indent stack"
@@ -145,8 +145,10 @@ typedef struct {
   Array(uint16_t) indents;
   ScanPhase phase;
   uint16_t line_indent;
-  uint16_t queued_newlines;
   uint16_t queued_dedents;
+  // Token sequence validation counters
+  uint32_t emitted_indents;
+  uint32_t emitted_dedents;
 } Scanner;
 
 // Enforces structural integrity of the indentation stack
@@ -236,8 +238,9 @@ void *tree_sitter_kippy_external_scanner_create(void) {
 
   enter_bol_unscanned(s);
   s->line_indent = 0;
-  s->queued_newlines = 0;
   s->queued_dedents = 0;
+  s->emitted_indents = 0;
+  s->emitted_dedents = 0;
 
   check_indent_invariants(s);
   return s;
@@ -248,6 +251,18 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
 
   Scanner *s = (Scanner *)payload;
   assert(s->magic == SCANNER_MAGIC);
+
+  // TOKEN SEQUENCE VALIDATION: check that INDENT/DEDENT counts match
+  if (s->emitted_indents != s->emitted_dedents) {
+    DEBUG_LOG("[DESTROY] Warning: unbalanced INDENT/DEDENT (%u vs %u)\n",
+      s->emitted_indents, s->emitted_dedents);
+  }
+
+  // TOKEN SEQUENCE VALIDATION: check that we're back at base level
+  if (s->indents.size != 1) {
+    DEBUG_LOG("[DESTROY] Warning: non-base indentation level at destroy (size=%u)\n",
+      s->indents.size);
+  }
 
   array_delete(&s->indents);
   s->magic = 0; // Poison the struct to catch use-after-free
@@ -275,14 +290,12 @@ static inline ScanPhase decode_phase_flags(uint8_t flags) {
   else                        return SCAN_BOL_SCANNED;
 }
 
-// Serialize phase, queued_newlines, and line_indent into buffer (little-endian)
+// Serialize phase and line_indent into buffer (little-endian)
 // Returns number of bytes written
 static inline unsigned serialize_scalars(Scanner *s, char *buffer, unsigned start_pos) {
   unsigned pos = start_pos;
 
   buffer[pos++] = (char)encode_phase_flags(s->phase);
-  buffer[pos++] = (char)(s->queued_newlines & 0xFF);
-  buffer[pos++] = (char)((s->queued_newlines >> 8) & 0xFF);
   buffer[pos++] = (char)(s->line_indent & 0xFF);
   buffer[pos++] = (char)((s->line_indent >> 8) & 0xFF);
 
@@ -316,11 +329,6 @@ static inline unsigned deserialize_scalars(Scanner *s, const char *buffer, unsig
 
   uint8_t flags = (uint8_t)buffer[pos++];
   s->phase = decode_phase_flags(flags);
-
-  if (pos + 2 <= length) {
-    s->queued_newlines = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
-    pos += 2;
-  }
 
   if (pos + 2 <= length) {
     s->line_indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
@@ -399,13 +407,12 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   array_clear(&s->indents);
   s->phase = SCAN_BOL_UNSCANNED;
   s->line_indent = 0;
-  s->queued_newlines = 0;
   s->queued_dedents = 0;
 
   if (length > 0) {
     unsigned pos = 0;
 
-    // Deserialize phase, queued_newlines, and line_indent
+    // Deserialize phase and line_indent
     pos = deserialize_scalars(s, buffer, length, pos);
 
     // Restore base indent level
@@ -435,90 +442,21 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
  * Line-Start Computation and Application
  * ========================================================================= */
 
-// Forward declarations for helpers used in compute_line_start_info
-static inline bool is_blank_line(TSLexer *lexer);
-static inline uint16_t count_indent(TSLexer *lexer);
+static inline bool scan_current_line_layout(TSLexer *lexer, uint16_t *indent_out) {
+  uint16_t indent = 0;
 
-// Result of computing line-start information (blank line skipping + indent measurement)
-typedef struct {
-  bool has_content_line;  // True if we found a non-blank line with content
-  uint16_t indent;        // Indentation level of the content line (if has_content_line)
-  uint16_t blank_count;   // Number of blank lines skipped
-} LineStartInfo;
-
-// Compute line-start information from lexer: skip blank lines and measure indentation
-// Mutates lexer position but does NOT mutate scanner state
-static inline LineStartInfo compute_line_start_info(TSLexer *lexer) {
-  LineStartInfo info = {0};
-
-  while (true) {
-    if (lexer->eof(lexer)) {
-      return info;
-    }
-
-    uint16_t indent = count_indent(lexer);
-
-    if (lexer->eof(lexer)) {
-      info.blank_count++;
-      return info;
-    }
-
-    if (is_newline(lexer->lookahead)) {
-      if (lexer->lookahead == '\r') lexer->advance(lexer, true);
-      if (lexer->lookahead == '\n') lexer->advance(lexer, true);
-      info.blank_count++;
-      continue;
-    }
-
-    info.has_content_line = true;
-    info.indent = indent;
-    return info;
-  }
-}
-
-// Apply computed line-start information to scanner state
-// Updates queued_newlines and line_indent based on the computed info
-static inline void apply_line_start_info(Scanner *s, LineStartInfo info) {
-  uint16_t limit = MAX_PENDING_NEWLINES - s->queued_newlines;
-  if (info.blank_count < limit) limit = info.blank_count;
-  s->queued_newlines += limit;
-
-  if (info.has_content_line) {
-    s->line_indent = info.indent;
-  } else {
-    s->line_indent = 0;
-  }
-}
-
-/* =========================================================================
- * Scanning Logic Helpers
- * ========================================================================= */
-
-static inline uint16_t count_indent(TSLexer *lexer) {
   while (is_hspace(lexer->lookahead)) {
     lexer->advance(lexer, true);
+    uint32_t col = lexer->get_column(lexer);
+    indent = (col > MAX_INDENT_COLUMN) ? MAX_INDENT_COLUMN : (uint16_t)col;
   }
 
-  uint32_t col = lexer->get_column(lexer);
-  return (col > MAX_INDENT_COLUMN) ? MAX_INDENT_COLUMN : (uint16_t)col;
-}
+  if (lexer->eof(lexer) || is_newline(lexer->lookahead)) {
+    return false;
+  }
 
-static inline bool is_blank_line(TSLexer *lexer) {
-  return is_newline(lexer->lookahead) || lexer->eof(lexer);
-}
-
-static inline void log_emit(const char *name, Scanner *s, TSLexer *lexer) {
-  DEBUG_LOG(
-    "[EMIT %s] lookahead='%c'(0x%x) phase=%d line_indent=%u top=%u size=%u pending_nl=%u\n",
-    name,
-    (lexer->lookahead >= 32 && lexer->lookahead < 127) ? lexer->lookahead : '?',
-    lexer->lookahead,
-    s->phase,
-    s->line_indent,
-    s->indents.size ? top_indent(s) : 0,
-    s->indents.size,
-    s->queued_newlines
-  );
+  *indent_out = indent;
+  return true;
 }
 
 static inline bool emit_dedent(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
@@ -529,6 +467,18 @@ static inline bool emit_dedent(Scanner *s, TSLexer *lexer, const bool *valid_sym
   if (s->indents.size > 1 && s->line_indent < top_indent(s)) {
     array_pop(&s->indents);
     check_indent_invariants(s);
+
+    assert(s->indents.size >= 1 && "DEDENT below base level");
+
+    // Valid outcomes:
+    //   top > line_indent  -> more dedents needed
+    //   top == line_indent -> done dedenting to sibling level
+    //   top < line_indent  -> indentation doesn't match any prior level
+    assert(
+      s->indents.size == 1 || top_indent(s) <= s->line_indent || top_indent(s) > s->line_indent
+    );
+
+    s->emitted_dedents++;
     lexer->result_symbol = DEDENT;
     lexer->mark_end(lexer);
     return true;
@@ -536,6 +486,7 @@ static inline bool emit_dedent(Scanner *s, TSLexer *lexer, const bool *valid_sym
 
   return false;
 }
+
 
 static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   check_indent_invariants(s);
@@ -548,6 +499,10 @@ static inline bool emit_indent(Scanner *s, TSLexer *lexer, const bool *valid_sym
     return false;
 
   check_indent_invariants(s);
+  // SEMANTIC INVARIANT: after INDENT, top of stack must equal line_indent
+  assert(top_indent(s) == s->line_indent && "INDENT pushed wrong indent value");
+  // TOKEN SEQUENCE VALIDATION: track emitted INDENTs for balance check
+  s->emitted_indents++;
   lexer->result_symbol = INDENT;
   lexer->mark_end(lexer);
   return true;
@@ -565,33 +520,38 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
     return false;
   }
 
+  // MODEL B: Only process layout for content lines.
+  // If we're on a blank line or EOF, don't consume it—let NEWLINE/EOF handling manage it.
+  if (lexer->eof(lexer) || is_newline(lexer->lookahead)) {
+    return false;
+  }
+
+  // Measure indentation of the current line (advances past whitespace)
   if (s->phase == SCAN_BOL_UNSCANNED) {
-    LineStartInfo info = compute_line_start_info(lexer);
-    apply_line_start_info(s, info);
+    uint16_t indent = 0;
+    if (!scan_current_line_layout(lexer, &indent)) {
+      // Not a content line (blank or EOF)—shouldn't happen given check above
+      return false;
+    }
+    s->line_indent = indent;
     enter_bol_scanned(s);
   }
 
+  // Emit any pending dedents first
   if (emit_dedent(s, lexer, valid_symbols)) {
-    log_emit("DEDENT", s, lexer);
+    DEBUG_LOG("[emit] DEDENT\n");
     return true;
   }
 
-  if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
-    s->queued_newlines--;
-    lexer->mark_end(lexer);
-    log_emit("PENDING_NEWLINE", s, lexer);
-    lexer->result_symbol = NEWLINE;
-    return true;
-  }
-
+  // Then emit any pending indents
   if (emit_indent(s, lexer, valid_symbols)) {
-    log_emit("INDENT", s, lexer);
+    DEBUG_LOG("[emit] INDENT\n");
     enter_midline(s);
     return true;
   }
 
   enter_midline(s);
-  DEBUG_LOG("[PHASE2] exiting, transitioning to SCAN_MIDLINE\n");
+  DEBUG_LOG("[PHASE2] no layout token, transitioning to MIDLINE\n");
   return false;
 }
 
@@ -612,33 +572,17 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     valid_symbols[INDENT], valid_symbols[DEDENT]);
 
   if (lexer->eof(lexer)) {
-    DEBUG_LOG("[EOF] queued_newlines=%u queued_dedents=%u indents.size=%d phase=%d\n",
-      s->queued_newlines, s->queued_dedents, s->indents.size, s->phase);
-
-    // Queue dedents if not already queued
-    if (s->queued_dedents == 0 && s->indents.size > 1) {
-      s->queued_dedents = s->indents.size - 1; // All non-base indents
-    }
-
     s->line_indent = 0;
     enter_bol_scanned(s);
 
-    // Emit queued newlines first
-    if (s->queued_newlines > 0 && valid_symbols[NEWLINE]) {
-      s->queued_newlines--;
-      lexer->mark_end(lexer);
-      log_emit("EOF_PENDING_NEWLINE", s, lexer);
-      lexer->result_symbol = NEWLINE;
+    // Emit DEDENTs based on actual stack state (single source of truth)
+    if (emit_dedent(s, lexer, valid_symbols)) {
+      DEBUG_LOG("[emit] EOF_DEDENT\n");
       return true;
     }
 
-    // Then emit queued dedents
-    if (s->queued_dedents > 0 && emit_dedent(s, lexer, valid_symbols)) {
-      s->queued_dedents--;
-      log_emit("EOF_DEDENT", s, lexer);
-      return true;
-    }
-
+    // If emit_dedent() failed, either we're at base or DEDENT isn't valid
+    assert(s->indents.size == 1 || !valid_symbols[DEDENT]);
     return false;
   }
 
@@ -655,6 +599,6 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   lexer->mark_end(lexer);
   enter_bol_unscanned(s);
   lexer->result_symbol = NEWLINE;
-  log_emit("NEWLINE", s, lexer);
+  DEBUG_LOG("[emit] NEWLINE\n");
   return true;
 }
