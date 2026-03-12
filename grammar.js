@@ -296,12 +296,11 @@ module.exports = grammar({
 		),
 
 
-		type_variant_payload: ($) =>
-			seq(
-				$.lparen,
-				commaSep1Trail($, $.type_expression_no_comma, $.comma, $.newline),
-				$.rparen,
-			),
+		type_variant_payload: ($) => seq(
+			$.lparen,
+			B.inlineCommaList($.type_expression_no_comma, $.comma, $.newline),
+			$.rparen
+		),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
