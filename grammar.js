@@ -265,49 +265,36 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.3: TYPE DECLARATIONS & VARIANTS
 		// ─────────────────────────────────────────────────────────────────────────────
-		type_declaration: ($) =>
-			seq(
-				attribute_prefix($),
-				$.kw_type,
-				field("name", $.type_name),
-				optional($.type_parameter_list),
-				$.equals,
-				field(
-					"value",
-					choice(
-						$.variant_type_value,
-						$.alias_type_value,
-					),
-				),
-			),
+		type_declaration: ($) => seq(
+			B.attributePrefix($),
+			$.kw_type,
+			field("name", $.type_name),
+			B.opt($.type_parameter_list),
+			$.equals,
+			field("value", choice($.variant_type_value, $.alias_type_value))
+		),
 
 		variant_type_value: ($) => prec(2, $.type_variant_block),
 
-		alias_type_value: ($) =>
-			prec(
-				1,
-				seq(
-					optional($.kw_distinct),
-					inline_or_block($, $.type_expression),
-				),
-			),
+		alias_type_value: ($) => prec(1, seq(
+			B.opt($.kw_distinct),
+			B.inlineOrBlock($, $.type_expression)
+		)),
 
-		type_parameter_list: ($) =>
-			seq(
-				$.lparen,
-				commaSep1Trail($, $.type_variable, $.comma, $.newline),
-				$.rparen,
-			),
+		type_parameter_list: ($) => seq(
+			$.lparen,
+			B.inlineCommaList($.type_variable, $.comma, $.newline),
+			$.rparen
+		),
 
-		type_variant_block: ($) =>
-			indented_list($, $.type_variant, { at_least_one: true }),
+		type_variant_block: ($) => B.indented($, B.sep1($.newline, $.type_variant)),
 
-		type_variant: ($) =>
-			seq(
-				$.pipe_bar,
-				field("name", $.tag_name),
-				optional(field("payload", $.type_variant_payload)),
-			),
+		type_variant: ($) => seq(
+			$.pipe_bar,
+			field("name", $.tag_name),
+			B.opt(field("payload", $.type_variant_payload))
+		),
+
 
 		type_variant_payload: ($) =>
 			seq(
