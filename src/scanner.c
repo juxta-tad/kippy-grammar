@@ -135,6 +135,15 @@ typedef enum {
   SCAN_BOL_SCANNED,
 } ScanPhase;
 
+static inline const char *scan_phase_name(ScanPhase phase) {
+  switch (phase) {
+    case SCAN_MIDLINE:       return "MIDLINE";
+    case SCAN_BOL_UNSCANNED: return "BOL_UNSCANNED";
+    case SCAN_BOL_SCANNED:   return "BOL_SCANNED";
+    default:                 return "UNKNOWN";
+  }
+}
+
 typedef struct {
   uint32_t magic;
   Array(uint16_t) indents;
@@ -223,12 +232,12 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
   assert(s->magic == SCANNER_MAGIC);
 
   if (s->emitted_indents != s->emitted_dedents) {
-    DEBUG_LOG("[DESTROY] Warning: unbalanced INDENT/DEDENT (%u vs %u)\n",
+    DEBUG_LOG("[DESTROY]     | WARN  | Unbalanced INDENT/DEDENT (%u emitted vs %u dedented)\n",
       s->emitted_indents, s->emitted_dedents);
   }
 
   if (s->indents.size != BASE_INDENT_STACK_SIZE) {
-    DEBUG_LOG("[DESTROY] Warning: non-base indentation level at destroy (size=%u)\n",
+    DEBUG_LOG("[DESTROY]     | WARN  | Non-base indentation level at destroy (size=%u)\n",
       s->indents.size);
   }
 
@@ -323,14 +332,14 @@ static inline bool restore_indent_stack(Scanner *s, const char *buffer, unsigned
     uint16_t prev_indent = top_indent(s);
 
     if (indent <= prev_indent) {
-      DEBUG_LOG("[DESERIALIZE] Non-monotonic indent rejected: %u <= %u\n", indent, prev_indent);
+      DEBUG_LOG("[DESERIALIZE] | WARN  | Non-monotonic indent rejected: %u <= %u\n", indent, prev_indent);
       array_clear(&s->indents);
       restore_base_indent(s);
       return false;
     }
 
     if (!safe_push_indent(s, indent)) {
-      DEBUG_LOG("[DESERIALIZE] Array push failed at indent level %u\n", indent);
+      DEBUG_LOG("[DESERIALIZE] | WARN  | Array push failed at indent level %u\n", indent);
       restore_base_indent(s);
       return false;
     }
@@ -378,7 +387,7 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
     uint16_t base = BASE_INDENT_LEVEL;
     array_push(&s->indents, base);
     if (s->indents.size != BASE_INDENT_STACK_SIZE) {
-      DEBUG_LOG("[DESERIALIZE] Failed to restore base indent at end\n");
+      DEBUG_LOG("[DESERIALIZE] | WARN  | Failed to restore base indent at end\n");
       return;
     }
   }
@@ -453,7 +462,8 @@ static inline bool is_bol_position(TSLexer *lexer) {
 
 static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool *valid_symbols) {
   bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
-  DEBUG_LOG("[PHASE2] phase=%d can_do_layout=%d\n", s->phase, can_do_layout);
+  DEBUG_LOG("[LAYOUT]      | INFO  | Phase: %-13s | can_do_layout: %s\n",
+    scan_phase_name(s->phase), can_do_layout ? "true" : "false");
 
   if (s->phase == SCAN_MIDLINE || !can_do_layout) {
     return false;
@@ -474,42 +484,62 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
   }
 
   if (emit_dedent(s, lexer, valid_symbols)) {
-    DEBUG_LOG("[emit] DEDENT\n");
+    DEBUG_LOG("[EMIT]        | TOKEN | DEDENT\n");
     return true;
   }
 
   if (emit_indent(s, lexer, valid_symbols)) {
-    DEBUG_LOG("[emit] INDENT\n");
+    DEBUG_LOG("[EMIT]        | TOKEN | INDENT (level: %u)\n", s->line_indent);
     enter_midline(s);
     return true;
   }
 
   enter_midline(s);
-  DEBUG_LOG("[PHASE2] no layout token, transitioning to MIDLINE\n");
+  DEBUG_LOG("[LAYOUT]      | INFO  | No layout token, transitioning to MIDLINE\n");
   return false;
 }
 
 // =============================================================================
 // Main Scanner Entry Point
 // =============================================================================
+static inline void format_lookahead(int32_t lookahead, char *buf) {
+  switch (lookahead) {
+    case '\n': strcpy(buf, "\\n"); break;
+    case '\r': strcpy(buf, "\\r"); break;
+    case '\t': strcpy(buf, "\\t"); break;
+    case 0:    strcpy(buf, "EOF"); break;
+    default:
+      if (lookahead >= PRINTABLE_ASCII_MIN && lookahead <= PRINTABLE_ASCII_MAX) {
+        buf[0] = (char)lookahead;
+        buf[1] = '\0';
+      } else {
+        strcpy(buf, ".");
+      }
+      break;
+  }
+}
+
 bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
   if (!payload || !lexer || !valid_symbols) return false;
 
   Scanner *s = payload;
   assert(s->magic == SCANNER_MAGIC);
 
-  DEBUG_LOG("[SCAN] phase=%d lookahead='%c'(0x%x) valid[INDENT]=%d valid[DEDENT]=%d\n",
-    s->phase,
-    (lexer->lookahead >= PRINTABLE_ASCII_MIN && lexer->lookahead <= PRINTABLE_ASCII_MAX) ? lexer->lookahead : '?',
-    lexer->lookahead,
-    valid_symbols[INDENT], valid_symbols[DEDENT]);
+  char la_str[4];
+  format_lookahead(lexer->lookahead, la_str);
+
+  DEBUG_LOG("[SCAN]        | INFO  | Phase: %-13s | Lookahead: '%s' (0x%02X) | Valid: [IND:%d DED:%d NL:%d]\n",
+    scan_phase_name(s->phase),
+    la_str,
+    (uint32_t)lexer->lookahead,
+    valid_symbols[INDENT], valid_symbols[DEDENT], valid_symbols[NEWLINE]);
 
   if (lexer->eof(lexer)) {
     s->line_indent = 0;
     enter_bol_scanned(s);
 
     if (emit_dedent(s, lexer, valid_symbols)) {
-      DEBUG_LOG("[emit] EOF_DEDENT\n");
+      DEBUG_LOG("[EMIT]        | TOKEN | EOF_DEDENT\n");
       return true;
     }
 
@@ -521,7 +551,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     return true;
   }
 
-  DEBUG_LOG("[PHASE3] checking for NEWLINE\n");
+  DEBUG_LOG("[NEWLINE]     | INFO  | Checking for NEWLINE\n");
   if (!valid_symbols[NEWLINE] || !is_newline(lexer->lookahead)) {
     return false;
   }
@@ -532,6 +562,6 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
   lexer->mark_end(lexer);
   enter_bol_unscanned(s);
   lexer->result_symbol = NEWLINE;
-  DEBUG_LOG("[emit] NEWLINE\n");
+  DEBUG_LOG("[EMIT]        | TOKEN | NEWLINE\n");
   return true;
 }
