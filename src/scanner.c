@@ -1,5 +1,8 @@
 //DO NOT EDIT FILE
 
+// =============================================================================
+// Includes & Macros
+// =============================================================================
 #include "tree_sitter/parser.h"
 #include "tree_sitter/array.h"
 #include <assert.h>
@@ -22,7 +25,10 @@
   #define DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-enum {
+// =============================================================================
+// Constants & Enums
+// =============================================================================
+enum ScannerConfig {
   SCANNER_MAGIC        = 0x4B495050, // "KIPP"
   MAX_INDENT_COLUMN    = 10000,
   MAX_PENDING_NEWLINES = 50000,
@@ -35,11 +41,41 @@ enum TokenType {
   DEDENT,
 };
 
-enum {
+enum ValidityConfig {
   VALID_SYMBOLS_MIN_SIZE = DEDENT + 1,
 };
 
+enum IndentConstants {
+  BASE_INDENT_LEVEL      = 0,
+  BASE_INDENT_STACK_SIZE = 1,
+};
+
+enum SerializationConstants {
+  SHIFT_8_BITS      = 8,
+  MASK_LOWER_8_BITS = 0xFF,
+  UINT16_BYTES      = 2,
+};
+
+enum PhaseFlags {
+  PHASE_FLAG_AT_LINE_START  = 0x01,
+  PHASE_FLAG_INDENT_SCANNED = 0x02,
+};
+
+enum ASCIIPrintables {
+  PRINTABLE_ASCII_MIN = 32,
+  PRINTABLE_ASCII_MAX = 126,
+};
+
+// Serialization Buffer Layout
+enum BufferLayout {
+  SERIALIZED_STACK_ENTRY_BYTES = 2,
+  SERIALIZED_SIZE_FIELD_BYTES  = 1,
+  SCANNER_HEADER_BYTES         = 1 + 2 + SERIALIZED_SIZE_FIELD_BYTES,
+};
+
+// =============================================================================
 // Compile-Time Invariants
+// =============================================================================
 _Static_assert(NEWLINE == 0, "Token order must match grammar externals[0]");
 _Static_assert(INDENT  == 1, "Token order must match grammar externals[1]");
 _Static_assert(DEDENT  == 2, "Token order must match grammar externals[2]");
@@ -57,13 +93,6 @@ _Static_assert(MAX_INDENT_COLUMN < UINT16_MAX,    "Max indent must fit in uint16
 _Static_assert(MAX_PENDING_NEWLINES < UINT16_MAX, "Max pending newlines must fit in uint16_t");
 _Static_assert(MAX_INDENT_DEPTH <= UINT8_MAX,     "Max indent depth must fit in serialization size field");
 
-// Serialization Buffer Layout
-enum {
-  SERIALIZED_STACK_ENTRY_BYTES = 2,
-  SERIALIZED_SIZE_FIELD_BYTES  = 1,
-  SCANNER_HEADER_BYTES         = 1 + 2 + SERIALIZED_SIZE_FIELD_BYTES,
-};
-
 _Static_assert(SCANNER_HEADER_BYTES == 4, "Header size must match serialization format");
 _Static_assert(
   TREE_SITTER_SERIALIZATION_BUFFER_SIZE >= SCANNER_HEADER_BYTES + SERIALIZED_STACK_ENTRY_BYTES,
@@ -74,26 +103,32 @@ _Static_assert(
   "Max indent depth must fit in serialization buffer"
 );
 
+// =============================================================================
+// Character Set Utilities
+// =============================================================================
 static const TSCharacterRange NEWLINE_CHARS[] = {
   {'\n', '\n'},
   {'\r', '\r'},
 };
+#define NEWLINE_CHARS_COUNT (sizeof(NEWLINE_CHARS) / sizeof(NEWLINE_CHARS[0]))
 
 static const TSCharacterRange HSPACE_CHARS[] = {
   {'\t', '\t'},
   {' ',  ' '},
 };
+#define HSPACE_CHARS_COUNT (sizeof(HSPACE_CHARS) / sizeof(HSPACE_CHARS[0]))
 
 static inline bool is_newline(int32_t c) {
-  return set_contains(NEWLINE_CHARS, 2, c);
+  return set_contains(NEWLINE_CHARS, NEWLINE_CHARS_COUNT, c);
 }
 
 static inline bool is_hspace(int32_t c) {
-  return set_contains(HSPACE_CHARS, 2, c);
+  return set_contains(HSPACE_CHARS, HSPACE_CHARS_COUNT, c);
 }
 
+// =============================================================================
 // Scanner State
-
+// =============================================================================
 typedef enum {
   SCAN_MIDLINE,
   SCAN_BOL_UNSCANNED,
@@ -112,23 +147,23 @@ typedef struct {
 
 static inline void check_indent_invariants(const Scanner *s) {
   assert(s != NULL);
-  assert(s->indents.size > 0);
+  assert(s->indents.size >= BASE_INDENT_STACK_SIZE);
   assert(s->indents.contents != NULL);
-  assert(s->indents.contents[0] == 0);
+  assert(s->indents.contents[BASE_INDENT_LEVEL] == BASE_INDENT_LEVEL);
 
-  for (uint32_t i = 1; i < s->indents.size; i++) {
+  for (uint32_t i = BASE_INDENT_STACK_SIZE; i < s->indents.size; i++) {
     assert(s->indents.contents[i] > s->indents.contents[i - 1]);
   }
 }
 
 static inline uint16_t top_indent(const Scanner *s) {
-  assert(s->indents.size > 0);
+  assert(s->indents.size >= BASE_INDENT_STACK_SIZE);
   return *array_back((Array(uint16_t) *)&s->indents);
 }
 
 static inline void reset_indent_stack(Scanner *s) {
   array_clear(&s->indents);
-  uint16_t base = 0;
+  uint16_t base = BASE_INDENT_LEVEL;
   array_push(&s->indents, base);
 }
 
@@ -152,6 +187,9 @@ static inline void enter_midline(Scanner *s)       { s->phase = SCAN_MIDLINE; }
 static inline void enter_bol_unscanned(Scanner *s) { s->phase = SCAN_BOL_UNSCANNED; }
 static inline void enter_bol_scanned(Scanner *s)   { s->phase = SCAN_BOL_SCANNED; }
 
+// =============================================================================
+// Initialization & Destruction
+// =============================================================================
 void *tree_sitter_kippy_external_scanner_create(void) {
   Scanner *s = (Scanner *)ts_calloc(1, sizeof(Scanner));
   if (!s) return NULL;
@@ -159,10 +197,10 @@ void *tree_sitter_kippy_external_scanner_create(void) {
   s->magic = SCANNER_MAGIC;
   array_init(&s->indents);
 
-  uint16_t base = 0;
+  uint16_t base = BASE_INDENT_LEVEL;
   array_push(&s->indents, base);
 
-  if (s->indents.size != 1) {
+  if (s->indents.size != BASE_INDENT_STACK_SIZE) {
     array_delete(&s->indents);
     ts_free(s);
     return NULL;
@@ -189,7 +227,7 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
       s->emitted_indents, s->emitted_dedents);
   }
 
-  if (s->indents.size != 1) {
+  if (s->indents.size != BASE_INDENT_STACK_SIZE) {
     DEBUG_LOG("[DESTROY] Warning: non-base indentation level at destroy (size=%u)\n",
       s->indents.size);
   }
@@ -199,19 +237,19 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
   ts_free(s);
 }
 
+// =============================================================================
 // State Serialization & Deserialization
-
-// Phase flags: bit 0 = at_line_start, bit 1 = indent_scanned
+// =============================================================================
 static inline uint8_t encode_phase_flags(ScanPhase phase) {
   uint8_t flags = 0;
-  if (phase != SCAN_MIDLINE)     flags |= 0x01;
-  if (phase == SCAN_BOL_SCANNED) flags |= 0x02;
+  if (phase != SCAN_MIDLINE)     flags |= PHASE_FLAG_AT_LINE_START;
+  if (phase == SCAN_BOL_SCANNED) flags |= PHASE_FLAG_INDENT_SCANNED;
   return flags;
 }
 
 static inline ScanPhase decode_phase_flags(uint8_t flags) {
-  bool at_line_start = (flags & 0x01) != 0;
-  bool indent_scanned = (flags & 0x02) != 0;
+  bool at_line_start  = (flags & PHASE_FLAG_AT_LINE_START) != 0;
+  bool indent_scanned = (flags & PHASE_FLAG_INDENT_SCANNED) != 0;
 
   if (!at_line_start)       return SCAN_MIDLINE;
   else if (!indent_scanned) return SCAN_BOL_UNSCANNED;
@@ -221,8 +259,8 @@ static inline ScanPhase decode_phase_flags(uint8_t flags) {
 static inline unsigned serialize_scalars(Scanner *s, char *buffer, unsigned start_pos) {
   unsigned pos = start_pos;
   buffer[pos++] = (char)encode_phase_flags(s->phase);
-  buffer[pos++] = (char)(s->line_indent & 0xFF);
-  buffer[pos++] = (char)((s->line_indent >> 8) & 0xFF);
+  buffer[pos++] = (char)(s->line_indent & MASK_LOWER_8_BITS);
+  buffer[pos++] = (char)((s->line_indent >> SHIFT_8_BITS) & MASK_LOWER_8_BITS);
   return pos;
 }
 
@@ -230,13 +268,13 @@ static inline unsigned serialize_indents(Scanner *s, char *buffer, unsigned star
   unsigned pos = start_pos;
   assert(s->indents.size <= MAX_INDENT_DEPTH);
 
-  uint8_t real_depth = (uint8_t)(s->indents.size - 1);
+  uint8_t real_depth = (uint8_t)(s->indents.size - BASE_INDENT_STACK_SIZE);
   buffer[pos++] = (char)real_depth;
 
-  for (uint32_t i = 1; i < s->indents.size; i++) {
+  for (uint32_t i = BASE_INDENT_STACK_SIZE; i < s->indents.size; i++) {
     uint16_t indent = s->indents.contents[i];
-    buffer[pos++] = (char)(indent & 0xFF);
-    buffer[pos++] = (char)((indent >> 8) & 0xFF);
+    buffer[pos++] = (char)(indent & MASK_LOWER_8_BITS);
+    buffer[pos++] = (char)((indent >> SHIFT_8_BITS) & MASK_LOWER_8_BITS);
   }
 
   return pos;
@@ -249,9 +287,9 @@ static inline unsigned deserialize_scalars(Scanner *s, const char *buffer, unsig
   uint8_t flags = (uint8_t)buffer[pos++];
   s->phase = decode_phase_flags(flags);
 
-  if (pos + 2 <= length) {
-    s->line_indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
-    pos += 2;
+  if (pos + UINT16_BYTES <= length) {
+    s->line_indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << SHIFT_8_BITS);
+    pos += UINT16_BYTES;
   }
 
   return pos;
@@ -259,9 +297,9 @@ static inline unsigned deserialize_scalars(Scanner *s, const char *buffer, unsig
 
 static inline bool restore_base_indent(Scanner *s) {
   if (s->indents.size == 0) {
-    uint16_t base = 0;
+    uint16_t base = BASE_INDENT_LEVEL;
     array_push(&s->indents, base);
-    if (s->indents.size != 1) {
+    if (s->indents.size != BASE_INDENT_STACK_SIZE) {
       array_clear(&s->indents);
       return false;
     }
@@ -272,15 +310,15 @@ static inline bool restore_base_indent(Scanner *s) {
 static inline bool restore_indent_stack(Scanner *s, const char *buffer, unsigned length, unsigned start_pos) {
   unsigned pos = start_pos;
 
-  if (pos >= length || s->indents.size != 1) {
+  if (pos >= length || s->indents.size != BASE_INDENT_STACK_SIZE) {
     return true;
   }
 
   uint8_t stack_size = (uint8_t)buffer[pos++];
 
-  for (uint8_t i = 0; i < stack_size && pos + 2 <= length; i++) {
-    uint16_t indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << 8);
-    pos += 2;
+  for (uint8_t i = 0; i < stack_size && pos + UINT16_BYTES <= length; i++) {
+    uint16_t indent = (uint16_t)(uint8_t)buffer[pos] | ((uint16_t)(uint8_t)buffer[pos + 1] << SHIFT_8_BITS);
+    pos += UINT16_BYTES;
 
     uint16_t prev_indent = top_indent(s);
 
@@ -337,9 +375,9 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   }
 
   if (s->indents.size == 0) {
-    uint16_t base = 0;
+    uint16_t base = BASE_INDENT_LEVEL;
     array_push(&s->indents, base);
-    if (s->indents.size != 1) {
+    if (s->indents.size != BASE_INDENT_STACK_SIZE) {
       DEBUG_LOG("[DESERIALIZE] Failed to restore base indent at end\n");
       return;
     }
@@ -348,8 +386,9 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
   check_indent_invariants(s);
 }
 
+// =============================================================================
 // Line-Start Computation and Application
-
+// =============================================================================
 static inline bool scan_current_line_layout(TSLexer *lexer, uint16_t *indent_out) {
   uint16_t indent = 0;
 
@@ -372,12 +411,12 @@ static inline bool emit_dedent(Scanner *s, TSLexer *lexer, const bool *valid_sym
 
   if (!valid_symbols[DEDENT]) return false;
 
-  if (s->indents.size > 1 && s->line_indent < top_indent(s)) {
+  if (s->indents.size > BASE_INDENT_STACK_SIZE && s->line_indent < top_indent(s)) {
     array_pop(&s->indents);
     check_indent_invariants(s);
 
-    assert(s->indents.size >= 1 && "DEDENT below base level");
-    assert(s->indents.size == 1 || top_indent(s) <= s->line_indent || top_indent(s) > s->line_indent);
+    assert(s->indents.size >= BASE_INDENT_STACK_SIZE && "DEDENT below base level");
+    assert(s->indents.size == BASE_INDENT_STACK_SIZE || top_indent(s) <= s->line_indent || top_indent(s) > s->line_indent);
 
     s->emitted_dedents++;
     lexer->result_symbol = DEDENT;
@@ -450,8 +489,9 @@ static inline bool scan_line_start_layout(Scanner *s, TSLexer *lexer, const bool
   return false;
 }
 
+// =============================================================================
 // Main Scanner Entry Point
-
+// =============================================================================
 bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
   if (!payload || !lexer || !valid_symbols) return false;
 
@@ -460,7 +500,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
 
   DEBUG_LOG("[SCAN] phase=%d lookahead='%c'(0x%x) valid[INDENT]=%d valid[DEDENT]=%d\n",
     s->phase,
-    (lexer->lookahead >= 32 && lexer->lookahead < 127) ? lexer->lookahead : '?',
+    (lexer->lookahead >= PRINTABLE_ASCII_MIN && lexer->lookahead <= PRINTABLE_ASCII_MAX) ? lexer->lookahead : '?',
     lexer->lookahead,
     valid_symbols[INDENT], valid_symbols[DEDENT]);
 
@@ -473,7 +513,7 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
       return true;
     }
 
-    assert(s->indents.size == 1 || !valid_symbols[DEDENT]);
+    assert(s->indents.size == BASE_INDENT_STACK_SIZE || !valid_symbols[DEDENT]);
     return false;
   }
 
