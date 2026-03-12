@@ -462,13 +462,6 @@
                     "name": "type_expression"
                   },
                   {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  },
-                  {
                     "type": "SYMBOL",
                     "name": "dedent"
                   }
@@ -764,13 +757,6 @@
                     "name": "type_expression"
                   },
                   {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  },
-                  {
                     "type": "SYMBOL",
                     "name": "dedent"
                   }
@@ -864,13 +850,6 @@
                   {
                     "type": "SYMBOL",
                     "name": "type_expression"
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
                   },
                   {
                     "type": "SYMBOL",
@@ -1031,13 +1010,6 @@
                             "name": "type_expression"
                           },
                           {
-                            "type": "REPEAT",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "newline"
-                            }
-                          },
-                          {
                             "type": "SYMBOL",
                             "name": "dedent"
                           }
@@ -1103,13 +1075,6 @@
                                     "name": "type_expression"
                                   },
                                   {
-                                    "type": "REPEAT",
-                                    "content": {
-                                      "type": "SYMBOL",
-                                      "name": "newline"
-                                    }
-                                  },
-                                  {
                                     "type": "SYMBOL",
                                     "name": "dedent"
                                   }
@@ -1153,13 +1118,6 @@
                           {
                             "type": "SYMBOL",
                             "name": "expression"
-                          },
-                          {
-                            "type": "REPEAT",
-                            "content": {
-                              "type": "SYMBOL",
-                              "name": "newline"
-                            }
                           },
                           {
                             "type": "SYMBOL",
@@ -1494,13 +1452,6 @@
                     "name": "expression"
                   },
                   {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  },
-                  {
                     "type": "SYMBOL",
                     "name": "dedent"
                   }
@@ -1694,13 +1645,6 @@
               {
                 "type": "SYMBOL",
                 "name": "expression"
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "newline"
-                }
               },
               {
                 "type": "SYMBOL",
@@ -4040,13 +3984,6 @@
               "name": "expression"
             },
             {
-              "type": "REPEAT",
-              "content": {
-                "type": "SYMBOL",
-                "name": "newline"
-              }
-            },
-            {
               "type": "SYMBOL",
               "name": "dedent"
             }
@@ -4177,13 +4114,6 @@
                       "name": "expression"
                     },
                     {
-                      "type": "REPEAT",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "newline"
-                      }
-                    },
-                    {
                       "type": "SYMBOL",
                       "name": "dedent"
                     }
@@ -4261,13 +4191,6 @@
             {
               "type": "SYMBOL",
               "name": "expression"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SYMBOL",
-                "name": "newline"
-              }
             },
             {
               "type": "SYMBOL",
@@ -4503,13 +4426,6 @@
                     "name": "type_expression"
                   },
                   {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  },
-                  {
                     "type": "SYMBOL",
                     "name": "dedent"
                   }
@@ -4696,13 +4612,6 @@
                 {
                   "type": "SYMBOL",
                   "name": "type_expression_no_comma"
-                },
-                {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "newline"
-                  }
                 },
                 {
                   "type": "SYMBOL",

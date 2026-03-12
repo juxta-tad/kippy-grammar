@@ -1073,26 +1073,19 @@ function block_body($, rule) {
 		$.newline,
 		$.indent,
 		rule,
-		repeat($.newline),
 		$.dedent,
 	);
 }
 
 function indented_list($, item, { at_least_one = false } = {}) {
-	const body = at_least_one
-		? seq(
-			item,
-			repeat(seq($.newline, item)),
-		)
-		: choice(
-			seq(item, repeat(seq($.newline, item))),
-			repeat($.newline),
-		);
+	const items = at_least_one
+		? seq(item, repeat(seq($.newline, item)))
+		: optional(seq(item, repeat(seq($.newline, item))));
 
 	return seq(
 		$.newline,
 		$.indent,
-		body,
+		items,
 		repeat($.newline),
 		$.dedent,
 	);
