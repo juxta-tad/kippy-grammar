@@ -2545,8 +2545,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": ".."
+          "type": "SYMBOL",
+          "name": "rest_op"
         },
         {
           "type": "FIELD",
@@ -4123,8 +4123,8 @@
       ]
     },
     "wildcard_pattern": {
-      "type": "STRING",
-      "value": "_"
+      "type": "SYMBOL",
+      "name": "wildcard"
     },
     "binding_list_pattern": {
       "type": "SEQ",
@@ -4463,8 +4463,8 @@
                               "name": "semicolon"
                             },
                             {
-                              "type": "STRING",
-                              "value": ".."
+                              "type": "SYMBOL",
+                              "name": "rest_op"
                             }
                           ]
                         },
@@ -4476,8 +4476,8 @@
                   ]
                 },
                 {
-                  "type": "STRING",
-                  "value": ".."
+                  "type": "SYMBOL",
+                  "name": "rest_op"
                 }
               ]
             },
@@ -4696,8 +4696,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": ".."
+          "type": "SYMBOL",
+          "name": "rest_op"
         },
         {
           "type": "FIELD",
@@ -4827,8 +4827,8 @@
                               "name": "semicolon"
                             },
                             {
-                              "type": "STRING",
-                              "value": ".."
+                              "type": "SYMBOL",
+                              "name": "rest_op"
                             }
                           ]
                         },
@@ -4840,8 +4840,8 @@
                   ]
                 },
                 {
-                  "type": "STRING",
-                  "value": ".."
+                  "type": "SYMBOL",
+                  "name": "rest_op"
                 }
               ]
             },
@@ -4980,6 +4980,10 @@
           "value": "..."
         }
       }
+    },
+    "rest_op": {
+      "type": "STRING",
+      "value": ".."
     },
     "constraint_clause": {
       "type": "SEQ",
@@ -5662,8 +5666,8 @@
       ]
     },
     "type_wildcard": {
-      "type": "STRING",
-      "value": "_"
+      "type": "SYMBOL",
+      "name": "wildcard"
     },
     "parenthesized_type": {
       "type": "SEQ",
@@ -5918,8 +5922,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "\""
+          "type": "SYMBOL",
+          "name": "quote"
         },
         {
           "type": "REPEAT",
@@ -5938,8 +5942,8 @@
           }
         },
         {
-          "type": "STRING",
-          "value": "\""
+          "type": "SYMBOL",
+          "name": "quote"
         }
       ]
     },
@@ -6131,6 +6135,10 @@
         "type": "STRING",
         "value": "__"
       }
+    },
+    "wildcard": {
+      "type": "STRING",
+      "value": "_"
     },
     "kw_pub": {
       "type": "STRING",
@@ -6371,10 +6379,6 @@
       "type": "SYMBOL",
       "name": "kw_and"
     },
-    "not_kw": {
-      "type": "SYMBOL",
-      "name": "kw_not"
-    },
     "plus": {
       "type": "STRING",
       "value": "+"
@@ -6561,6 +6565,10 @@
       },
       {
         "type": "SYMBOL",
+        "name": "kw_derives"
+      },
+      {
+        "type": "SYMBOL",
         "name": "kw_sig"
       },
       {
@@ -6590,6 +6598,10 @@
       {
         "type": "SYMBOL",
         "name": "kw_self"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "kw_Self"
       }
     ]
   }

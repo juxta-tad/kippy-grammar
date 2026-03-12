@@ -215,6 +215,7 @@ module.exports = grammar({
 			$.kw_build,
 			$.kw_type,
 			$.kw_distinct,
+			$.kw_derives,
 			$.kw_sig,
 			$.kw_fn,
 			$.kw_test,
@@ -223,6 +224,7 @@ module.exports = grammar({
 			$.kw_not,
 			$.kw_as,
 			$.kw_self,
+			$.kw_Self,
 		],
 	},
 
@@ -535,7 +537,7 @@ module.exports = grammar({
 				),
 			),
 
-		spread_element: ($) => seq("..", field("base", $.expression)),
+		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.10: PRIMARY EXPRESSION FORMS
@@ -694,7 +696,7 @@ module.exports = grammar({
 				seq($.lparen, $.pattern, $.rparen),
 			),
 
-		wildcard_pattern: ($) => "_",
+		wildcard_pattern: ($) => $.wildcard,
 
 		// Binding-safe destructuring patterns (for let-bindings, excludes literals/or-patterns)
 		binding_list_pattern: ($) =>
@@ -719,9 +721,9 @@ module.exports = grammar({
 				opt(choice(
 					seq(
 						sep1($.binding_record_pattern_field, $.semicolon),
-						opt(seq($.semicolon, "..")),
+						opt(seq($.semicolon, $.rest_op)),
 					),
-					"..",
+					$.rest_op,
 				)),
 				$.rbrace,
 			),
@@ -757,7 +759,7 @@ module.exports = grammar({
 				$.rbracket,
 			),
 
-		rest_pattern: ($) => seq("..", field("binding", $.identifier)),
+		rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
 
 		tuple_pattern: ($) =>
 			seq(
@@ -774,9 +776,9 @@ module.exports = grammar({
 				opt(choice(
 					seq(
 						sep1($.record_pattern_field, $.semicolon),
-						opt(seq($.semicolon, "..")),
+						opt(seq($.semicolon, $.rest_op)),
 					),
-					"..",
+					$.rest_op,
 				)),
 				$.rbrace,
 			),
@@ -795,6 +797,7 @@ module.exports = grammar({
 
 		variadic_type: ($) => seq($.ellipsis, field("item", $.non_arrow_type)),
 		ellipsis: ($) => token(prec(1, "...")),
+		rest_op: ($) => "..",
 
 		constraint_clause: ($) =>
 			seq(
@@ -846,7 +849,7 @@ module.exports = grammar({
 			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
 		type_tuple: ($) =>
 			tuple($, $.lbrace_hash, $.rbrace, $.non_arrow_type, $.semicolon),
-		type_wildcard: ($) => "_",
+		type_wildcard: ($) => $.wildcard,
 		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -911,7 +914,7 @@ module.exports = grammar({
 		escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
 		static_string: ($) =>
-			seq('"', many(choice($.static_string_text, $.escape_sequence)), '"'),
+			seq($.quote, many(choice($.static_string_text, $.escape_sequence)), $.quote),
 		static_string_text: ($) => token(/[^"\\\n]+/),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -936,6 +939,7 @@ module.exports = grammar({
 				seq(choice($.name, $.kw_self), many(seq($.module_sep, $.name))),
 			),
 		placeholder: ($) => token("__"),
+		wildcard: ($) => "_",
 
 		// Keywords
 		kw_pub: () => "pub",
@@ -997,7 +1001,6 @@ module.exports = grammar({
 
 		or_op: ($) => $.kw_or,
 		and_op: ($) => $.kw_and,
-		not_kw: ($) => $.kw_not,
 
 		plus: () => "+",
 		minus: () => "-",
