@@ -457,103 +457,38 @@ module.exports = grammar({
 		// 3.9A: INLINE VS BLOCK EXPRESSION HIERARCHY
 		// ─────────────────────────────────────────────────────────────────────────────
 		// Inline expressions: atoms and structures without layout
-		inline_expression: ($) =>
-			choice(
-				$.record_builder,
-				$.literal,
-				$.long_identifier,
-				$.placeholder,
-				$.list_expression,
-				$.map_expression,
-				$.record_expression,
-				$.tuple_expression,
-				$.parenthesized_expression,
-			),
+		primary_expression: ($) => choice(
+			$.inline_expression,
+			$.block_expression,
+		),
 
-		// Block expressions: layout-based constructs (when, if, lambda, let-in blocks)
-		block_expression: ($) =>
-			choice(
-				$.when_expression,
-				$.if_expression,
-				$.lambda_expression,
-				$.let_block_expression,
-			),
+		inline_expression: ($) => choice(
+			$.record_builder, $.literal, $.long_identifier, $.placeholder,
+			$.list_expression, $.map_expression, $.record_expression,
+			$.tuple_expression, $.parenthesized_expression,
+		),
 
-		primary_expression: ($) =>
-			choice(
-				$.inline_expression,
-				$.block_expression,
-			),
+		block_expression: ($) => choice(
+			$.when_expression, $.if_expression, $.lambda_expression, $.let_block_expression,
+		),
 
-		list_expression: ($) =>
-			layoutBracketWithSep($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
-
-		list_item: ($) =>
-			choice(
-				$.expression,
-				$.spread_element,
-			),
-
-		record_body: ($) =>
-			record_like($, $.record_field, {
-				allowSpread: true,
-				spreadRule: $.spread_element,
-			}),
+		list_expression: ($) => B.bracketedList($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
+		list_item: ($) => choice($.expression, $.spread_element),
 
 		record_expression: ($) => $.record_body,
+		record_body: ($) => B.bracketedListWithSpread($, $.lbrace, $.rbrace, $.record_field, $.semicolon, $.spread_element),
+		record_builder: ($) => seq($.kw_build, field("builder", $.long_identifier), $.record_body),
 
-		record_builder: ($) =>
-			seq(
-				$.kw_build,
-				field("builder", $.long_identifier),
-				$.record_body,
-			),
-
-		map_expression: ($) =>
-			layoutBracketWithSep(
-				$,
-				$.lbracket_hash,
-				$.rbracket,
-				$.map_entry,
-				$.semicolon,
-			),
-
-		map_entry: ($) =>
-			seq(
-				field("key", $.expression),
-				$.thick_arrow,
-				field("value", $.expression),
-			),
+		map_expression: ($) => B.bracketedList($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
+		map_entry: ($) => seq(field("key", $.expression), $.thick_arrow, field("value", $.expression)),
 
 		field_name: ($) => reserved("global", $.identifier),
+		record_field: ($) => seq(field("name", $.field_name), $.equals, field("value", $.record_field_value)),
+		record_field_value: ($) => B.inlineOrBlock($, $.expression),
 
-		record_field_value: ($) =>
-			choice(
-				$.expression,
-				seq(
-					$.newline,
-					$.indent,
-					$.expression,
-					$.dedent,
-				),
-			),
+		tuple_expression: ($) => B.bracketedTuple($, $.lbrace_hash, $.rbrace, $.expression, $.semicolon),
 
-		record_field: ($) =>
-			seq(
-				field("name", $.field_name),
-				$.equals,
-				field("value", $.record_field_value),
-			),
-
-		tuple_expression: ($) => tuple_like($, $.expression),
-
-		parenthesized_expression: ($) =>
-			seq(
-				$.lparen,
-				field("value", $.expression),
-				$.rparen,
-			),
-
+		parenthesized_expression: ($) => seq($.lparen, field("value", $.expression), $.rparen),
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────────
