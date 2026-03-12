@@ -213,18 +213,11 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
 		// ─────────────────────────────────────────────────────────────────────────────
-		source_file: ($) =>
-			seq(
-				repeat($.newline),
-				optional(seq(
-					$.module_declaration,
-					repeat1($.newline),
-				)),
-				repeat(seq(
-					$.module_item,
-					repeat($.newline),
-				)),
-			),
+		source_file: ($) => seq(
+			B.many($.newline),
+			B.opt(seq($.module_declaration, B.many1($.newline))),
+			B.many(seq($.module_item, B.many($.newline)))
+		),
 
 		module_item: ($) =>
 			choice(
