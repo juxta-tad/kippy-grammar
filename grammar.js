@@ -24,14 +24,16 @@ const B = {
 	trailingSep: (sep, rule) => optional(B.trailingSep1(sep, rule)),
 
 	// --- Inline Layout Utilities ---
-	inlineCommaList: (item, sep, newline) => seq(
-		item,
-		repeat(seq(optional(sep), repeat1(newline), item)),
-		optional(seq(repeat(newline), sep))
-	),
+	inlineCommaList: (item, sep, newline) =>
+		seq(
+			item,
+			repeat(seq(optional(sep), repeat1(newline), item)),
+			optional(seq(repeat(newline), sep)),
+		),
 
 	// --- Indentation & Blocks ---
-	indented: ($, rule) => seq($.newline, $.indent, rule, repeat($.newline), $.dedent),
+	indented: ($, rule) =>
+		seq($.newline, $.indent, rule, repeat($.newline), $.dedent),
 	inlineOrBlock: ($, rule) => choice(rule, B.indented($, rule)),
 
 	// --- Multi-Layout Bracketed Structures (Records, Maps, Lists) ---
@@ -43,12 +45,12 @@ const B = {
 		const blockList = seq(
 			item,
 			repeat(seq(blockItemSep, item)),
-			optional(seq(optional(sepToken), repeat($.newline)))
+			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 
 		return choice(
 			seq(open, optional(inlineList), close),
-			seq(open, B.indented($, optional(blockList)), close)
+			seq(open, B.indented($, optional(blockList)), close),
 		);
 	},
 
@@ -58,7 +60,7 @@ const B = {
 		const inlineSpread = seq(
 			optional(seq(B.sep1(sepToken, item), sepToken)),
 			spreadRule,
-			optional(sepToken)
+			optional(sepToken),
 		);
 
 		// Block modes
@@ -66,50 +68,61 @@ const B = {
 		const blockNormal = seq(
 			item,
 			repeat(seq(blockItemSep, item)),
-			optional(seq(optional(sepToken), repeat($.newline)))
+			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 		const blockSpread = seq(
 			optional(seq(
 				item,
 				repeat(seq(blockItemSep, item)),
-				blockItemSep
+				blockItemSep,
 			)),
 			spreadRule,
-			optional(seq(optional(sepToken), repeat($.newline)))
+			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 
 		return choice(
 			seq(open, optional(choice(inlineSpread, inlineNormal)), close),
-			seq(open, B.indented($, optional(choice(blockSpread, blockNormal))), close)
+			seq(
+				open,
+				B.indented($, optional(choice(blockSpread, blockNormal))),
+				close,
+			),
 		);
 	},
 
 	bracketedTuple: ($, open, close, item, sepToken) => {
 		// Tuples explicitly demand at least 2 items
 		const inlineTuple = seq(
-			field("first", item), sepToken, field("second", item),
-			repeat(seq(sepToken, field("rest", item))), optional(sepToken)
+			field("first", item),
+			sepToken,
+			field("second", item),
+			repeat(seq(sepToken, field("rest", item))),
+			optional(sepToken),
 		);
 
 		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
 		const blockTuple = seq(
-			field("first", item), blockItemSep, field("second", item),
+			field("first", item),
+			blockItemSep,
+			field("second", item),
 			repeat(seq(blockItemSep, field("rest", item))),
-			optional(seq(optional(sepToken), repeat($.newline)))
+			optional(seq(optional(sepToken), repeat($.newline))),
 		);
 
 		return choice(
 			seq(open, inlineTuple, close),
-			seq(open, B.indented($, blockTuple), close)
+			seq(open, B.indented($, blockTuple), close),
 		);
 	},
 
 	// --- Common Language Patterns ---
 	attributePrefix: ($) => B.many(seq($.attribute, B.opt($.newline))),
 
-	leftAssoc: (precValue, operand, operator) => prec.left(
-		precValue, seq(operand, B.many(seq(operator, operand)))
-	),
+	leftAssoc: (precValue, operand, operator) =>
+		prec.left(
+			precValue,
+			seq(operand, B.many(seq(operator, operand))),
+		),
 };
 
 function buildOperatorLadder(prefix, postfixRuleName) {
@@ -213,11 +226,12 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
 		// ─────────────────────────────────────────────────────────────────────────────
-		source_file: ($) => seq(
-			B.many($.newline),
-			B.opt(seq($.module_declaration, B.many1($.newline))),
-			B.many(seq($.module_item, B.many($.newline)))
-		),
+		source_file: ($) =>
+			seq(
+				B.many($.newline),
+				B.opt(seq($.module_declaration, B.many1($.newline))),
+				B.many(seq($.module_item, B.many($.newline))),
+			),
 
 		module_item: ($) =>
 			choice(
@@ -262,28 +276,32 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.3: TYPE DECLARATIONS & VARIANTS
 		// ─────────────────────────────────────────────────────────────────────────────
-	type_declaration: ($) =>
-		seq(
-			attribute_prefix($),
-			$.kw_type,
-			field("name", $.type_name),
-			optional($.type_parameter_list),
-			$.equals,
-			field("value", choice(
-				$.variant_type_value,
-				$.alias_type_value,
-			)),
-		),
-
-	variant_type_value: ($) => prec(2, $.type_variant_block),
-
-	alias_type_value: ($) =>
-		prec(1,
+		type_declaration: ($) =>
 			seq(
-				optional($.kw_distinct),
-				inline_or_block($, $.type_expression),
+				attribute_prefix($),
+				$.kw_type,
+				field("name", $.type_name),
+				optional($.type_parameter_list),
+				$.equals,
+				field(
+					"value",
+					choice(
+						$.variant_type_value,
+						$.alias_type_value,
+					),
+				),
 			),
-		),
+
+		variant_type_value: ($) => prec(2, $.type_variant_block),
+
+		alias_type_value: ($) =>
+			prec(
+				1,
+				seq(
+					optional($.kw_distinct),
+					inline_or_block($, $.type_expression),
+				),
+			),
 
 		type_parameter_list: ($) =>
 			seq(
@@ -295,19 +313,19 @@ module.exports = grammar({
 		type_variant_block: ($) =>
 			indented_list($, $.type_variant, { at_least_one: true }),
 
-	type_variant: ($) =>
-		seq(
-			$.pipe_bar,
-			field("name", $.tag_name),
-			optional(field("payload", $.type_variant_payload)),
-		),
+		type_variant: ($) =>
+			seq(
+				$.pipe_bar,
+				field("name", $.tag_name),
+				optional(field("payload", $.type_variant_payload)),
+			),
 
-	type_variant_payload: ($) =>
-		seq(
-			$.lparen,
-			commaSep1Trail($, $.type_expression_no_comma, $.comma, $.newline),
-			$.rparen,
-		),
+		type_variant_payload: ($) =>
+			seq(
+				$.lparen,
+				commaSep1Trail($, $.type_expression_no_comma, $.comma, $.newline),
+				$.rparen,
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
@@ -403,7 +421,9 @@ module.exports = grammar({
 				field("ability", $.type_name),
 				field(
 					"methods",
-					indented_adjacent_list($, $.implementation_method, { at_least_one: true }),
+					indented_adjacent_list($, $.implementation_method, {
+						at_least_one: true,
+					}),
 				),
 			),
 
@@ -817,22 +837,22 @@ module.exports = grammar({
 				$.variadic_type,
 			),
 
-	function_type_parameters: ($) =>
-		seq(
-			field("first", $.type_expression_no_comma),
-			repeat(seq(
-				$.comma,
-				repeat($.newline),
-				field("rest", $.type_expression_no_comma),
-			)),
-			optional($.comma),
-		),
+		function_type_parameters: ($) =>
+			seq(
+				field("first", $.type_expression_no_comma),
+				repeat(seq(
+					$.comma,
+					repeat($.newline),
+					field("rest", $.type_expression_no_comma),
+				)),
+				optional($.comma),
+			),
 
-	function_type_left: ($) =>
-		choice(
-			$.non_arrow_type,
-			$.variadic_type,
-		),
+		function_type_left: ($) =>
+			choice(
+				$.non_arrow_type,
+				$.variadic_type,
+			),
 
 		variadic_type: ($) =>
 			seq(
@@ -1191,9 +1211,7 @@ function indented_list($, item, { at_least_one = false } = {}) {
 
 // For layout-terminated items (no explicit separator, just adjacent items)
 function adjacent_items(item, { at_least_one = false } = {}) {
-	return at_least_one
-		? seq(item, repeat(item))
-		: repeat(item);
+	return at_least_one ? seq(item, repeat(item)) : repeat(item);
 }
 
 function indented_adjacent_list($, item, { at_least_one = false } = {}) {
