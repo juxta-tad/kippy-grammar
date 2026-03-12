@@ -346,7 +346,7 @@ module.exports = grammar({
 		annotation: ($) =>
 			seq(
 				attrPrefix($),
-				field("name", $.binding_target),
+				field("name", $.binding_name),
 				$.colon,
 				field("type", inlineOrBlock($, $.type_expression)),
 				opt(field("constraints", $.constraint_clause)),
@@ -370,51 +370,9 @@ module.exports = grammar({
 				attrPrefix($),
 				opt($.kw_pub),
 				$.kw_let,
-				field("name", $.binding_target),
-				opt(seq(
-					$.kw_with,
-					sep1(field("param", $.identifier), $.comma),
-				)),
-				choice(
-					seq(
-						$.colon,
-						field("type", inlineOrBlock($, $.type_expression)),
-						opt(field("constraints", $.constraint_clause)),
-					),
-					seq(
-						opt(
-							seq($.colon, field("type", inlineOrBlock($, $.type_expression))),
-						),
-						$.equals,
-						field("value", inlineOrBlock($, $.expression)),
-					),
-				),
+				$.binding_core,
 			),
 
-		// Single binding (name = value) for use inside let expressions
-		// No kw_let, no attributes, no pub modifier
-		binding: ($) =>
-			seq(
-				field("name", $.binding_target),
-				opt(seq(
-					$.kw_with,
-					sep1(field("param", $.identifier), $.comma),
-				)),
-				choice(
-					seq(
-						$.colon,
-						field("type", inlineOrBlock($, $.type_expression)),
-						opt(field("constraints", $.constraint_clause)),
-					),
-					seq(
-						opt(
-							seq($.colon, field("type", inlineOrBlock($, $.type_expression))),
-						),
-						$.equals,
-						field("value", inlineOrBlock($, $.expression)),
-					),
-				),
-			),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.6: ATTRIBUTES & METADATA
@@ -485,7 +443,16 @@ module.exports = grammar({
 				field("body", block($, $.expression)),
 			),
 
-		binding_target: ($) => reserved("global", $.identifier),
+		binding_core: ($) =>
+			seq(
+				field("pattern", $.binding_pattern),
+				opt(seq($.colon, field("type", inlineOrBlock($, $.type_expression)))),
+				$.equals,
+				field("value", inlineOrBlock($, $.expression)),
+			),
+
+		binding_name: ($) => reserved("global", $.identifier),
+
 		receiver_parameter: ($) => $.kw_self,
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -630,7 +597,7 @@ module.exports = grammar({
 			tuple($, $.lbrace_hash, $.rbrace, $.expression, $.semicolon),
 
 		parenthesized_expression: ($) =>
-			seq($.lparen, field("value", $.expression), $.rparen),
+			seq($.lparen, many($.newline), field("value", $.expression), many($.newline), $.rparen),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
@@ -639,7 +606,9 @@ module.exports = grammar({
 		let_expression: ($) =>
 			prec.right(seq(
 				$.kw_let,
-				field("bindings", sep1($.binding, $.newline)),
+				field("first", $.binding_core),
+				many(seq(many1($.newline), field("rest", $.binding_core))),
+				optional(repeat1($.newline)),
 				$.kw_in,
 				field("value", $.expression),
 			)),
@@ -681,8 +650,19 @@ module.exports = grammar({
 		// 3.12: PATTERN MATCHING
 		// ─────────────────────────────────────────────────────────────────────────
 		pattern: ($) =>
-			seq($.or_pattern, opt(seq($.kw_if, field("guard", $.expression)))),
+			seq($.unguarded_pattern, opt(seq($.kw_if, field("guard", $.expression)))),
+		unguarded_pattern: ($) => $.or_pattern,
+
+		binding_pattern: ($) =>
+		choice(
+			$.wildcard_pattern,
+			$.identifier,
+			$.binding_list_pattern,
+			$.binding_tuple_pattern,
+			$.binding_record_pattern,
+		),
 		or_pattern: ($) => prec.left(sep1($.as_pattern, $.pipe_bar)),
+
 		as_pattern: ($) =>
 			choice(
 				seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)),
@@ -702,6 +682,43 @@ module.exports = grammar({
 			),
 
 		wildcard_pattern: ($) => "_",
+
+		// Binding-safe destructuring patterns (for let-bindings, excludes literals/or-patterns)
+		binding_list_pattern: ($) =>
+			seq(
+				$.lbracket,
+				opt(choice(
+					seq(
+						sep1($.binding_pattern, $.semicolon),
+						opt(seq($.semicolon, $.rest_pattern)),
+					),
+					$.rest_pattern,
+				)),
+				$.rbracket,
+			),
+
+		binding_tuple_pattern: ($) =>
+			tuple($, $.lbrace_hash, $.rbrace, $.binding_pattern, $.semicolon),
+
+		binding_record_pattern: ($) =>
+			seq(
+				$.lbrace,
+				opt(choice(
+					seq(
+						sep1($.binding_record_pattern_field, $.semicolon),
+						opt(seq($.semicolon, "..")),
+					),
+					"..",
+				)),
+				$.rbrace,
+			),
+
+		binding_record_pattern_field: ($) =>
+			choice(
+				seq($.field_name, $.colon, $.binding_pattern),
+				$.field_name,
+			),
+
 		simple_tag_argument_pattern: ($) =>
 			choice($.literal, $.wildcard_pattern, $.identifier),
 
