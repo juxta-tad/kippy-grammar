@@ -33,25 +33,18 @@ enum TokenType {
     DEDENT,
 };
 
-typedef enum {
-    PHASE_MIDLINE,
-    PHASE_BOL_UNSCANNED,
-    PHASE_BOL_SCANNED,
-} ScanPhase;
-
 typedef struct {
     uint32_t magic;
     uint16_t indents[MAX_INDENT_DEPTH + 1]; // +1 for the base indent (0)
     uint16_t indent_count;
-    ScanPhase phase;
-    uint16_t current_line_indent;
+    uint16_t pending_dedents;
 
     // Debugging statistics
     uint32_t emitted_indents;
     uint32_t emitted_dedents;
 } Scanner;
 
-// Forward declaration of our runtime assert check (implemented at the bottom)
+// Forward declaration of our runtime assert check
 static void check_invariants(const Scanner *s);
 
 // =============================================================================
@@ -63,15 +56,6 @@ static inline void skip(TSLexer *lexer)    { lexer->advance(lexer, true); }
 
 static inline bool is_newline(int32_t c) { return c == '\n' || c == '\r'; }
 static inline bool is_hspace(int32_t c)  { return c == ' '  || c == '\t'; }
-
-static inline const char *scan_phase_name(ScanPhase phase) {
-    switch (phase) {
-        case PHASE_MIDLINE:       return "MIDLINE";
-        case PHASE_BOL_UNSCANNED: return "BOL_UNSCANNED";
-        case PHASE_BOL_SCANNED:   return "BOL_SCANNED";
-        default:                  return "UNKNOWN";
-    }
-}
 
 static inline void format_lookahead(int32_t lookahead, char *buf) {
     switch (lookahead) {
@@ -98,7 +82,7 @@ void *tree_sitter_kippy_external_scanner_create(void) {
     s->magic = SCANNER_MAGIC;
     s->indents[0] = 0; // Base indent is always 0
     s->indent_count = 1;
-    s->phase = PHASE_BOL_UNSCANNED;
+    s->pending_dedents = 0;
 
     check_invariants(s);
     return s;
@@ -126,12 +110,9 @@ unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffe
     Scanner *s = (Scanner *)payload;
     unsigned pos = 0;
 
-    // 1. Save state scalars
-    buffer[pos++] = (char)s->phase;
-    buffer[pos++] = (char)(s->current_line_indent & 0xFF);
-    buffer[pos++] = (char)((s->current_line_indent >> 8) & 0xFF);
+    buffer[pos++] = (char)(s->pending_dedents & 0xFF);
+    buffer[pos++] = (char)((s->pending_dedents >> 8) & 0xFF);
 
-    // 2. Save indent stack (skip base indent 0)
     buffer[pos++] = (char)(s->indent_count - 1);
     for (uint16_t i = 1; i < s->indent_count; i++) {
         buffer[pos++] = (char)(s->indents[i] & 0xFF);
@@ -147,20 +128,24 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
     // Default state
     s->indent_count = 1;
     s->indents[0] = 0;
-    s->phase = PHASE_BOL_UNSCANNED;
-    s->current_line_indent = 0;
+    s->pending_dedents = 0;
 
     if (length > 0) {
         unsigned pos = 0;
 
-        // 1. Restore state scalars
-        s->phase = (ScanPhase)buffer[pos++];
-        s->current_line_indent = (uint8_t)buffer[pos++] | ((uint8_t)buffer[pos++] << 8);
+        if (pos + 1 < length) {
+            uint8_t low = (uint8_t)buffer[pos++];
+            uint8_t high = (uint8_t)buffer[pos++];
+            s->pending_dedents = low | (high << 8);
+        }
 
-        // 2. Restore indent stack
-        uint8_t extra_indents = (uint8_t)buffer[pos++];
-        for (uint8_t i = 0; i < extra_indents && pos < length; i++) {
-            s->indents[s->indent_count++] = (uint8_t)buffer[pos++] | ((uint8_t)buffer[pos++] << 8);
+        if (pos < length) {
+            uint8_t extra_indents = (uint8_t)buffer[pos++];
+            for (uint8_t i = 0; i < extra_indents && (pos + 1) < length; i++) {
+                uint8_t low = (uint8_t)buffer[pos++];
+                uint8_t high = (uint8_t)buffer[pos++];
+                s->indents[s->indent_count++] = low | (high << 8);
+            }
         }
     }
 
@@ -177,15 +162,21 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
 
     char la_str[4];
     format_lookahead(lexer->lookahead, la_str);
-    DEBUG_LOG("[SCAN]        | INFO  | Phase: %-13s | Lookahead: '%s' (0x%02X) | Valid: [IND:%d DED:%d NL:%d]\n",
-        scan_phase_name(s->phase), la_str, (uint32_t)lexer->lookahead,
+    DEBUG_LOG("[SCAN]        | INFO  | Lookahead: '%s' (0x%02X) | Col: %u | Valid: [IND:%d DED:%d NL:%d]\n",
+        la_str, (uint32_t)lexer->lookahead, lexer->get_column(lexer),
         valid_symbols[INDENT], valid_symbols[DEDENT], valid_symbols[NEWLINE]);
 
-    // 1. Handle EOF (Emit remaining DEDENTs)
-    if (lexer->eof(lexer)) {
-        s->phase = PHASE_BOL_SCANNED;
-        s->current_line_indent = 0;
+    // 1. Emit pending dedents from previous scan calls
+    if (s->pending_dedents > 0 && valid_symbols[DEDENT]) {
+        s->pending_dedents--;
+        s->emitted_dedents++;
+        lexer->result_symbol = DEDENT;
+        DEBUG_LOG("[EMIT]        | TOKEN | PENDING DEDENT (%u remaining)\n", s->pending_dedents);
+        return true;
+    }
 
+    // 2. Handle EOF (Emit all remaining DEDENTs safely)
+    if (lexer->eof(lexer)) {
         if (valid_symbols[DEDENT] && s->indent_count > 1) {
             s->indent_count--;
             s->emitted_dedents++;
@@ -196,70 +187,73 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
         return false;
     }
 
-    // 2. Handle Newlines
+    // 3. Layout decisions strictly bound to line beginnings (Column 0)
+    if (lexer->get_column(lexer) == 0) {
+        uint16_t indent = 0;
+
+        // Scan leading spaces/tabs into a local indent value
+        while (is_hspace(lexer->lookahead)) {
+            skip(lexer); // Ignored syntactically
+        }
+
+        indent = lexer->get_column(lexer);
+        if (indent > MAX_INDENT_COLUMN) indent = MAX_INDENT_COLUMN;
+
+        // If the next char is a newline (or EOF hit), treat it as a blank line
+        if (is_newline(lexer->lookahead) || lexer->eof(lexer)) {
+            if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
+                if (lexer->lookahead == '\r') advance(lexer);
+                if (lexer->lookahead == '\n') advance(lexer);
+                lexer->result_symbol = NEWLINE;
+                DEBUG_LOG("[EMIT]        | TOKEN | BLANK_LINE_NEWLINE\n");
+                return true;
+            }
+            // Do not compute indentation stack changes for blank lines
+            return false;
+        }
+
+        // Compare indentation with the stack to emit INDENT/DEDENT
+        uint16_t previous_indent = s->indents[s->indent_count - 1];
+
+        if (valid_symbols[DEDENT] && indent < previous_indent) {
+            uint16_t pop_count = 0;
+            // Eagerly pop until indent rules are satisfied, counting required DEDENT tokens
+            while (s->indent_count > 1 && s->indents[s->indent_count - 1] > indent) {
+                s->indent_count--;
+                pop_count++;
+            }
+
+            if (pop_count > 0) {
+                s->pending_dedents = pop_count - 1; // Save remaining for subsequent calls
+                s->emitted_dedents++;
+                lexer->result_symbol = DEDENT;
+                DEBUG_LOG("[EMIT]        | TOKEN | DEDENT (pending: %u)\n", s->pending_dedents);
+                return true;
+            }
+        }
+
+        if (valid_symbols[INDENT] && indent > previous_indent) {
+            if (s->indent_count <= MAX_INDENT_DEPTH) {
+                s->indents[s->indent_count++] = indent;
+            }
+            s->emitted_indents++;
+            lexer->result_symbol = INDENT;
+            DEBUG_LOG("[EMIT]        | TOKEN | INDENT (level: %u)\n", indent);
+            return true;
+        }
+    }
+
+    // 4. Standard NEWLINE mapping (When we aren't at column 0 / End-of-statement)
     if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
-        DEBUG_LOG("[NEWLINE]     | INFO  | Checking for NEWLINE\n");
         if (lexer->lookahead == '\r') advance(lexer);
         if (lexer->lookahead == '\n') advance(lexer);
-
-        lexer->mark_end(lexer);
-        s->phase = PHASE_BOL_UNSCANNED;
         lexer->result_symbol = NEWLINE;
         DEBUG_LOG("[EMIT]        | TOKEN | NEWLINE\n");
         return true;
     }
 
-    bool can_do_layout = valid_symbols[INDENT] || valid_symbols[DEDENT];
-    if (s->phase == PHASE_MIDLINE || !can_do_layout) return false;
-
-    // 3. Measure indentation at the start of a new line
-    if (s->phase == PHASE_BOL_UNSCANNED) {
-        uint16_t column = 0;
-
-        while (is_hspace(lexer->lookahead)) {
-            skip(lexer); // Skip spaces so they don't become part of a token
-            column = lexer->get_column(lexer);
-        }
-
-        s->current_line_indent = (column > MAX_INDENT_COLUMN) ? MAX_INDENT_COLUMN : column;
-        s->phase = PHASE_BOL_SCANNED;
-
-        // If the line is empty (just whitespace then newline/EOF), ignore its indentation
-        if (is_newline(lexer->lookahead) || lexer->eof(lexer)) {
-            return false;
-        }
-    }
-
-    // 4. Emit INDENT or DEDENT tokens
-    if (s->phase == PHASE_BOL_SCANNED) {
-        uint16_t previous_indent = s->indents[s->indent_count - 1];
-
-        if (valid_symbols[DEDENT] && s->current_line_indent < previous_indent) {
-            s->indent_count--;
-            s->emitted_dedents++;
-            lexer->result_symbol = DEDENT;
-            DEBUG_LOG("[EMIT]        | TOKEN | DEDENT\n");
-            return true; // Return immediately; if we need multiple dedents, Tree-sitter will call us again
-        }
-
-        if (valid_symbols[INDENT] && s->current_line_indent > previous_indent) {
-            if (s->indent_count <= MAX_INDENT_DEPTH) {
-                s->indents[s->indent_count++] = s->current_line_indent;
-            }
-            s->emitted_indents++;
-            lexer->result_symbol = INDENT;
-            DEBUG_LOG("[EMIT]        | TOKEN | INDENT (level: %u)\n", s->current_line_indent);
-            return true;
-        }
-
-        // If indentation hasn't changed, proceed to read standard tokens
-        DEBUG_LOG("[LAYOUT]      | INFO  | No layout token, transitioning to MIDLINE\n");
-        s->phase = PHASE_MIDLINE;
-    }
-
     return false;
 }
-
 
 // =============================================================================
 // Assertions & Compile-Time Invariants
