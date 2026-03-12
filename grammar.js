@@ -988,7 +988,7 @@ module.exports = grammar({
 		equals: () => "=",
 		semicolon: () => ";",
 		dot: () => token.immediate("."),
-		module_sep: () => token.immediate("::"),
+		module_sep: () => token.immediate("\\"),
 		at_sign: () => token.immediate("@"),
 		hash_sign: () => token.immediate("#"),
 
