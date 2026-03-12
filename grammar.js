@@ -317,7 +317,7 @@ module.exports = grammar({
 				field("ability", $.type_name),
 				field(
 					"methods",
-					indented_list($, $.implementation_method, { at_least_one: true }),
+					indented_adjacent_list($, $.implementation_method, { at_least_one: true }),
 				),
 			),
 
@@ -339,7 +339,7 @@ module.exports = grammar({
 				optional($.type_parameter_list),
 				field(
 					"methods",
-					indented_list($, $.annotation, { at_least_one: true }),
+					indented_adjacent_list($, $.annotation, { at_least_one: true }),
 				),
 			),
 
@@ -1073,21 +1073,47 @@ function block_body($, rule) {
 		$.newline,
 		$.indent,
 		rule,
+		repeat($.newline),
 		$.dedent,
 	);
 }
 
-function indented_list($, item, { at_least_one = false } = {}) {
+function separated_items(item, sep, { at_least_one = false } = {}) {
 	const items = at_least_one
-		? seq(item, repeat(seq($.newline, item)))
-		: optional(seq(item, repeat(seq($.newline, item))));
+		? seq(item, repeat(seq(sep, item)))
+		: optional(seq(item, repeat(seq(sep, item))));
+	return items;
+}
 
+function indented_block($, body) {
 	return seq(
 		$.newline,
 		$.indent,
-		items,
+		body,
 		repeat($.newline),
 		$.dedent,
+	);
+}
+
+// Legacy helper: wraps separated_items for newline-separated lists in indented blocks
+function indented_list($, item, { at_least_one = false } = {}) {
+	return indented_block(
+		$,
+		separated_items(item, $.newline, { at_least_one }),
+	);
+}
+
+// For layout-terminated items (no explicit separator, just adjacent items)
+function adjacent_items(item, { at_least_one = false } = {}) {
+	return at_least_one
+		? seq(item, repeat(item))
+		: repeat(item);
+}
+
+function indented_adjacent_list($, item, { at_least_one = false } = {}) {
+	return indented_block(
+		$,
+		adjacent_items(item, { at_least_one }),
 	);
 }
 

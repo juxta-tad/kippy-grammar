@@ -93,9 +93,12 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
     Scanner *s = (Scanner *)payload;
     check_invariants(s);
 
-    if (s->emitted_indents != s->emitted_dedents) {
-        DEBUG_LOG("[DESTROY]     | WARN  | Unbalanced INDENT/DEDENT (%u emitted vs %u dedented)\n",
-            s->emitted_indents, s->emitted_dedents);
+    // Check actual stack state instead of counter difference
+    // net_open_indents = indents above base + pending dedents queued to emit
+    uint16_t net_open_indents = (s->indent_count - 1) + s->pending_dedents;
+    if (net_open_indents > 0) {
+        DEBUG_LOG("[DESTROY]     | WARN  | Unclosed indentation (stack depth: %u, pending dedents: %u)\n",
+            s->indent_count - 1, s->pending_dedents);
     }
 
     s->magic = 0;
