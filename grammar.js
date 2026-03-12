@@ -410,7 +410,7 @@ module.exports = grammar({
 				field("type", $.non_arrow_type),
 				$.kw_with,
 				field("ability", $.type_name),
-				field("methods", block($, many1($.implementation_method))),
+				field("methods", block($, newlineSeparated1($, $.implementation_method))),
 			),
 
 		implementation_method: ($) =>
@@ -807,15 +807,18 @@ module.exports = grammar({
 		type_application: ($) => seq($.type_name, $.type_argument_list),
 		type_variable: ($) => reserved("global", $.identifier),
 
+		self_type: ($) => $.kw_Self,
+
 		type_primary: ($) =>
 			choice(
 				$.type_application,
 				$.type_name,
 				$.type_variable,
+				$.self_type,
 				$.type_wildcard,
 				$.parenthesized_type,
 			),
-		type_name: ($) => dotted1($, $.tag_name, $.tag_name),
+		type_name: ($) => seq($.tag_name, many(seq($.module_sep, $.tag_name))),
 
 		type_argument_list: ($) =>
 			seq(
@@ -915,7 +918,8 @@ module.exports = grammar({
 		import_name: ($) => choice($.identifier, $.tag_name),
 		name: ($) => choice($.identifier, $.tag_name),
 		value_name: ($) => choice($.identifier, $.kw_self),
-		long_identifier: ($) => prec.left(dotted1($, $.value_name, $.name)),
+		long_identifier: ($) =>
+		prec.left(seq(choice($.name, $.kw_self), many(seq($.module_sep, $.name)))),
 		placeholder: ($) => token("__"),
 
 		// Keywords
@@ -947,6 +951,7 @@ module.exports = grammar({
 		kw_not: () => "not",
 		kw_as: () => "as",
 		kw_self: () => "self",
+		kw_Self: () => "Self",
 
 		// Punctuation
 		lparen: () => "(",
@@ -967,6 +972,7 @@ module.exports = grammar({
 		equals: () => "=",
 		semicolon: () => ";",
 		dot: () => token.immediate("."),
+		module_sep: () => token.immediate("::"),
 		at_sign: () => token.immediate("@"),
 		hash_sign: () => token.immediate("#"),
 

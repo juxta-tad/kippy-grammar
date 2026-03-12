@@ -1094,11 +1094,32 @@
                 "name": "indent"
               },
               {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "implementation_method"
-                }
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "implementation_method"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "REPEAT1",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          }
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "implementation_method"
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "type": "REPEAT",
@@ -5039,6 +5060,10 @@
       },
       "context_name": "global"
     },
+    "self_type": {
+      "type": "SYMBOL",
+      "name": "kw_Self"
+    },
     "type_primary": {
       "type": "CHOICE",
       "members": [
@@ -5053,6 +5078,10 @@
         {
           "type": "SYMBOL",
           "name": "type_variable"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "self_type"
         },
         {
           "type": "SYMBOL",
@@ -5078,7 +5107,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "dot"
+                "name": "module_sep"
               },
               {
                 "type": "SYMBOL",
@@ -5999,8 +6028,17 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "value_name"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "name"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "kw_self"
+              }
+            ]
           },
           {
             "type": "REPEAT",
@@ -6009,7 +6047,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "dot"
+                  "name": "module_sep"
                 },
                 {
                   "type": "SYMBOL",
@@ -6140,6 +6178,10 @@
       "type": "STRING",
       "value": "self"
     },
+    "kw_Self": {
+      "type": "STRING",
+      "value": "Self"
+    },
     "lparen": {
       "type": "STRING",
       "value": "("
@@ -6214,6 +6256,13 @@
       "content": {
         "type": "STRING",
         "value": "."
+      }
+    },
+    "module_sep": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "::"
       }
     },
     "at_sign": {
