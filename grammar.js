@@ -416,39 +416,82 @@ module.exports = grammar({
 		// 3.8: EXPRESSION HIERARCHY (Operators by Precedence)
 		// ─────────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
+
 		call_argument: ($) => $["restricted_pipe_expression"],
 
-		restricted_postfix_expression: ($) => prec.left(PREC.POSTFIX, seq($.primary_expression, B.many($.restricted_postfix_suffix))),
+		pipe_expression: ($) =>
+			prec.left(
+				PREC.PIPE,
+				seq(
+					$.or_expression,
+					repeat(seq($.pipe, $.or_expression)),
+				),
+			),
+
+		or_expression: ($) => or_rule($, $.and_expression),
+		and_expression: ($) => and_rule($, $.compare_expression),
+		compare_expression: ($) => compare_rule($, $.add_expression),
+		add_expression: ($) => add_rule($, $.mul_expression),
+		mul_expression: ($) => mul_rule($, $.unary_expression),
+		unary_expression: ($) =>
+			choice(
+				prec.right(
+					PREC.UNARY,
+					seq(choice($.minus, $.kw_not, $.kw_cert), $.unary_expression),
+				),
+				$.postfix_expression,
+			),
+
+		restricted_postfix_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					$.primary_expression,
+					repeat($.restricted_postfix_suffix),
+				),
+			),
+
+		index_suffix: ($) =>
+			seq(
+				$.lbracket,
+				field("index", $.expression),
+				$.rbracket,
+			),
+
+		method_suffix: ($) =>
+			seq(
+				$.dot,
+				field("method", $.identifier),
+			),
+
+		qualified_method_suffix: ($) =>
+			seq(
+				$.at_sign,
+				field("ability", $.tag_name),
+				$.dot,
+				field("method", $.identifier),
+			),
+
 		restricted_postfix_suffix: ($) => postfix_suffixes($, { allowCall: false }),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS (Calls, Fields, Try)
 		// ─────────────────────────────────────────────────────────────────────────────
-		postfix_expression: ($) => prec.left(PREC.POSTFIX, seq($.primary_expression, B.many($.postfix_suffix))),
-		postfix_suffix: ($) => postfix_suffixes($, { allowCall: true }),
+		// Postfix expressions: base + repeating operators (no indirect recursion)
+		postfix_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					$.primary_expression,
+					repeat($.postfix_suffix),
+				),
+			),
 
-		index_suffix: ($) => seq($.lbracket, field("index", $.expression), $.rbracket),
-		method_suffix: ($) => seq($.dot, field("method", $.identifier)),
-		qualified_method_suffix: ($) => seq($.at_sign, field("ability", $.tag_name), $.dot, field("method", $.identifier)),
+		postfix_suffix: ($) => postfix_suffixes($, { allowCall: true }),
 
 		spread_element: ($) => seq("..", field("base", $.expression)),
 
-		call_suffix: ($) => choice(
-			// Inline Calls
-			prec.right(seq(
-				$.kw_with,
-				field("arg", $.call_argument),
-				B.many(seq($.comma, B.many($.newline), field("arg", $.call_argument))),
-				B.opt($.comma)
-			)),
-			// Block Calls
-			seq(
-				$.kw_with,
-				B.indented($, B.trailingSep1(seq($.comma, $.newline), field("arg", $.call_argument)))
-			)
-		),
-
-
+		call_suffix: ($) => with_call_suffix($),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.10: PRIMARY EXPRESSION FORMS
@@ -457,38 +500,103 @@ module.exports = grammar({
 		// 3.9A: INLINE VS BLOCK EXPRESSION HIERARCHY
 		// ─────────────────────────────────────────────────────────────────────────────
 		// Inline expressions: atoms and structures without layout
-		primary_expression: ($) => choice(
-			$.inline_expression,
-			$.block_expression,
-		),
+		inline_expression: ($) =>
+			choice(
+				$.record_builder,
+				$.literal,
+				$.long_identifier,
+				$.placeholder,
+				$.list_expression,
+				$.map_expression,
+				$.record_expression,
+				$.tuple_expression,
+				$.parenthesized_expression,
+			),
 
-		inline_expression: ($) => choice(
-			$.record_builder, $.literal, $.long_identifier, $.placeholder,
-			$.list_expression, $.map_expression, $.record_expression,
-			$.tuple_expression, $.parenthesized_expression,
-		),
+		// Block expressions: layout-based constructs (when, if, lambda, let-in blocks)
+		block_expression: ($) =>
+			choice(
+				$.when_expression,
+				$.if_expression,
+				$.lambda_expression,
+				$.let_block_expression,
+			),
 
-		block_expression: ($) => choice(
-			$.when_expression, $.if_expression, $.lambda_expression, $.let_block_expression,
-		),
+		primary_expression: ($) =>
+			choice(
+				$.inline_expression,
+				$.block_expression,
+			),
 
-		list_expression: ($) => B.bracketedList($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
-		list_item: ($) => choice($.expression, $.spread_element),
+		list_expression: ($) =>
+			layoutBracketWithSep($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
+
+		list_item: ($) =>
+			choice(
+				$.expression,
+				$.spread_element,
+			),
+
+		record_body: ($) =>
+			record_like($, $.record_field, {
+				allowSpread: true,
+				spreadRule: $.spread_element,
+			}),
 
 		record_expression: ($) => $.record_body,
-		record_body: ($) => B.bracketedListWithSpread($, $.lbrace, $.rbrace, $.record_field, $.semicolon, $.spread_element),
-		record_builder: ($) => seq($.kw_build, field("builder", $.long_identifier), $.record_body),
 
-		map_expression: ($) => B.bracketedList($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
-		map_entry: ($) => seq(field("key", $.expression), $.thick_arrow, field("value", $.expression)),
+		record_builder: ($) =>
+			seq(
+				$.kw_build,
+				field("builder", $.long_identifier),
+				$.record_body,
+			),
+
+		map_expression: ($) =>
+			layoutBracketWithSep(
+				$,
+				$.lbracket_hash,
+				$.rbracket,
+				$.map_entry,
+				$.semicolon,
+			),
+
+		map_entry: ($) =>
+			seq(
+				field("key", $.expression),
+				$.thick_arrow,
+				field("value", $.expression),
+			),
 
 		field_name: ($) => reserved("global", $.identifier),
-		record_field: ($) => seq(field("name", $.field_name), $.equals, field("value", $.record_field_value)),
-		record_field_value: ($) => B.inlineOrBlock($, $.expression),
 
-		tuple_expression: ($) => B.bracketedTuple($, $.lbrace_hash, $.rbrace, $.expression, $.semicolon),
+		record_field_value: ($) =>
+			choice(
+				$.expression,
+				seq(
+					$.newline,
+					$.indent,
+					$.expression,
+					$.dedent,
+				),
+			),
 
-		parenthesized_expression: ($) => seq($.lparen, field("value", $.expression), $.rparen),
+		record_field: ($) =>
+			seq(
+				field("name", $.field_name),
+				$.equals,
+				field("value", $.record_field_value),
+			),
+
+		tuple_expression: ($) => tuple_like($, $.expression),
+
+		parenthesized_expression: ($) =>
+			seq(
+				$.lparen,
+				field("value", $.expression),
+				$.rparen,
+			),
+
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────────
