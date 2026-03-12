@@ -325,36 +325,31 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.5: VALUE BINDINGS & LET DECLARATIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		let_binding: ($) =>
-			seq(
-				attribute_prefix($),
-				optional($.kw_pub),
-				$.kw_let,
-				field("name", $.binding_target),
-				optional(seq(
-					$.kw_with,
-					field("param", $.identifier),
-					repeat(seq(
-						$.comma,
-						field("param", $.identifier),
-					)),
-				)),
-				choice(
-					seq(
-						$.colon,
-						field("type", inline_or_block($, $.type_expression)),
-						optional(field("constraints", $.constraint_clause)),
-					),
-					seq(
-						optional(seq(
-							$.colon,
-							field("type", inline_or_block($, $.type_expression)),
-						)),
-						$.equals,
-						field("value", inline_or_block($, $.expression)),
-					),
+		let_binding: ($) => seq(
+			B.attributePrefix($),
+			B.opt($.kw_pub),
+			$.kw_let,
+			field("name", $.binding_target),
+			B.opt(seq(
+				$.kw_with,
+				field("param", $.identifier),
+				B.many(seq($.comma, field("param", $.identifier)))
+			)),
+			choice(
+				// Type Annotation Form
+				seq(
+					$.colon,
+					field("type", B.inlineOrBlock($, $.type_expression)),
+					B.opt(field("constraints", $.constraint_clause))
 				),
-			),
+				// Assignment Form
+				seq(
+					B.opt(seq($.colon, field("type", B.inlineOrBlock($, $.type_expression)))),
+					$.equals,
+					field("value", B.inlineOrBlock($, $.expression))
+				)
+			)
+		),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.6: ATTRIBUTES & METADATA
