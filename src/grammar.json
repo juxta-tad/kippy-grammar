@@ -2363,7 +2363,7 @@
           "name": "ability",
           "content": {
             "type": "SYMBOL",
-            "name": "tag_name"
+            "name": "type_name"
           }
         },
         {

@@ -2182,7 +2182,7 @@
         "required": true,
         "types": [
           {
-            "type": "tag_name",
+            "type": "type_name",
             "named": true
           }
         ]

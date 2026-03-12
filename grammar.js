@@ -517,7 +517,7 @@ module.exports = grammar({
 		qualified_method_suffix: ($) =>
 			seq(
 				$.at_sign,
-				field("ability", $.tag_name),
+				field("ability", $.type_name),
 				$.dot,
 				field("method", $.identifier),
 			),
