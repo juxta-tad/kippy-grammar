@@ -253,18 +253,12 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.2: MODULE & USE DECLARATIONS
 		// ─────────────────────────────────────────────────────────────────────────────
-		use_statement: ($) =>
-			seq(
-				$.kw_use,
-				field("module", $.type_name),
-				B.opt(seq($.kw_as, field("alias", $.tag_name))),
-				B.opt(
-					seq(
-						$.kw_using,
-						B.bracketedList($, $.lparen, $.rparen, $.import_name, $.comma),
-					),
-				),
-			),
+		use_statement: ($) => seq(
+			$.kw_use,
+			field("module", $.type_name),
+			B.opt(seq($.kw_as, field("alias", $.tag_name))),
+			B.opt(seq($.kw_using, B.bracketedList($, $.lparen, $.rparen, $.import_name, $.comma)))
+		),
 
 		module_declaration: ($) =>
 			seq(
