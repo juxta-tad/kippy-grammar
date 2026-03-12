@@ -354,29 +354,22 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.6: ATTRIBUTES & METADATA
 		// ─────────────────────────────────────────────────────────────────────────────
-		attribute: ($) =>
-			seq(
-				$.hash_sign,
-				$.long_identifier,
-				optional($.attribute_arguments_inline),
-			),
+		attribute: ($) => seq(
+			$.hash_sign,
+			$.long_identifier,
+			B.opt($.attribute_arguments_inline)
+		),
 
-		attribute_arguments_inline: ($) =>
-			seq(
-				$.lparen,
-				optional(commaSepTrail($, $.attribute_argument, $.comma, $.newline)),
-				$.rparen,
-			),
+		attribute_arguments_inline: ($) => seq(
+			$.lparen,
+			B.opt(B.inlineCommaList($.attribute_argument, $.comma, $.newline)),
+			$.rparen
+		),
 
-		attribute_argument: ($) =>
-			choice(
-				$.expression,
-				seq(
-					field("name", $.identifier),
-					$.equals,
-					field("value", $.expression),
-				),
-			),
+		attribute_argument: ($) => choice(
+			$.expression,
+			seq(field("name", $.identifier), $.equals, field("value", $.expression))
+		),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.7: IMPLEMENTATIONS & ABILITIES
