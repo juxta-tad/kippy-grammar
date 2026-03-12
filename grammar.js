@@ -391,6 +391,31 @@ module.exports = grammar({
 				),
 			),
 
+		// Single binding (name = value) for use inside let expressions
+		// No kw_let, no attributes, no pub modifier
+		binding: ($) =>
+			seq(
+				field("name", $.binding_target),
+				opt(seq(
+					$.kw_with,
+					sep1(field("param", $.identifier), $.comma),
+				)),
+				choice(
+					seq(
+						$.colon,
+						field("type", inlineOrBlock($, $.type_expression)),
+						opt(field("constraints", $.constraint_clause)),
+					),
+					seq(
+						opt(
+							seq($.colon, field("type", inlineOrBlock($, $.type_expression))),
+						),
+						$.equals,
+						field("value", inlineOrBlock($, $.expression)),
+					),
+				),
+			),
+
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.6: ATTRIBUTES & METADATA
 		// ─────────────────────────────────────────────────────────────────────────
@@ -422,13 +447,13 @@ module.exports = grammar({
 		// 3.7: IMPLEMENTATIONS & ABILITIES
 		// ─────────────────────────────────────────────────────────────────────────
 		implementation: ($) =>
-	  seq(
-	    $.kw_extend,
-	    field("type", $.non_arrow_type),
-	    $.kw_with,
-	    field("ability", $.type_name),
-	    field("methods", block($, many1($.implementation_method))),
-	  ),
+			seq(
+				$.kw_extend,
+				field("type", $.non_arrow_type),
+				$.kw_with,
+				field("ability", $.type_name),
+				field("methods", block($, many1($.implementation_method))),
+			),
 
 		implementation_method: ($) =>
 			seq(
@@ -565,7 +590,7 @@ module.exports = grammar({
 				$.when_expression,
 				$.if_expression,
 				$.lambda_expression,
-				$.let_block_expression,
+				$.let_expression,
 			),
 
 		// Collections
@@ -610,23 +635,14 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.11: BLOCK & CONTROL FLOW EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────
-		let_block_expression: ($) =>
-			seq(
-				$.lparen,
-				block(
-					$,
-					choice(
-						field("value", $.expression),
-						seq(
-							newlineSeparated1($, $.let_binding),
-							many1($.newline),
-							$.kw_in,
-							field("value", $.expression),
-						),
-					),
-				),
-				$.rparen,
-			),
+
+		let_expression: ($) =>
+			prec.right(seq(
+				$.kw_let,
+				field("bindings", sep1($.binding, $.newline)),
+				$.kw_in,
+				field("value", $.expression),
+			)),
 
 		when_expression: ($) =>
 			prec.right(seq(

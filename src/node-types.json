@@ -395,6 +395,108 @@
     }
   },
   {
+    "type": "binding",
+    "named": true,
+    "fields": {
+      "constraints": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constraint_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_target",
+            "named": true
+          }
+        ]
+      },
+      "param": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "equals",
+          "named": true
+        },
+        {
+          "type": "kw_with",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "binding_target",
     "named": true,
     "fields": {},
@@ -426,7 +528,7 @@
           "named": true
         },
         {
-          "type": "let_block_expression",
+          "type": "let_expression",
           "named": true
         },
         {
@@ -1261,9 +1363,23 @@
     }
   },
   {
-    "type": "let_block_expression",
+    "type": "let_expression",
     "named": true,
     "fields": {
+      "bindings": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "binding",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      },
       "value": {
         "multiple": false,
         "required": true,
@@ -1280,31 +1396,11 @@
       "required": true,
       "types": [
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
           "type": "kw_in",
           "named": true
         },
         {
-          "type": "let_binding",
-          "named": true
-        },
-        {
-          "type": "lparen",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rparen",
+          "type": "kw_let",
           "named": true
         }
       ]
