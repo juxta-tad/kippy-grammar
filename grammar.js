@@ -21,7 +21,7 @@ const opt = optional;
 const many = repeat;
 const many1 = repeat1;
 
-// --- Basic Separators ---
+// --- Basic Inline Separators ---
 function sep1(rule, separator) {
   return seq(rule, many(seq(separator, rule)));
 }
@@ -38,63 +38,62 @@ function trailingSep(rule, separator) {
   return opt(trailingSep1(rule, separator));
 }
 
-// --- Layout & Indentation ---
-function block($, rule) {
-  return seq($.newline, $.indent, rule, many($.newline), $.dedent);
+// --- Block & Layout Helpers (Your Compact Set) ---
+function block($, body) {
+  return seq($.newline, $.indent, body, $.dedent);
 }
 
-function inlineOrBlock($, rule) {
-  return choice(rule, block($, rule));
+function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
+  return choice(inlineRule, block($, blockRule));
 }
 
-// --- Bracketed Collections (Lists, Records, Maps) ---
-// Handles both inline `[a, b]` and block-level indented items
-function collection($, open, close, item, sepToken, { allowSpread = false, spreadRule = null } = {}) {
-  // Inline rules
-  const inlineList = trailingSep1(item, sepToken);
-  let inlineBody = inlineList;
-  if (allowSpread) {
-    inlineBody = choice(
-      seq(opt(seq(sep1(item, sepToken), sepToken)), spreadRule, opt(sepToken)),
-      inlineList
-    );
-  }
+function newlineSeparated1($, rule) {
+  return seq(rule, many(seq(many1($.newline), rule)));
+}
 
-  // Block rules (items separated by newlines, optional sepToken)
-  const blockItemSep = seq(opt(sepToken), many1($.newline));
-  const blockList = seq(item, many(seq(blockItemSep, item)), opt(blockItemSep));
-  let blockBody = blockList;
-  if (allowSpread) {
-    blockBody = choice(
-      seq(opt(seq(item, many(seq(blockItemSep, item)), blockItemSep)), spreadRule, opt(blockItemSep)),
-      blockList
-    );
-  }
+function newlineSeparated($, rule) {
+  return opt(newlineSeparated1($, rule));
+}
 
-  return choice(
-    seq(open, opt(inlineBody), close),
-    seq(open, block($, opt(blockBody)), close)
+function blockSeparated1($, rule, separator) {
+  return seq(
+    rule,
+    many(seq(seq(opt(separator), many1($.newline)), rule)),
+    opt(separator)
   );
 }
 
-// --- Tuples (Must have at least 2 items) ---
+function blockSeparated($, rule, separator) {
+  return opt(blockSeparated1($, rule, separator));
+}
+
+function collection($, open, close, item, sepToken) {
+  return choice(
+    seq(open, opt(trailingSep1(item, sepToken)), close),
+    seq(open, block($, blockSeparated($, item, sepToken)), close)
+  );
+}
+
 function tuple($, open, close, item, sepToken) {
-  // Inline: { a ; b }
-  const inlineTuple = seq(
-    field("first", item), sepToken, field("second", item),
-    many(seq(sepToken, field("rest", item))), opt(sepToken)
-  );
-
-  // Block: Indented items separated by newlines
-  const blockItemSep = seq(opt(sepToken), many1($.newline));
-  const blockTuple = seq(
-    field("first", item), blockItemSep, field("second", item),
-    many(seq(blockItemSep, field("rest", item))), opt(blockItemSep)
-  );
-
   return choice(
-    seq(open, inlineTuple, close),
-    seq(open, block($, blockTuple), close)
+    seq(
+      open,
+      field("first", item), sepToken, field("second", item),
+      many(seq(sepToken, field("rest", item))),
+      opt(sepToken),
+      close
+    ),
+    seq(
+      open,
+      block($, seq(
+        field("first", item),
+        seq(opt(sepToken), many1($.newline)),
+        field("second", item),
+        many(seq(seq(opt(sepToken), many1($.newline)), field("rest", item))),
+        opt(sepToken)
+      )),
+      close
+    )
   );
 }
 
@@ -108,7 +107,6 @@ function dotted1($, head, tail) {
 }
 
 // --- Expression Ladder Generator ---
-// Generates both normal expressions and restricted (call argument) expressions
 function buildExpressionLadder(prefix, baseRule) {
   return {
     [`${prefix}pipe_expression`]: ($) => prec.left(PREC.PIPE, seq(
@@ -245,11 +243,11 @@ module.exports = grammar({
 
     type_parameter_list: ($) => seq(
       $.lparen,
-      opt(trailingSep1($.type_variable, $.comma)), // simplified inline list
+      opt(trailingSep1($.type_variable, $.comma)),
       $.rparen
     ),
 
-    type_variant_block: ($) => block($, sep1($.type_variant, $.newline)),
+    type_variant_block: ($) => block($, newlineSeparated1($, $.type_variant)),
 
     type_variant: ($) => seq(
       $.pipe_bar,
@@ -329,7 +327,7 @@ module.exports = grammar({
       field("type", $.non_arrow_type),
       $.kw_with,
       field("ability", $.type_name),
-      field("methods", block($, many1($.implementation_method)))
+      field("methods", block($, newlineSeparated1($, $.implementation_method)))
     ),
 
     implementation_method: ($) => seq(
@@ -346,7 +344,7 @@ module.exports = grammar({
       $.kw_ability,
       field("name", $.type_name),
       opt($.type_parameter_list),
-      field("methods", block($, many1($.annotation)))
+      field("methods", block($, newlineSeparated1($, $.annotation)))
     ),
 
     expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -368,10 +366,7 @@ module.exports = grammar({
     expression: ($) => $.pipe_expression,
     call_argument: ($) => $["restricted_pipe_expression"],
 
-    // Standard Operators
     ...buildExpressionLadder("", "postfix_expression"),
-
-    // Restricted Operators (for nested call arguments)
     ...buildExpressionLadder("restricted_", "restricted_postfix_expression"),
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -410,9 +405,9 @@ module.exports = grammar({
 
     call_suffix: ($) => choice(
       // Inline
-      prec.right(seq($.kw_with, sep1(field("arg", $.call_argument), $.comma), opt($.comma))),
+      prec.right(seq($.kw_with, trailingSep1(field("arg", $.call_argument), $.comma))),
       // Block
-      seq($.kw_with, block($, sep1(field("arg", $.call_argument), seq($.comma, $.newline))))
+      seq($.kw_with, block($, blockSeparated1($, field("arg", $.call_argument), $.comma)))
     ),
 
     spread_element: ($) => seq("..", field("base", $.expression)),
@@ -449,12 +444,18 @@ module.exports = grammar({
     list_item: ($) => choice($.expression, $.spread_element),
 
     map_expression: ($) => collection($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
-    map_entry: ($) => seq(field("key", $.expression), $.thick_arrow, field("value", $.expression)),
+    map_entry: ($) => seq(field("key", $.expression), $.thick_arrow, field("value", inlineOrBlock($, $.expression))),
 
     record_expression: ($) => $.record_body,
     record_builder: ($) => seq($.kw_build, field("builder", $.long_identifier), $.record_body),
-    record_body: ($) => collection($, $.lbrace, $.rbrace, $.record_field, $.semicolon, { allowSpread: true, spreadRule: $.spread_element }),
-    record_field: ($) => seq(field("name", $.field_name), $.equals, field("value", inlineOrBlock($, $.expression))),
+    record_body: ($) => collection($, $.lbrace, $.rbrace, $.record_field, $.semicolon),
+
+    // Allow spread natively as a valid "field" inside records instead of complicating helpers
+    record_field: ($) => choice(
+      seq(field("name", $.field_name), $.equals, field("value", inlineOrBlock($, $.expression))),
+      $.spread_element
+    ),
+
     field_name: ($) => reserved("global", $.identifier),
 
     tuple_expression: ($) => tuple($, $.lbrace_hash, $.rbrace, $.expression, $.semicolon),
@@ -469,7 +470,7 @@ module.exports = grammar({
       block($, choice(
         field("value", $.expression),
         seq(
-          sep1($.let_binding, many1($.newline)),
+          newlineSeparated1($, $.let_binding),
           many1($.newline),
           $.kw_in,
           field("value", $.expression),
@@ -480,7 +481,7 @@ module.exports = grammar({
 
     when_expression: ($) => prec.right(seq(
       $.kw_when, field("subject", $.pipe_expression), $.kw_is,
-      field("arms", block($, sep1($.when_arm, $.newline))),
+      field("arms", block($, newlineSeparated1($, $.when_arm))),
     )),
 
     when_arm: ($) => seq(field("pattern", $.pattern), $.arrow, field("value", inlineOrBlock($, $.expression))),
