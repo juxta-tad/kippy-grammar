@@ -305,24 +305,22 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
 		// ─────────────────────────────────────────────────────────────────────────────
-		annotation: ($) =>
-			seq(
-				attribute_prefix($),
-				field("name", $.binding_target),
-				$.colon,
-				field("type", inline_or_block($, $.type_expression)),
-				optional(field("constraints", $.constraint_clause)),
-			),
+		annotation: ($) => seq(
+			B.attributePrefix($),
+			field("name", $.binding_target),
+			$.colon,
+			field("type", B.inlineOrBlock($, $.type_expression)),
+			B.opt(field("constraints", $.constraint_clause))
+		),
 
-		signature: ($) =>
-			seq(
-				attribute_prefix($),
-				$.kw_sig,
-				field("name", $.identifier),
-				$.colon,
-				field("type", inline_or_block($, $.type_expression)),
-				optional(field("constraints", $.constraint_clause)),
-			),
+		signature: ($) => seq(
+			B.attributePrefix($),
+			$.kw_sig,
+			field("name", $.identifier),
+			$.colon,
+			field("type", B.inlineOrBlock($, $.type_expression)),
+			B.opt(field("constraints", $.constraint_clause))
+		),
 
 		// ─────────────────────────────────────────────────────────────────────────────
 		// 3.5: VALUE BINDINGS & LET DECLARATIONS
