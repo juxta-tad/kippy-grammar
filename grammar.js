@@ -257,14 +257,13 @@ module.exports = grammar({
 			seq(
 				$.kw_use,
 				field("module", $.type_name),
-				optional(seq(
-					$.kw_as,
-					field("alias", $.tag_name),
-				)),
-				optional(seq(
-					$.kw_using,
-					layoutBracket($, $.lparen, $.rparen, $.import_name),
-				)),
+				B.opt(seq($.kw_as, field("alias", $.tag_name))),
+				B.opt(
+					seq(
+						$.kw_using,
+						B.bracketedList($, $.lparen, $.rparen, $.import_name, $.comma),
+					),
+				),
 			),
 
 		module_declaration: ($) =>

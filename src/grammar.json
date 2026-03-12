@@ -223,50 +223,15 @@
                           "name": "lparen"
                         },
                         {
-                          "type": "SYMBOL",
-                          "name": "newline"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "indent"
-                        },
-                        {
                           "type": "SEQ",
                           "members": [
                             {
                               "type": "SYMBOL",
-                              "name": "import_name"
+                              "name": "newline"
                             },
                             {
-                              "type": "REPEAT",
-                              "content": {
-                                "type": "SEQ",
-                                "members": [
-                                  {
-                                    "type": "CHOICE",
-                                    "members": [
-                                      {
-                                        "type": "SYMBOL",
-                                        "name": "comma"
-                                      },
-                                      {
-                                        "type": "BLANK"
-                                      }
-                                    ]
-                                  },
-                                  {
-                                    "type": "REPEAT1",
-                                    "content": {
-                                      "type": "SYMBOL",
-                                      "name": "newline"
-                                    }
-                                  },
-                                  {
-                                    "type": "SYMBOL",
-                                    "name": "import_name"
-                                  }
-                                ]
-                              }
+                              "type": "SYMBOL",
+                              "name": "indent"
                             },
                             {
                               "type": "CHOICE",
@@ -275,15 +240,76 @@
                                   "type": "SEQ",
                                   "members": [
                                     {
+                                      "type": "SYMBOL",
+                                      "name": "import_name"
+                                    },
+                                    {
                                       "type": "REPEAT",
                                       "content": {
-                                        "type": "SYMBOL",
-                                        "name": "newline"
+                                        "type": "SEQ",
+                                        "members": [
+                                          {
+                                            "type": "SEQ",
+                                            "members": [
+                                              {
+                                                "type": "CHOICE",
+                                                "members": [
+                                                  {
+                                                    "type": "SYMBOL",
+                                                    "name": "comma"
+                                                  },
+                                                  {
+                                                    "type": "BLANK"
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "type": "REPEAT1",
+                                                "content": {
+                                                  "type": "SYMBOL",
+                                                  "name": "newline"
+                                                }
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "SYMBOL",
+                                            "name": "import_name"
+                                          }
+                                        ]
                                       }
                                     },
                                     {
-                                      "type": "SYMBOL",
-                                      "name": "comma"
+                                      "type": "CHOICE",
+                                      "members": [
+                                        {
+                                          "type": "SEQ",
+                                          "members": [
+                                            {
+                                              "type": "CHOICE",
+                                              "members": [
+                                                {
+                                                  "type": "SYMBOL",
+                                                  "name": "comma"
+                                                },
+                                                {
+                                                  "type": "BLANK"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "REPEAT",
+                                              "content": {
+                                                "type": "SYMBOL",
+                                                "name": "newline"
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "BLANK"
+                                        }
+                                      ]
                                     }
                                   ]
                                 },
@@ -291,19 +317,19 @@
                                   "type": "BLANK"
                                 }
                               ]
+                            },
+                            {
+                              "type": "REPEAT",
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "newline"
+                              }
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "dedent"
                             }
                           ]
-                        },
-                        {
-                          "type": "REPEAT",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "newline"
-                          }
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "dedent"
                         },
                         {
                           "type": "SYMBOL",
