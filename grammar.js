@@ -1,7 +1,3 @@
-// ═════════════════════════════════════════════════════════════════════════════
-// SECTION 1: CONSTANTS & TOKEN HELPERS
-// ═════════════════════════════════════════════════════════════════════════════
-
 const PREC = {
 	// Lowest to highest precedence
 	PIPE: 1,
@@ -14,11 +10,108 @@ const PREC = {
 	POSTFIX: 8,
 };
 
-// ═════════════════════════════════════════════════════════════════════════════
-// SECTION 2: GRAMMAR METADATA & CONFIGURATION
-// ═════════════════════════════════════════════════════════════════════════════
+const B = {
+	// --- Basic Repetition ---
+	opt: optional,
+	many: repeat,
+	many1: repeat1,
 
-// Helper: Generate operator precedence ladder (regular and restricted variants)
+	// --- Separator Lists ---
+	sep1: (sep, rule) => seq(rule, repeat(seq(sep, rule))),
+	sep: (sep, rule) => optional(B.sep1(sep, rule)),
+
+	trailingSep1: (sep, rule) => seq(rule, repeat(seq(sep, rule)), optional(sep)),
+	trailingSep: (sep, rule) => optional(B.trailingSep1(sep, rule)),
+
+	// --- Inline Layout Utilities ---
+	inlineCommaList: (item, sep, newline) => seq(
+		item,
+		repeat(seq(optional(sep), repeat1(newline), item)),
+		optional(seq(repeat(newline), sep))
+	),
+
+	// --- Indentation & Blocks ---
+	indented: ($, rule) => seq($.newline, $.indent, rule, repeat($.newline), $.dedent),
+	inlineOrBlock: ($, rule) => choice(rule, B.indented($, rule)),
+
+	// --- Multi-Layout Bracketed Structures (Records, Maps, Lists) ---
+	bracketedList: ($, open, close, item, sepToken) => {
+		const inlineList = B.trailingSep1(sepToken, item);
+
+		// Block mode: items separated by newlines, optional trailing tokens
+		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
+		const blockList = seq(
+			item,
+			repeat(seq(blockItemSep, item)),
+			optional(seq(optional(sepToken), repeat($.newline)))
+		);
+
+		return choice(
+			seq(open, optional(inlineList), close),
+			seq(open, B.indented($, optional(blockList)), close)
+		);
+	},
+
+	bracketedListWithSpread: ($, open, close, item, sepToken, spreadRule) => {
+		// Inline modes
+		const inlineNormal = B.trailingSep1(sepToken, item);
+		const inlineSpread = seq(
+			optional(seq(B.sep1(sepToken, item), sepToken)),
+			spreadRule,
+			optional(sepToken)
+		);
+
+		// Block modes
+		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
+		const blockNormal = seq(
+			item,
+			repeat(seq(blockItemSep, item)),
+			optional(seq(optional(sepToken), repeat($.newline)))
+		);
+		const blockSpread = seq(
+			optional(seq(
+				item,
+				repeat(seq(blockItemSep, item)),
+				blockItemSep
+			)),
+			spreadRule,
+			optional(seq(optional(sepToken), repeat($.newline)))
+		);
+
+		return choice(
+			seq(open, optional(choice(inlineSpread, inlineNormal)), close),
+			seq(open, B.indented($, optional(choice(blockSpread, blockNormal))), close)
+		);
+	},
+
+	bracketedTuple: ($, open, close, item, sepToken) => {
+		// Tuples explicitly demand at least 2 items
+		const inlineTuple = seq(
+			field("first", item), sepToken, field("second", item),
+			repeat(seq(sepToken, field("rest", item))), optional(sepToken)
+		);
+
+		const blockItemSep = seq(optional(sepToken), repeat1($.newline));
+		const blockTuple = seq(
+			field("first", item), blockItemSep, field("second", item),
+			repeat(seq(blockItemSep, field("rest", item))),
+			optional(seq(optional(sepToken), repeat($.newline)))
+		);
+
+		return choice(
+			seq(open, inlineTuple, close),
+			seq(open, B.indented($, blockTuple), close)
+		);
+	},
+
+	// --- Common Language Patterns ---
+	attributePrefix: ($) => B.many(seq($.attribute, B.opt($.newline))),
+
+	leftAssoc: (precValue, operand, operator) => prec.left(
+		precValue, seq(operand, B.many(seq(operator, operand)))
+	),
+};
+
 function buildOperatorLadder(prefix, postfixRuleName) {
 	return {
 		[`${prefix}pipe_expression`]: ($) =>
