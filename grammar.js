@@ -652,7 +652,7 @@ module.exports = grammar({
 			prec.right(seq(
 				$.kw_fn,
 				sep1(field("param", $.identifier), $.comma),
-				$.colon,
+				$.thick_arrow,
 				field("body", inlineOrBlock($, $.expression)),
 			)),
 

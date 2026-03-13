@@ -3786,7 +3786,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "colon"
+            "name": "thick_arrow"
           },
           {
             "type": "FIELD",

@@ -1414,15 +1414,15 @@
       "required": true,
       "types": [
         {
-          "type": "colon",
-          "named": true
-        },
-        {
           "type": "comma",
           "named": true
         },
         {
           "type": "kw_fn",
+          "named": true
+        },
+        {
+          "type": "thick_arrow",
           "named": true
         }
       ]
