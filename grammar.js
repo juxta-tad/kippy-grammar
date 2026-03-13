@@ -111,6 +111,10 @@ function attrPrefix($) {
 	return many(seq($.attribute, opt($.newline)));
 }
 
+function visibility_modifier($) {
+	return opt($.kw_pub);
+}
+
 function dotted1($, head, tail) {
 	return seq(head, many(seq($.dot, tail)));
 }
@@ -305,6 +309,7 @@ module.exports = grammar({
 		type_declaration: ($) =>
 			seq(
 				attrPrefix($),
+				visibility_modifier($),
 				$.kw_type,
 				field("name", $.type_name),
 				opt($.type_parameter_list),
@@ -366,6 +371,7 @@ module.exports = grammar({
 		signature: ($) =>
 			seq(
 				attrPrefix($),
+				visibility_modifier($),
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
@@ -379,6 +385,7 @@ module.exports = grammar({
 		let_binding: ($) =>
 			seq(
 				attrPrefix($),
+				visibility_modifier($),
 				opt($.kw_pub),
 				$.kw_let,
 				$.binding_core,
@@ -416,6 +423,8 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		implementation: ($) =>
 			seq(
+				attrPrefix($),
+				visibility_modifier($),
 				$.kw_extend,
 				field("type", $.non_arrow_type),
 				$.kw_with,
@@ -437,6 +446,7 @@ module.exports = grammar({
 		ability_declaration: ($) =>
 			seq(
 				attrPrefix($),
+				visibility_modifier($),
 				$.kw_ability,
 				field("name", $.type_name),
 				opt($.type_parameter_list),

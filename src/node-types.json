@@ -59,6 +59,10 @@
           "named": true
         },
         {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
           "type": "newline",
           "named": true
         },
@@ -1167,11 +1171,23 @@
       "required": true,
       "types": [
         {
+          "type": "attribute",
+          "named": true
+        },
+        {
           "type": "kw_extend",
           "named": true
         },
         {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
           "type": "kw_with",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -2767,6 +2783,10 @@
           "named": true
         },
         {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
           "type": "kw_sig",
           "named": true
         },
@@ -3187,6 +3207,10 @@
         },
         {
           "type": "equals",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
           "named": true
         },
         {
