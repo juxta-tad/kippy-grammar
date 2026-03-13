@@ -74,10 +74,10 @@ function tuple($, open, close, item, sepToken) {
 	return choice(
 		seq(
 			open,
-			field("first", item),
+			field("element", item),
 			sepToken,
-			field("second", item),
-			many(seq(sepToken, field("rest", item))),
+			field("element", item),
+			many(seq(sepToken, field("element", item))),
 			opt(sepToken),
 			close,
 		),
@@ -86,10 +86,10 @@ function tuple($, open, close, item, sepToken) {
 			block(
 				$,
 				seq(
-					field("first", item),
+					field("element", item),
 					seq(opt(sepToken), many1($.newline)),
-					field("second", item),
-					many(seq(seq(opt(sepToken), many1($.newline)), field("rest", item))),
+					field("element", item),
+					many(seq(seq(opt(sepToken), many1($.newline)), field("element", item))),
 					opt(sepToken),
 				),
 			),

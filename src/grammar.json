@@ -3627,7 +3627,7 @@
             },
             {
               "type": "FIELD",
-              "name": "first",
+              "name": "element",
               "content": {
                 "type": "SYMBOL",
                 "name": "expression"
@@ -3639,7 +3639,7 @@
             },
             {
               "type": "FIELD",
-              "name": "second",
+              "name": "element",
               "content": {
                 "type": "SYMBOL",
                 "name": "expression"
@@ -3656,7 +3656,7 @@
                   },
                   {
                     "type": "FIELD",
-                    "name": "rest",
+                    "name": "element",
                     "content": {
                       "type": "SYMBOL",
                       "name": "expression"
@@ -3706,7 +3706,7 @@
                   "members": [
                     {
                       "type": "FIELD",
-                      "name": "first",
+                      "name": "element",
                       "content": {
                         "type": "SYMBOL",
                         "name": "expression"
@@ -3738,7 +3738,7 @@
                     },
                     {
                       "type": "FIELD",
-                      "name": "second",
+                      "name": "element",
                       "content": {
                         "type": "SYMBOL",
                         "name": "expression"
@@ -3775,7 +3775,7 @@
                           },
                           {
                             "type": "FIELD",
-                            "name": "rest",
+                            "name": "element",
                             "content": {
                               "type": "SYMBOL",
                               "name": "expression"
@@ -4567,7 +4567,7 @@
             },
             {
               "type": "FIELD",
-              "name": "first",
+              "name": "element",
               "content": {
                 "type": "SYMBOL",
                 "name": "binding_pattern"
@@ -4579,7 +4579,7 @@
             },
             {
               "type": "FIELD",
-              "name": "second",
+              "name": "element",
               "content": {
                 "type": "SYMBOL",
                 "name": "binding_pattern"
@@ -4596,7 +4596,7 @@
                   },
                   {
                     "type": "FIELD",
-                    "name": "rest",
+                    "name": "element",
                     "content": {
                       "type": "SYMBOL",
                       "name": "binding_pattern"
@@ -4646,7 +4646,7 @@
                   "members": [
                     {
                       "type": "FIELD",
-                      "name": "first",
+                      "name": "element",
                       "content": {
                         "type": "SYMBOL",
                         "name": "binding_pattern"
@@ -4678,7 +4678,7 @@
                     },
                     {
                       "type": "FIELD",
-                      "name": "second",
+                      "name": "element",
                       "content": {
                         "type": "SYMBOL",
                         "name": "binding_pattern"
@@ -4715,7 +4715,7 @@
                           },
                           {
                             "type": "FIELD",
-                            "name": "rest",
+                            "name": "element",
                             "content": {
                               "type": "SYMBOL",
                               "name": "binding_pattern"
@@ -5808,7 +5808,7 @@
             },
             {
               "type": "FIELD",
-              "name": "first",
+              "name": "element",
               "content": {
                 "type": "SYMBOL",
                 "name": "non_arrow_type"
@@ -5820,7 +5820,7 @@
             },
             {
               "type": "FIELD",
-              "name": "second",
+              "name": "element",
               "content": {
                 "type": "SYMBOL",
                 "name": "non_arrow_type"
@@ -5837,7 +5837,7 @@
                   },
                   {
                     "type": "FIELD",
-                    "name": "rest",
+                    "name": "element",
                     "content": {
                       "type": "SYMBOL",
                       "name": "non_arrow_type"
@@ -5887,7 +5887,7 @@
                   "members": [
                     {
                       "type": "FIELD",
-                      "name": "first",
+                      "name": "element",
                       "content": {
                         "type": "SYMBOL",
                         "name": "non_arrow_type"
@@ -5919,7 +5919,7 @@
                     },
                     {
                       "type": "FIELD",
-                      "name": "second",
+                      "name": "element",
                       "content": {
                         "type": "SYMBOL",
                         "name": "non_arrow_type"
@@ -5956,7 +5956,7 @@
                           },
                           {
                             "type": "FIELD",
-                            "name": "rest",
+                            "name": "element",
                             "content": {
                               "type": "SYMBOL",
                               "name": "non_arrow_type"

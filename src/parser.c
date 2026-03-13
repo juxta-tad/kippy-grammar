@@ -13,7 +13,7 @@
 #define ALIAS_COUNT 0
 #define TOKEN_COUNT 88
 #define EXTERNAL_TOKEN_COUNT 3
-#define FIELD_COUNT 34
+#define FIELD_COUNT 32
 #define MAX_ALIAS_SEQUENCE_LENGTH 14
 #define MAX_RESERVED_WORD_SET_SIZE 30
 #define PRODUCTION_ID_COUNT 161
@@ -1961,9 +1961,9 @@ enum ts_field_identifiers {
   field_condition = 9,
   field_constraint = 10,
   field_constraints = 11,
-  field_else_value = 12,
-  field_field = 13,
-  field_first = 14,
+  field_element = 12,
+  field_else_value = 13,
+  field_field = 14,
   field_guard = 15,
   field_index = 16,
   field_indexing = 17,
@@ -1976,14 +1976,12 @@ enum ts_field_identifiers {
   field_param = 24,
   field_pattern = 25,
   field_payload = 26,
-  field_rest = 27,
-  field_result = 28,
-  field_second = 29,
-  field_subject = 30,
-  field_then_value = 31,
-  field_type = 32,
-  field_type_var = 33,
-  field_value = 34,
+  field_result = 27,
+  field_subject = 28,
+  field_then_value = 29,
+  field_type = 30,
+  field_type_var = 31,
+  field_value = 32,
 };
 
 static const char * const ts_field_names[] = {
@@ -1999,9 +1997,9 @@ static const char * const ts_field_names[] = {
   [field_condition] = "condition",
   [field_constraint] = "constraint",
   [field_constraints] = "constraints",
+  [field_element] = "element",
   [field_else_value] = "else_value",
   [field_field] = "field",
-  [field_first] = "first",
   [field_guard] = "guard",
   [field_index] = "index",
   [field_indexing] = "indexing",
@@ -2014,9 +2012,7 @@ static const char * const ts_field_names[] = {
   [field_param] = "param",
   [field_pattern] = "pattern",
   [field_payload] = "payload",
-  [field_rest] = "rest",
   [field_result] = "result",
-  [field_second] = "second",
   [field_subject] = "subject",
   [field_then_value] = "then_value",
   [field_type] = "type",
@@ -2271,8 +2267,8 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_name, 2},
     {field_type, 4},
   [50] =
-    {field_first, 1},
-    {field_second, 3},
+    {field_element, 1},
+    {field_element, 3},
   [52] =
     {field_pattern, 0},
     {field_type, 2},
@@ -2315,14 +2311,14 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_methods, 6},
     {field_name, 2},
   [81] =
-    {field_rest, 1},
+    {field_element, 1},
   [82] =
-    {field_first, 1},
-    {field_rest, 4, .inherited = true},
-    {field_second, 3},
+    {field_element, 1},
+    {field_element, 3},
+    {field_element, 4, .inherited = true},
   [85] =
-    {field_rest, 0, .inherited = true},
-    {field_rest, 1, .inherited = true},
+    {field_element, 0, .inherited = true},
+    {field_element, 1, .inherited = true},
   [87] =
     {field_pattern, 0},
     {field_value, 2},
@@ -2543,8 +2539,8 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_type, 7},
     {field_type, 8},
   [264] =
-    {field_first, 3},
-    {field_second, 5},
+    {field_element, 3},
+    {field_element, 5},
   [266] =
     {field_pattern, 0},
     {field_type, 2},
@@ -2687,14 +2683,14 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_type, 7},
     {field_type, 8},
   [384] =
-    {field_first, 3},
-    {field_second, 6},
+    {field_element, 3},
+    {field_element, 6},
   [386] =
-    {field_rest, 2},
+    {field_element, 2},
   [387] =
-    {field_first, 3},
-    {field_rest, 6, .inherited = true},
-    {field_second, 5},
+    {field_element, 3},
+    {field_element, 5},
+    {field_element, 6, .inherited = true},
   [390] =
     {field_pattern, 0},
     {field_type, 2},
@@ -2820,9 +2816,9 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_methods, 10},
     {field_type, 2},
   [496] =
-    {field_first, 3},
-    {field_rest, 7, .inherited = true},
-    {field_second, 6},
+    {field_element, 3},
+    {field_element, 6},
+    {field_element, 7, .inherited = true},
   [499] =
     {field_value, 5},
     {field_value, 6},
