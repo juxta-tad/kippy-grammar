@@ -911,8 +911,11 @@ module.exports = grammar({
 				),
 				$.triple_quote,
 			),
-		char_literal: ($) =>
-			seq($.single_quote, choice($.escape_sequence, /[^'\\]/), $.single_quote),
+			char_literal: ($) =>
+		  token(choice(
+		    /'[^'\\]'/,
+		    /'\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])'/,
+		  )),
 
 		interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
 		interpolation_start: ($) => token(/\\\(/),
@@ -1000,7 +1003,7 @@ module.exports = grammar({
 
 		quote: () => '"',
 		triple_quote: () => token('"""'),
-		single_quote: () => "'",
+
 
 		comma: () => ",",
 		colon: () => ":",

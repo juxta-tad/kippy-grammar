@@ -6323,30 +6323,20 @@
       ]
     },
     "char_literal": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "single_quote"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "escape_sequence"
-            },
-            {
-              "type": "PATTERN",
-              "value": "[^'\\\\]"
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "single_quote"
-        }
-      ]
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "PATTERN",
+            "value": "'[^'\\\\]'"
+          },
+          {
+            "type": "PATTERN",
+            "value": "'\\\\(u\\([0-9A-Fa-f]{1,8}\\)|[\\\\'\"ntrbfv])'"
+          }
+        ]
+      }
     },
     "interpolation": {
       "type": "SEQ",
@@ -6797,10 +6787,6 @@
         "type": "STRING",
         "value": "\"\"\""
       }
-    },
-    "single_quote": {
-      "type": "STRING",
-      "value": "'"
     },
     "comma": {
       "type": "STRING",

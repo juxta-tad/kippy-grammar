@@ -949,25 +949,6 @@
     }
   },
   {
-    "type": "char_literal",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "escape_sequence",
-          "named": true
-        },
-        {
-          "type": "single_quote",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "compare_expression",
     "named": true,
     "fields": {},
@@ -3992,6 +3973,10 @@
     "extra": true
   },
   {
+    "type": "char_literal",
+    "named": true
+  },
+  {
     "type": "colon",
     "named": true
   },
@@ -4291,10 +4276,6 @@
   },
   {
     "type": "semicolon",
-    "named": true
-  },
-  {
-    "type": "single_quote",
     "named": true
   },
   {
