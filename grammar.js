@@ -488,10 +488,23 @@ module.exports = grammar({
 
 		...buildExpressionLadder("", "postfix_expression"),
 		...buildExpressionLadder("restricted_", "restricted_postfix_expression"),
+		...buildExpressionLadder("arm_", "arm_postfix_expression"),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────
+
+		arm_postfix_expression: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					$.inline_expression,
+					many($.postfix_suffix),
+					opt($.call_suffix),
+					many($.postfix_suffix),
+				),
+			),
+
 		postfix_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
@@ -666,7 +679,7 @@ module.exports = grammar({
 				field("pattern", $.pattern),
 				$.arrow,
 				choice(
-					seq(field("value", $.inline_expression), many1($.newline)),
+					seq(field("value", $.arm_inline_expression), many1($.newline)),
 					block($, field("value", $.expression)),
 				),
 			),
