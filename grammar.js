@@ -210,8 +210,8 @@ module.exports = grammar({
 			$.kw_if,
 			$.kw_then,
 			$.kw_else,
-			$.kw_when,
-			$.kw_is,
+			$.kw_match,
+			$.kw_to,
 			$.kw_in,
 			$.kw_where,
 			$.kw_with,
@@ -576,7 +576,7 @@ module.exports = grammar({
 
 		block_expression: ($) =>
 			choice(
-				$.when_expression,
+				$.match_expression,
 				$.if_expression,
 				$.lambda_expression,
 				$.let_expression,
@@ -647,15 +647,15 @@ module.exports = grammar({
 				),
 			)),
 
-		when_expression: ($) =>
+		match_expression: ($) =>
 			prec.right(seq(
-				$.kw_when,
+				$.kw_match,
 				field("subject", $.pipe_expression),
-				$.kw_is,
-				field("arms", block($, newlineSeparated1($, $.when_arm))),
+				$.kw_to,
+				field("arms", block($, newlineSeparated1($, $.match_arm))),
 			)),
 
-		when_arm: ($) =>
+		match_arm: ($) =>
 			seq(
 				field("pattern", $.pattern),
 				$.arrow,
@@ -972,8 +972,8 @@ module.exports = grammar({
 		kw_if: () => "if",
 		kw_then: () => "then",
 		kw_else: () => "else",
-		kw_when: () => "when",
-		kw_is: () => "is",
+		kw_match: () => "match",
+		kw_to: () => "is",
 		kw_in: () => "in",
 		kw_where: () => "where",
 		kw_with: () => "with",

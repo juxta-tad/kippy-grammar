@@ -690,7 +690,7 @@
           "named": true
         },
         {
-          "type": "when_expression",
+          "type": "match_expression",
           "named": true
         }
       ]
@@ -1732,6 +1732,106 @@
         },
         {
           "type": "semicolon",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_arm",
+    "named": true,
+    "fields": {
+      "pattern": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "pattern",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "arrow",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_expression",
+    "named": true,
+    "fields": {
+      "arms": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "match_arm",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      },
+      "subject": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "pipe_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_match",
+          "named": true
+        },
+        {
+          "type": "kw_to",
           "named": true
         }
       ]
@@ -3728,106 +3828,6 @@
     }
   },
   {
-    "type": "when_arm",
-    "named": true,
-    "fields": {
-      "pattern": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "pattern",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "expression",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "newline",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "arrow",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "when_expression",
-    "named": true,
-    "fields": {
-      "arms": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "newline",
-            "named": true
-          },
-          {
-            "type": "when_arm",
-            "named": true
-          }
-        ]
-      },
-      "subject": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "pipe_expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_is",
-          "named": true
-        },
-        {
-          "type": "kw_when",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "wildcard_pattern",
     "named": true,
     "fields": {},
@@ -3985,11 +3985,11 @@
     "named": true
   },
   {
-    "type": "kw_is",
+    "type": "kw_let",
     "named": true
   },
   {
-    "type": "kw_let",
+    "type": "kw_match",
     "named": true
   },
   {
@@ -4025,6 +4025,10 @@
     "named": true
   },
   {
+    "type": "kw_to",
+    "named": true
+  },
+  {
     "type": "kw_type",
     "named": true
   },
@@ -4034,10 +4038,6 @@
   },
   {
     "type": "kw_using",
-    "named": true
-  },
-  {
-    "type": "kw_when",
     "named": true
   },
   {
