@@ -428,12 +428,10 @@ module.exports = grammar({
 
 		implementation_method: ($) =>
 			seq(
-				attrPrefix($),
 				field("name", $.identifier),
-				opt(field("receiver", $.receiver_parameter)),
 				many(field("param", $.identifier)),
-				$.equals,
-				field("value", inlineOrBlock($, $.expression)),
+				$.fat_arrow,
+				field("body", inlineOrBlock($, $.expression)),
 			),
 
 		ability_declaration: ($) =>
@@ -459,7 +457,12 @@ module.exports = grammar({
 		binding_core: ($) =>
 			seq(
 				field("pattern", $.binding_pattern),
-				opt(seq($.colon, field("type", inlineOrBlock($, $.type_expression)))),
+				opt(
+					seq(
+						$.thick_arrow,
+						field("type", inlineOrBlock($, $.type_expression)),
+					),
+				),
 				$.equals,
 				field("value", inlineOrBlock($, $.expression)),
 			),
@@ -919,7 +922,11 @@ module.exports = grammar({
 		escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
 
 		static_string: ($) =>
-			seq($.quote, many(choice($.static_string_text, $.escape_sequence)), $.quote),
+			seq(
+				$.quote,
+				many(choice($.static_string_text, $.escape_sequence)),
+				$.quote,
+			),
 		static_string_text: ($) => token(/[^"\\\n]+/),
 
 		// ─────────────────────────────────────────────────────────────────────────
