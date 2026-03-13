@@ -666,7 +666,7 @@ module.exports = grammar({
 				field("pattern", $.pattern),
 				$.arrow,
 				choice(
-					seq(field("value", $.expression), many1($.newline)),
+					seq(field("value", $.inline_expression), many1($.newline)),
 					block($, field("value", $.expression)),
 				),
 			),
