@@ -647,7 +647,7 @@
           "named": true
         },
         {
-          "type": "lbrace_hash",
+          "type": "lbrace_paren",
           "named": true
         },
         {
@@ -3053,7 +3053,7 @@
           "named": true
         },
         {
-          "type": "lbrace_hash",
+          "type": "lbrace_paren",
           "named": true
         },
         {
@@ -3080,7 +3080,7 @@
       "required": true,
       "types": [
         {
-          "type": "lbrace_hash",
+          "type": "lbrace_paren",
           "named": true
         },
         {
@@ -3410,7 +3410,7 @@
           "named": true
         },
         {
-          "type": "lbrace_hash",
+          "type": "lbrace_paren",
           "named": true
         },
         {
@@ -4033,7 +4033,7 @@
     "named": true
   },
   {
-    "type": "lbrace_hash",
+    "type": "lbrace_paren",
     "named": true
   },
   {

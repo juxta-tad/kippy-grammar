@@ -1172,7 +1172,7 @@
                       "type": "SEQ",
                       "members": [
                         {
-                          "type": "REPEAT",
+                          "type": "REPEAT1",
                           "content": {
                             "type": "SYMBOL",
                             "name": "newline"
@@ -1350,7 +1350,7 @@
                       "type": "SEQ",
                       "members": [
                         {
-                          "type": "REPEAT",
+                          "type": "REPEAT1",
                           "content": {
                             "type": "SYMBOL",
                             "name": "newline"
@@ -3260,7 +3260,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_hash"
+              "name": "lbrace_paren"
             },
             {
               "type": "FIELD",
@@ -3325,7 +3325,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_hash"
+              "name": "lbrace_paren"
             },
             {
               "type": "SEQ",
@@ -4168,7 +4168,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_hash"
+              "name": "lbrace_paren"
             },
             {
               "type": "FIELD",
@@ -4233,7 +4233,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_hash"
+              "name": "lbrace_paren"
             },
             {
               "type": "SEQ",
@@ -4667,7 +4667,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "lbrace_hash"
+          "name": "lbrace_paren"
         },
         {
           "type": "SYMBOL",
@@ -5422,7 +5422,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_hash"
+              "name": "lbrace_paren"
             },
             {
               "type": "FIELD",
@@ -5487,7 +5487,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_hash"
+              "name": "lbrace_paren"
             },
             {
               "type": "SEQ",
@@ -6237,18 +6237,18 @@
       "type": "STRING",
       "value": "}"
     },
-    "lbrace_hash": {
+    "lbrace_paren": {
       "type": "TOKEN",
       "content": {
         "type": "STRING",
-        "value": "#{"
+        "value": "#("
       }
     },
     "lbracket_hash": {
       "type": "TOKEN",
       "content": {
         "type": "STRING",
-        "value": "#["
+        "value": "#map["
       }
     },
     "quote": {
