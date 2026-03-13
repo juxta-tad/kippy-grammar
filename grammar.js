@@ -30,10 +30,6 @@ function trailingSep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)), opt(separator));
 }
 
-function trailingSep(rule, separator) {
-	return opt(trailingSep1(rule, separator));
-}
-
 // --- Block & Layout Helpers (Your Compact Set) ---
 function block($, body) {
 	return seq($.newline, $.indent, body, many($.newline), $.dedent);
