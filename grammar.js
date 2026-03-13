@@ -911,13 +911,13 @@ module.exports = grammar({
 				),
 				$.triple_quote,
 			),
-			char_literal: $ =>
-		  token(
-		    choice(
-		      /'[^'\\]'/,
-		      /'\\(?:[nrt0\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})'/
-		    )
-		  ),
+		char_literal: ($) =>
+			token(
+				choice(
+					/'[^'\\]'/,
+					/'\\(?:[nrt0\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})'/,
+				),
+			),
 
 		interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
 		interpolation_start: ($) => token(/\\\(/),
@@ -1005,7 +1005,6 @@ module.exports = grammar({
 
 		quote: () => '"',
 		triple_quote: () => token('"""'),
-
 
 		comma: () => ",",
 		colon: () => ":",
