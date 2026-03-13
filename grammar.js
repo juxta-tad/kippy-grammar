@@ -667,7 +667,7 @@ module.exports = grammar({
 		lambda_expression: ($) =>
 			prec.right(seq(
 				$.kw_fn,
-				sep1(field("param", $.identifier), $.comma),
+				sep1(field("param", $.binding_pattern), $.comma),
 				$.fat_arrow,
 				field("body", softBody($, $.expression)),
 			)),
@@ -697,6 +697,7 @@ module.exports = grammar({
 				$.binding_tuple_pattern,
 				$.binding_record_pattern,
 			),
+
 		or_pattern: ($) => prec.left(sep1($.as_pattern, $.pipe_bar)),
 
 		as_pattern: ($) =>

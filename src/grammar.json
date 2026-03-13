@@ -4240,7 +4240,7 @@
                 "name": "param",
                 "content": {
                   "type": "SYMBOL",
-                  "name": "identifier"
+                  "name": "binding_pattern"
                 }
               },
               {
@@ -4257,7 +4257,7 @@
                       "name": "param",
                       "content": {
                         "type": "SYMBOL",
-                        "name": "identifier"
+                        "name": "binding_pattern"
                       }
                     }
                   ]

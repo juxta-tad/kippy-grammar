@@ -1607,7 +1607,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "binding_pattern",
             "named": true
           }
         ]
