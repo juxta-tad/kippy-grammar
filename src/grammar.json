@@ -1494,7 +1494,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "fat_arrow"
+                  "name": "colon"
                 },
                 {
                   "type": "FIELD",

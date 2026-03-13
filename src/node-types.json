@@ -458,11 +458,11 @@
       "required": true,
       "types": [
         {
-          "type": "equals",
+          "type": "colon",
           "named": true
         },
         {
-          "type": "fat_arrow",
+          "type": "equals",
           "named": true
         }
       ]
