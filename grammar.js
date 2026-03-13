@@ -484,6 +484,7 @@ module.exports = grammar({
 		// 3.8: EXPRESSION HIERARCHY
 		// ─────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
+		arm_inline_expression: ($) => $.arm_pipe_expression,
 		call_argument: ($) => $["restricted_pipe_expression"],
 
 		...buildExpressionLadder("", "postfix_expression"),
