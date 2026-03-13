@@ -32,7 +32,7 @@ function trailingSep1(rule, separator) {
 
 // --- Block & Layout Helpers (Your Compact Set) ---
 function block($, body) {
-	return seq($.newline, $.indent, body, $.dedent);
+	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
 
 function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
@@ -669,7 +669,13 @@ module.exports = grammar({
 				$.kw_fn,
 				sep1(field("param", $.identifier), $.comma),
 				$.fat_arrow,
-				field("body", softBody($, $.expression)),
+				field(
+					"body",
+					choice(
+						$.expression,
+						seq($.newline, $.indent, $.expression, many($.newline), $.dedent),
+					),
+				),
 			)),
 
 		if_expression: ($) =>
