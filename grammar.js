@@ -26,10 +26,6 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-function sep(rule, separator) {
-	return opt(sep1(rule, separator));
-}
-
 function trailingSep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)), opt(separator));
 }
@@ -51,16 +47,8 @@ function newlineSeparated1($, rule) {
 	return seq(rule, many(seq(many1($.newline), rule)));
 }
 
-function newlineSeparated($, rule) {
-	return opt(newlineSeparated1($, rule));
-}
-
 function layoutSeparated1($, rule) {
 	return seq(rule, many(seq(many1($.newline), rule)));
-}
-
-function layoutItems1($, rule) {
-	return seq(rule, many(seq(many($.newline), rule)));
 }
 
 function blockSeparated1($, rule, separator) {
@@ -117,10 +105,6 @@ function attrPrefix($) {
 
 function visibility_modifier($) {
 	return opt($.kw_pub);
-}
-
-function dotted1($, head, tail) {
-	return seq(head, many(seq($.dot, tail)));
 }
 
 // --- Expression Ladder Generator ---
@@ -271,10 +255,10 @@ module.exports = grammar({
 		module_item: ($) =>
 			choice(
 				$.use_statement,
-				$.documented_declaration,
+				$.declaration_item,
 			),
 
-		documented_declaration: ($) =>
+		declaration_item: ($) =>
 			choice(
 				$.type_declaration,
 				$.signature,
@@ -356,7 +340,7 @@ module.exports = grammar({
 		type_variant_payload: ($) =>
 			seq(
 				$.lparen,
-				opt(trailingSep1($.type_expression_no_comma, $.comma)),
+				opt(trailingSep1($.type_expression, $.comma)),
 				$.rparen,
 			),
 
@@ -390,7 +374,6 @@ module.exports = grammar({
 			seq(
 				attrPrefix($),
 				visibility_modifier($),
-				opt($.kw_pub),
 				$.kw_let,
 				$.binding_core,
 			),
@@ -522,22 +505,13 @@ module.exports = grammar({
 				PREC.POSTFIX,
 				seq(
 					$.primary_expression,
-					many($.restricted_postfix_suffix),
+					many($.postfix_suffix),
 					opt($.call_suffix),
-					many($.restricted_postfix_suffix),
+					many($.postfix_suffix),
 				),
 			),
 
 		postfix_suffix: ($) =>
-			choice(
-				field("indexing", $.index_suffix),
-				$.method_suffix,
-				$.qualified_method_suffix,
-				$.try_op,
-				seq($.possessive, field("field", $.field_name)),
-			),
-
-		restricted_postfix_suffix: ($) =>
 			choice(
 				field("indexing", $.index_suffix),
 				$.method_suffix,
@@ -835,10 +809,10 @@ module.exports = grammar({
 		// 3.13: TYPE SYSTEM
 		// ─────────────────────────────────────────────────────────────────────────
 		type_expression: ($) => choice($.non_arrow_type, $.variadic_type),
-		type_expression_no_comma: ($) => choice($.non_arrow_type, $.variadic_type),
+
 
 		function_type_parameters: ($) =>
-			trailingSep1(field("param", $.type_expression_no_comma), $.comma),
+			trailingSep1(field("param", $.type_expression), $.comma),
 
 		variadic_type: ($) => seq($.ellipsis, field("item", $.non_arrow_type)),
 		ellipsis: ($) => token(prec(1, "...")),
@@ -884,12 +858,12 @@ module.exports = grammar({
 		type_argument_list: ($) =>
 			seq(
 				$.lparen,
-				opt(trailingSep1($.type_expression_no_comma, $.comma)),
+				opt(trailingSep1($.type_expression, $.comma)),
 				$.rparen,
 			),
 
 		record_type_field: ($) =>
-			seq($.field_name, $.colon, inlineOrBlock($, $.type_expression_no_comma)),
+			seq($.field_name, $.colon, inlineOrBlock($, $.type_expression)),
 		type_record: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
 		type_tuple: ($) =>

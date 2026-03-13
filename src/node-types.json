@@ -1067,37 +1067,7 @@
     }
   },
   {
-    "type": "derives_clause",
-    "named": true,
-    "fields": {
-      "ability": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "non_arrow_type",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "comma",
-          "named": true
-        },
-        {
-          "type": "kw_derives",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "documented_declaration",
+    "type": "declaration_item",
     "named": true,
     "fields": {},
     "children": {
@@ -1130,6 +1100,36 @@
         },
         {
           "type": "type_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "derives_clause",
+    "named": true,
+    "fields": {
+      "ability": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "non_arrow_type",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "kw_derives",
           "named": true
         }
       ]
@@ -1239,7 +1239,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_expression_no_comma",
+            "type": "type_expression",
             "named": true
           }
         ]
@@ -2117,7 +2117,7 @@
       "required": true,
       "types": [
         {
-          "type": "documented_declaration",
+          "type": "declaration_item",
           "named": true
         },
         {
@@ -2743,7 +2743,7 @@
           "named": true
         },
         {
-          "type": "type_expression_no_comma",
+          "type": "type_expression",
           "named": true
         }
       ]
@@ -2934,59 +2934,11 @@
           "named": true
         },
         {
+          "type": "postfix_suffix",
+          "named": true
+        },
+        {
           "type": "primary_expression",
-          "named": true
-        },
-        {
-          "type": "restricted_postfix_suffix",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "restricted_postfix_suffix",
-    "named": true,
-    "fields": {
-      "field": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "field_name",
-            "named": true
-          }
-        ]
-      },
-      "indexing": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "index_suffix",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "method_suffix",
-          "named": true
-        },
-        {
-          "type": "possessive",
-          "named": true
-        },
-        {
-          "type": "qualified_method_suffix",
-          "named": true
-        },
-        {
-          "type": "try_op",
           "named": true
         }
       ]
@@ -3473,7 +3425,7 @@
           "named": true
         },
         {
-          "type": "type_expression_no_comma",
+          "type": "type_expression",
           "named": true
         }
       ]
@@ -3545,25 +3497,6 @@
   },
   {
     "type": "type_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "non_arrow_type",
-          "named": true
-        },
-        {
-          "type": "variadic_type",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "type_expression_no_comma",
     "named": true,
     "fields": {},
     "children": {
@@ -3866,7 +3799,7 @@
           "named": true
         },
         {
-          "type": "type_expression_no_comma",
+          "type": "type_expression",
           "named": true
         }
       ]

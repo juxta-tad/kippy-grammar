@@ -67,11 +67,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "documented_declaration"
+          "name": "declaration_item"
         }
       ]
     },
-    "documented_declaration": {
+    "declaration_item": {
       "type": "CHOICE",
       "members": [
         {
@@ -721,7 +721,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "type_expression_no_comma"
+                  "name": "type_expression"
                 },
                 {
                   "type": "REPEAT",
@@ -734,7 +734,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "type_expression_no_comma"
+                        "name": "type_expression"
                       }
                     ]
                   }
@@ -1002,18 +1002,6 @@
               }
             ]
           }
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "kw_pub"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
         },
         {
           "type": "CHOICE",
@@ -2586,7 +2574,7 @@
             "type": "REPEAT",
             "content": {
               "type": "SYMBOL",
-              "name": "restricted_postfix_suffix"
+              "name": "postfix_suffix"
             }
           },
           {
@@ -2605,55 +2593,13 @@
             "type": "REPEAT",
             "content": {
               "type": "SYMBOL",
-              "name": "restricted_postfix_suffix"
+              "name": "postfix_suffix"
             }
           }
         ]
       }
     },
     "postfix_suffix": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "indexing",
-          "content": {
-            "type": "SYMBOL",
-            "name": "index_suffix"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "method_suffix"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "qualified_method_suffix"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "try_op"
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "possessive"
-            },
-            {
-              "type": "FIELD",
-              "name": "field",
-              "content": {
-                "type": "SYMBOL",
-                "name": "field_name"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "restricted_postfix_suffix": {
       "type": "CHOICE",
       "members": [
         {
@@ -5297,19 +5243,6 @@
         }
       ]
     },
-    "type_expression_no_comma": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "non_arrow_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "variadic_type"
-        }
-      ]
-    },
     "function_type_parameters": {
       "type": "SEQ",
       "members": [
@@ -5318,7 +5251,7 @@
           "name": "param",
           "content": {
             "type": "SYMBOL",
-            "name": "type_expression_no_comma"
+            "name": "type_expression"
           }
         },
         {
@@ -5335,7 +5268,7 @@
                 "name": "param",
                 "content": {
                   "type": "SYMBOL",
-                  "name": "type_expression_no_comma"
+                  "name": "type_expression"
                 }
               }
             ]
@@ -5605,7 +5538,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "type_expression_no_comma"
+                  "name": "type_expression"
                 },
                 {
                   "type": "REPEAT",
@@ -5618,7 +5551,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "type_expression_no_comma"
+                        "name": "type_expression"
                       }
                     ]
                   }
@@ -5664,7 +5597,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "type_expression_no_comma"
+              "name": "type_expression"
             },
             {
               "type": "SEQ",
@@ -5679,7 +5612,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "type_expression_no_comma"
+                  "name": "type_expression"
                 },
                 {
                   "type": "REPEAT",
