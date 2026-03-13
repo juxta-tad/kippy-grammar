@@ -866,7 +866,7 @@
           "named": true
         },
         {
-          "type": "lbrace_paren",
+          "type": "lparen_hash",
           "named": true
         },
         {
@@ -3388,7 +3388,7 @@
           "named": true
         },
         {
-          "type": "lbrace_paren",
+          "type": "lparen_hash",
           "named": true
         },
         {
@@ -3415,7 +3415,7 @@
       "required": true,
       "types": [
         {
-          "type": "lbrace_paren",
+          "type": "lparen_hash",
           "named": true
         },
         {
@@ -3749,7 +3749,7 @@
           "named": true
         },
         {
-          "type": "lbrace_paren",
+          "type": "lparen_hash",
           "named": true
         },
         {
@@ -4272,10 +4272,6 @@
     "named": true
   },
   {
-    "type": "lbrace_paren",
-    "named": true
-  },
-  {
     "type": "lbracket",
     "named": true
   },
@@ -4294,6 +4290,10 @@
   },
   {
     "type": "lparen",
+    "named": true
+  },
+  {
+    "type": "lparen_hash",
     "named": true
   },
   {

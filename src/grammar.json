@@ -3677,7 +3677,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_paren"
+              "name": "lparen_hash"
             },
             {
               "type": "FIELD",
@@ -3742,7 +3742,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_paren"
+              "name": "lparen_hash"
             },
             {
               "type": "SEQ",
@@ -4617,7 +4617,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_paren"
+              "name": "lparen_hash"
             },
             {
               "type": "FIELD",
@@ -4682,7 +4682,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_paren"
+              "name": "lparen_hash"
             },
             {
               "type": "SEQ",
@@ -5116,7 +5116,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "lbrace_paren"
+          "name": "lparen_hash"
         },
         {
           "type": "SYMBOL",
@@ -5871,7 +5871,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_paren"
+              "name": "lparen_hash"
             },
             {
               "type": "FIELD",
@@ -5936,7 +5936,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "lbrace_paren"
+              "name": "lparen_hash"
             },
             {
               "type": "SEQ",
@@ -6686,7 +6686,7 @@
       "type": "STRING",
       "value": "}"
     },
-    "lbrace_paren": {
+    "lparen_hash": {
       "type": "TOKEN",
       "content": {
         "type": "STRING",

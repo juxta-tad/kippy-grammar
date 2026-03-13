@@ -636,7 +636,7 @@ module.exports = grammar({
 		field_name: ($) => reserved("global", $.identifier),
 
 		tuple_expression: ($) =>
-			tuple($, $.lbrace_paren, $.rbrace, $.expression, $.semicolon),
+			tuple($, $.lparen_hash, $.rbrace, $.expression, $.semicolon),
 
 		parenthesized_expression: ($) =>
 			seq(
@@ -758,7 +758,7 @@ module.exports = grammar({
 			),
 
 		binding_tuple_pattern: ($) =>
-			tuple($, $.lbrace_paren, $.rbrace, $.binding_pattern, $.semicolon),
+			tuple($, $.lparen_hash, $.rbrace, $.binding_pattern, $.semicolon),
 
 		binding_record_pattern: ($) =>
 			seq(
@@ -808,7 +808,7 @@ module.exports = grammar({
 
 		tuple_pattern: ($) =>
 			seq(
-				$.lbrace_paren,
+				$.lparen_hash,
 				$.pattern,
 				$.semicolon,
 				trailingSep($.pattern, $.semicolon),
@@ -893,7 +893,7 @@ module.exports = grammar({
 		type_record: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
 		type_tuple: ($) =>
-			tuple($, $.lbrace_paren, $.rbrace, $.non_arrow_type, $.semicolon),
+			tuple($, $.lparen_hash, $.rbrace, $.non_arrow_type, $.semicolon),
 		type_wildcard: ($) => $.wildcard,
 		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 
@@ -1029,7 +1029,7 @@ module.exports = grammar({
 		rbracket: () => "]",
 		lbrace: () => "{",
 		rbrace: () => "}",
-		lbrace_paren: () => token("#("),
+		lparen_hash: () => token("#("),
 		lbracket_hash: () => token("#map["),
 
 		quote: () => '"',
