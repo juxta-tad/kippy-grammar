@@ -55,6 +55,10 @@ function newlineSeparated($, rule) {
 	return opt(newlineSeparated1($, rule));
 }
 
+function layoutSeparated1($, rule) {
+	return seq(rule, many(seq(many($.newline), rule)));
+}
+
 function blockSeparated1($, rule, separator) {
 	return seq(
 		rule,
@@ -418,7 +422,7 @@ module.exports = grammar({
 				field("ability", $.type_name),
 				field(
 					"methods",
-					block($, newlineSeparated1($, $.implementation_method)),
+					block($, layoutSeparated1($, $.implementation_method)),
 				),
 			),
 
@@ -438,7 +442,7 @@ module.exports = grammar({
 				$.kw_ability,
 				field("name", $.type_name),
 				opt($.type_parameter_list),
-				field("methods", block($, newlineSeparated1($, $.annotation))),
+				field("methods", block($, layoutSeparated1($, $.annotation))),
 			),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -482,6 +486,8 @@ module.exports = grammar({
 				seq(
 					$.primary_expression,
 					many($.postfix_suffix),
+					opt($.call_suffix),
+					many($.postfix_suffix),
 				),
 			),
 
@@ -491,12 +497,13 @@ module.exports = grammar({
 				seq(
 					$.primary_expression,
 					many($.restricted_postfix_suffix),
+					opt($.call_suffix),
+					many($.restricted_postfix_suffix),
 				),
 			),
 
 		postfix_suffix: ($) =>
 			choice(
-				field("arguments", $.call_suffix),
 				field("indexing", $.index_suffix),
 				$.method_suffix,
 				$.qualified_method_suffix,
@@ -527,9 +534,7 @@ module.exports = grammar({
 		call_suffix: ($) =>
 			choice(
 				// Inline
-				prec.right(
-					seq($.kw_with, trailingSep1(field("arg", $.call_argument), $.comma)),
-				),
+				prec.right(seq($.kw_with, field("arg", $.call_argument))),
 				// Block
 				seq(
 					$.kw_with,

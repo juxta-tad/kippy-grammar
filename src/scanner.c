@@ -192,17 +192,14 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
 
     // 3. Layout decisions strictly bound to line beginnings (Column 0)
     if (lexer->get_column(lexer) == 0) {
-        uint16_t indent = 0;
-
-        // Scan leading spaces/tabs into a local indent value
-        while (is_hspace(lexer->lookahead)) {
-            skip(lexer); // Ignored syntactically
+        // Consume indentation as part of the scanner's traversal
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            advance(lexer);   // NOT skip(lexer)
         }
 
-        indent = lexer->get_column(lexer);
+        uint16_t indent = lexer->get_column(lexer);
         if (indent > MAX_INDENT_COLUMN) indent = MAX_INDENT_COLUMN;
 
-        // If the next char is a newline (or EOF hit), treat it as a blank line
         if (is_newline(lexer->lookahead) || lexer->eof(lexer)) {
             if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
                 if (lexer->lookahead == '\r') advance(lexer);
@@ -211,29 +208,32 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
                 DEBUG_LOG("[EMIT]        | TOKEN | BLANK_LINE_NEWLINE\n");
                 return true;
             }
-            // Do not compute indentation stack changes for blank lines
             return false;
         }
 
-        // Compare indentation with the stack to emit INDENT/DEDENT
         uint16_t previous_indent = s->indents[s->indent_count - 1];
 
         if (valid_symbols[DEDENT] && indent < previous_indent) {
             uint16_t pop_count = 0;
-            // Eagerly pop until indent rules are satisfied, counting required DEDENT tokens
             while (s->indent_count > 1 && s->indents[s->indent_count - 1] > indent) {
                 s->indent_count--;
                 pop_count++;
             }
 
+            if (s->indents[s->indent_count - 1] != indent) {
+                return false;
+            }
+
             if (pop_count > 0) {
-                s->pending_dedents = pop_count - 1; // Save remaining for subsequent calls
+                s->pending_dedents = pop_count - 1;
                 s->emitted_dedents++;
                 lexer->result_symbol = DEDENT;
                 DEBUG_LOG("[EMIT]        | TOKEN | DEDENT (pending: %u)\n", s->pending_dedents);
                 return true;
             }
         }
+
+        previous_indent = s->indents[s->indent_count - 1];
 
         if (valid_symbols[INDENT] && indent > previous_indent) {
             if (s->indent_count <= MAX_INDENT_DEPTH) {
