@@ -1207,52 +1207,12 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "attribute"
-              },
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "newline"
-                  },
-                  {
-                    "type": "BLANK"
-                  }
-                ]
-              }
-            ]
-          }
-        },
-        {
           "type": "FIELD",
           "name": "name",
           "content": {
             "type": "SYMBOL",
             "name": "identifier"
           }
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "receiver",
-              "content": {
-                "type": "SYMBOL",
-                "name": "receiver_parameter"
-              }
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
         },
         {
           "type": "REPEAT",
@@ -1267,11 +1227,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "equals"
+          "name": "fat_arrow"
         },
         {
           "type": "FIELD",
-          "name": "value",
+          "name": "body",
           "content": {
             "type": "CHOICE",
             "members": [
@@ -1534,7 +1494,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "colon"
+                  "name": "fat_arrow"
                 },
                 {
                   "type": "FIELD",
@@ -2982,7 +2942,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "thick_arrow"
+          "name": "fat_arrow"
         },
         {
           "type": "FIELD",
@@ -3786,7 +3746,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "thick_arrow"
+            "name": "fat_arrow"
           },
           {
             "type": "FIELD",
@@ -6420,7 +6380,7 @@
       "type": "STRING",
       "value": "->"
     },
-    "thick_arrow": {
+    "fat_arrow": {
       "type": "STRING",
       "value": "=>"
     },

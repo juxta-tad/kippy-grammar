@@ -459,7 +459,7 @@ module.exports = grammar({
 				field("pattern", $.binding_pattern),
 				opt(
 					seq(
-						$.thick_arrow,
+						$.fat_arrow,
 						field("type", inlineOrBlock($, $.type_expression)),
 					),
 				),
@@ -587,7 +587,7 @@ module.exports = grammar({
 		map_entry: ($) =>
 			seq(
 				field("key", $.expression),
-				$.thick_arrow,
+				$.fat_arrow,
 				field("value", inlineOrBlock($, $.expression)),
 			),
 
@@ -655,7 +655,7 @@ module.exports = grammar({
 			prec.right(seq(
 				$.kw_fn,
 				sep1(field("param", $.identifier), $.comma),
-				$.thick_arrow,
+				$.fat_arrow,
 				field("body", inlineOrBlock($, $.expression)),
 			)),
 
@@ -1028,7 +1028,7 @@ module.exports = grammar({
 		gt_op: () => ">",
 
 		arrow: () => "->",
-		thick_arrow: () => "=>",
+		fat_arrow: () => "=>",
 		try_op: () => "?",
 		possessive: () => token.immediate("'s"),
 	},
