@@ -228,6 +228,221 @@
     }
   },
   {
+    "type": "arm_add_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_mul_expression",
+          "named": true
+        },
+        {
+          "type": "minus",
+          "named": true
+        },
+        {
+          "type": "plus",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_and_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "and_op",
+          "named": true
+        },
+        {
+          "type": "arm_compare_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_compare_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_add_expression",
+          "named": true
+        },
+        {
+          "type": "eq_op",
+          "named": true
+        },
+        {
+          "type": "ge_op",
+          "named": true
+        },
+        {
+          "type": "gt_op",
+          "named": true
+        },
+        {
+          "type": "le_op",
+          "named": true
+        },
+        {
+          "type": "lt_op",
+          "named": true
+        },
+        {
+          "type": "ne_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_inline_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_pipe_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_mul_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_unary_expression",
+          "named": true
+        },
+        {
+          "type": "percent",
+          "named": true
+        },
+        {
+          "type": "slash",
+          "named": true
+        },
+        {
+          "type": "star",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_or_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_and_expression",
+          "named": true
+        },
+        {
+          "type": "or_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_pipe_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_or_expression",
+          "named": true
+        },
+        {
+          "type": "pipe",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_postfix_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "call_suffix",
+          "named": true
+        },
+        {
+          "type": "inline_expression",
+          "named": true
+        },
+        {
+          "type": "postfix_suffix",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arm_unary_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arm_postfix_expression",
+          "named": true
+        },
+        {
+          "type": "arm_unary_expression",
+          "named": true
+        },
+        {
+          "type": "kw_cert",
+          "named": true
+        },
+        {
+          "type": "kw_not",
+          "named": true
+        },
+        {
+          "type": "minus",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "as_pattern",
     "named": true,
     "fields": {
@@ -1752,34 +1967,38 @@
         ]
       },
       "value": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "dedent",
+            "type": "arm_inline_expression",
             "named": true
           },
           {
             "type": "expression",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
-            "type": "newline",
             "named": true
           }
         ]
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "arrow",
+          "named": true
+        },
+        {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -1794,19 +2013,7 @@
         "required": true,
         "types": [
           {
-            "type": "dedent",
-            "named": true
-          },
-          {
-            "type": "indent",
-            "named": true
-          },
-          {
             "type": "match_arm",
-            "named": true
-          },
-          {
-            "type": "newline",
             "named": true
           }
         ]
@@ -1827,11 +2034,23 @@
       "required": true,
       "types": [
         {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
           "type": "kw_match",
           "named": true
         },
         {
           "type": "kw_to",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]

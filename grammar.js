@@ -672,7 +672,10 @@ module.exports = grammar({
 				$.kw_match,
 				field("subject", $.pipe_expression),
 				$.kw_to,
-				field("arms", block($, layoutItems1($, $.match_arm))),
+				$.newline,
+				$.indent,
+				field("arms", repeat1($.match_arm)),
+				$.dedent,
 			)),
 
 		match_arm: ($) =>
@@ -681,7 +684,7 @@ module.exports = grammar({
 				$.arrow,
 				choice(
 					seq(field("value", $.arm_inline_expression), many1($.newline)),
-					block($, field("value", $.expression)),
+					seq(block($, field("value", $.expression)), many($.newline)),
 				),
 			),
 
