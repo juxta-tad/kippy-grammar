@@ -454,13 +454,13 @@ module.exports = grammar({
 				field("body", block($, $.expression)),
 			),
 
-			binding_core: ($) =>
-				seq(
-					field("pattern", $.binding_pattern),
-					opt(seq($.colon, field("type", inlineOrBlock($, $.type_expression)))),
-					$.equals,
-					field("value", inlineOrBlock($, $.expression)),
-				),
+		binding_core: ($) =>
+			seq(
+				field("pattern", $.binding_pattern),
+				opt(seq($.colon, field("type", inlineOrBlock($, $.type_expression)))),
+				$.equals,
+				field("value", inlineOrBlock($, $.expression)),
+			),
 
 		binding_name: ($) => reserved("global", $.identifier),
 
