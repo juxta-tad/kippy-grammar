@@ -43,7 +43,7 @@ function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
 	return choice(inlineRule, block($, blockRule));
 }
 
-function newlineSeparated1($, rule) {
+function layoutSeparated1($, rule) {
 	return seq(rule, many(seq(many1($.newline), rule)));
 }
 
@@ -89,7 +89,9 @@ function tuple($, open, close, item, sepToken) {
 					field("element", item),
 					seq(opt(sepToken), many1($.newline)),
 					field("element", item),
-					many(seq(seq(opt(sepToken), many1($.newline)), field("element", item))),
+					many(
+						seq(seq(opt(sepToken), many1($.newline)), field("element", item)),
+					),
 					opt(sepToken),
 				),
 			),
@@ -328,7 +330,7 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		type_variant_block: ($) => block($, newlineSeparated1($, $.type_variant)),
+		type_variant_block: ($) => block($, layoutSeparated1($, $.type_variant)),
 
 		type_variant: ($) =>
 			seq(
@@ -425,6 +427,7 @@ module.exports = grammar({
 		implementation_method: ($) =>
 			seq(
 				field("name", $.identifier),
+				opt(field("receiver", $.receiver_parameter)),
 				many(field("param", $.identifier)),
 				$.fat_arrow,
 				field("body", inlineOrBlock($, $.expression)),
@@ -803,7 +806,6 @@ module.exports = grammar({
 		// 3.13: TYPE SYSTEM
 		// ─────────────────────────────────────────────────────────────────────────
 		type_expression: ($) => choice($.type_term, $.variadic_type),
-
 
 		function_type_parameters: ($) =>
 			trailingSep1(field("param", $.type_expression), $.comma),
