@@ -47,10 +47,6 @@ function layoutSeparated1($, rule) {
 	return seq(rule, many(seq(many1($.newline), rule)));
 }
 
-function layoutSeparated1($, rule) {
-	return seq(rule, many(seq(many1($.newline), rule)));
-}
-
 function blockSeparated1($, rule, separator) {
 	return seq(
 		rule,
