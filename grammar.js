@@ -39,6 +39,14 @@ function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
 	return choice(inlineRule, block($, blockRule));
 }
 
+function softBody($, inlineRule, blockRule = inlineRule) {
+	return choice(
+		inlineRule,
+		block($, blockRule),
+		seq(many1($.newline), $.parenthesized_expression),
+	);
+}
+
 function layoutSeparated1($, rule) {
 	return seq(rule, many(seq(many1($.newline), rule)));
 }
@@ -422,7 +430,7 @@ module.exports = grammar({
 				opt(field("receiver", $.receiver_parameter)),
 				many(field("param", $.identifier)),
 				$.fat_arrow,
-				field("body", inlineOrBlock($, $.expression)),
+				field("body", softBody($, $.expression)),
 			),
 
 		ability_declaration: ($) =>
@@ -451,7 +459,7 @@ module.exports = grammar({
 				field("pattern", $.binding_pattern),
 				opt(seq($.colon, field("type", inlineOrBlock($, $.type_expression)))),
 				$.equals,
-				field("value", inlineOrBlock($, $.expression)),
+				field("value", softBody($, $.expression)),
 			),
 
 		binding_name: ($) => reserved("global", $.identifier),
@@ -627,13 +635,7 @@ module.exports = grammar({
 				many(seq(many1($.newline), $.binding_core)),
 				opt(many1($.newline)),
 				$.kw_in,
-				field(
-					"value",
-					choice(
-						seq(many($.newline), $.expression),
-						block($, $.expression),
-					),
-				),
+				field("value", softBody($, $.expression)),
 			)),
 
 		match_expression: ($) =>
@@ -662,7 +664,7 @@ module.exports = grammar({
 				$.kw_fn,
 				sep1(field("param", $.identifier), $.comma),
 				$.fat_arrow,
-				field("body", inlineOrBlock($, $.expression)),
+				field("body", softBody($, $.expression)),
 			)),
 
 		if_expression: ($) =>
@@ -670,9 +672,9 @@ module.exports = grammar({
 				$.kw_if,
 				field("condition", $.expression),
 				$.kw_then,
-				field("then_value", inlineOrBlock($, $.expression)),
+				field("then_value", softBody($, $.expression)),
 				$.kw_else,
-				field("else_value", inlineOrBlock($, $.expression)),
+				field("else_value", softBody($, $.expression)),
 			)),
 
 		// ─────────────────────────────────────────────────────────────────────────
