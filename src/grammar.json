@@ -6248,7 +6248,7 @@
     },
     "kw_to": {
       "type": "STRING",
-      "value": "is"
+      "value": "to"
     },
     "kw_in": {
       "type": "STRING",
