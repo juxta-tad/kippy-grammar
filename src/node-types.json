@@ -1595,6 +1595,10 @@
           {
             "type": "newline",
             "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
           }
         ]
       },

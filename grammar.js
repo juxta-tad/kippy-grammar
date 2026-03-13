@@ -669,13 +669,7 @@ module.exports = grammar({
 				$.kw_fn,
 				sep1(field("param", $.identifier), $.comma),
 				$.fat_arrow,
-				field(
-					"body",
-					choice(
-						$.expression,
-						seq($.newline, $.indent, $.expression, many($.newline), $.dedent),
-					),
-				),
+				field("body", softBody($, $.expression)),
 			)),
 
 		if_expression: ($) =>
