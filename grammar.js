@@ -255,10 +255,10 @@ module.exports = grammar({
 		module_item: ($) =>
 			choice(
 				$.use_statement,
-				$.declaration_item,
+				$.declaration,
 			),
 
-		declaration_item: ($) =>
+		declaration: ($) =>
 			choice(
 				$.type_declaration,
 				$.signature,
@@ -308,7 +308,7 @@ module.exports = grammar({
 		derives_clause: ($) =>
 			seq(
 				$.kw_derives,
-				trailingSep1(field("ability", $.non_arrow_type), $.comma),
+				trailingSep1(field("ability", $.type_term), $.comma),
 			),
 		variant_type_value: ($) => prec(2, $.type_variant_block),
 
@@ -413,7 +413,7 @@ module.exports = grammar({
 				attrPrefix($),
 				visibility_modifier($),
 				$.kw_extend,
-				field("type", $.non_arrow_type),
+				field("type", $.type_term),
 				$.kw_with,
 				field("ability", $.type_name),
 				field(
@@ -781,13 +781,7 @@ module.exports = grammar({
 		rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
 
 		tuple_pattern: ($) =>
-			seq(
-				$.lparen_hash,
-				$.pattern,
-				$.semicolon,
-				trailingSep($.pattern, $.semicolon),
-				$.rparen,
-			),
+			tuple($, $.lparen_hash, $.rparen, $.pattern, $.semicolon),
 
 		record_pattern: ($) =>
 			seq(
@@ -808,13 +802,13 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.13: TYPE SYSTEM
 		// ─────────────────────────────────────────────────────────────────────────
-		type_expression: ($) => choice($.non_arrow_type, $.variadic_type),
+		type_expression: ($) => choice($.type_term, $.variadic_type),
 
 
 		function_type_parameters: ($) =>
 			trailingSep1(field("param", $.type_expression), $.comma),
 
-		variadic_type: ($) => seq($.ellipsis, field("item", $.non_arrow_type)),
+		variadic_type: ($) => seq($.ellipsis, field("item", $.type_term)),
 		ellipsis: ($) => token(prec(1, "...")),
 		rest_op: ($) => "..",
 
@@ -823,10 +817,10 @@ module.exports = grammar({
 				$.kw_where,
 				field("type_var", $.identifier),
 				$.colon,
-				field("constraint", $.non_arrow_type),
+				field("constraint", $.type_term),
 			),
 
-		non_arrow_type: ($) =>
+		type_term: ($) =>
 			choice($.function_type, $.type_primary, $.type_tuple, $.type_record),
 
 		function_type: ($) =>
@@ -867,7 +861,7 @@ module.exports = grammar({
 		type_record: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
 		type_tuple: ($) =>
-			tuple($, $.lparen_hash, $.rparen, $.non_arrow_type, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.type_term, $.semicolon),
 		type_wildcard: ($) => $.wildcard,
 		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 

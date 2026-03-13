@@ -1015,7 +1015,7 @@
         "required": true,
         "types": [
           {
-            "type": "non_arrow_type",
+            "type": "type_term",
             "named": true
           }
         ]
@@ -1047,7 +1047,7 @@
     }
   },
   {
-    "type": "declaration_item",
+    "type": "declaration",
     "named": true,
     "fields": {},
     "children": {
@@ -1094,7 +1094,7 @@
         "required": true,
         "types": [
           {
-            "type": "non_arrow_type",
+            "type": "type_term",
             "named": true
           }
         ]
@@ -1355,7 +1355,7 @@
         "required": true,
         "types": [
           {
-            "type": "non_arrow_type",
+            "type": "type_term",
             "named": true
           }
         ]
@@ -2097,7 +2097,7 @@
       "required": true,
       "types": [
         {
-          "type": "declaration_item",
+          "type": "declaration",
           "named": true
         },
         {
@@ -2183,33 +2183,6 @@
         },
         {
           "type": "tag_name",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "non_arrow_type",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "function_type",
-          "named": true
-        },
-        {
-          "type": "type_primary",
-          "named": true
-        },
-        {
-          "type": "type_record",
-          "named": true
-        },
-        {
-          "type": "type_tuple",
           "named": true
         }
       ]
@@ -3321,17 +3294,36 @@
   {
     "type": "tuple_pattern",
     "named": true,
-    "fields": {},
+    "fields": {
+      "element": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "pattern",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
           "type": "lparen_hash",
           "named": true
         },
         {
-          "type": "pattern",
+          "type": "newline",
           "named": true
         },
         {
@@ -3464,7 +3456,7 @@
       "required": true,
       "types": [
         {
-          "type": "non_arrow_type",
+          "type": "type_term",
           "named": true
         },
         {
@@ -3595,6 +3587,33 @@
     }
   },
   {
+    "type": "type_term",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "function_type",
+          "named": true
+        },
+        {
+          "type": "type_primary",
+          "named": true
+        },
+        {
+          "type": "type_record",
+          "named": true
+        },
+        {
+          "type": "type_tuple",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "type_tuple",
     "named": true,
     "fields": {
@@ -3603,7 +3622,7 @@
         "required": true,
         "types": [
           {
-            "type": "non_arrow_type",
+            "type": "type_term",
             "named": true
           }
         ]
@@ -3887,7 +3906,7 @@
         "required": true,
         "types": [
           {
-            "type": "non_arrow_type",
+            "type": "type_term",
             "named": true
           }
         ]
