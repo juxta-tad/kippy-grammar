@@ -32,7 +32,7 @@ function trailingSep1(rule, separator) {
 
 // --- Block & Layout Helpers (Your Compact Set) ---
 function block($, body) {
-	return seq($.newline, $.indent, body, many($.newline), $.dedent);
+	return seq($.newline, $.indent, body, $.dedent);
 }
 
 function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
