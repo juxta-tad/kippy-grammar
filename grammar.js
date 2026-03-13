@@ -632,14 +632,13 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 
 		let_expression: ($) =>
-			prec.right(seq(
-				$.kw_let,
-				field("first", $.binding_core),
-				many(seq(many1($.newline), field("rest", $.binding_core))),
-				optional(repeat1($.newline)),
-				$.kw_in,
-				field("value", $.expression),
-			)),
+	  prec.right(seq(
+	    $.kw_let,
+	    field("first", $.binding_core),
+	    many(seq(many1($.newline), field("rest", $.binding_core))),
+	    $.kw_in,
+	    field("value", $.expression),
+	  )),
 
 		when_expression: ($) =>
 			prec.right(seq(
