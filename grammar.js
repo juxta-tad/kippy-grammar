@@ -638,7 +638,13 @@ module.exports = grammar({
 				many(seq(many1($.newline), $.binding_core)),
 				opt(many1($.newline)),
 				$.kw_in,
-				field("value", inlineOrBlock($, $.expression)),
+				field(
+					"value",
+					choice(
+						seq(many($.newline), $.expression),
+						block($, $.expression),
+					),
+				),
 			)),
 
 		when_expression: ($) =>
