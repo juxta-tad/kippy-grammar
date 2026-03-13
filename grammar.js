@@ -618,9 +618,14 @@ module.exports = grammar({
 		parenthesized_expression: ($) =>
 			seq(
 				$.lparen,
-				many($.newline),
-				field("value", $.expression),
-				many($.newline),
+				choice(
+					seq(
+						many($.newline),
+						field("value", $.expression),
+						many($.newline),
+					),
+					block($, field("value", $.expression)),
+				),
 				$.rparen,
 			),
 
