@@ -3586,12 +3586,8 @@
             "name": "kw_let"
           },
           {
-            "type": "FIELD",
-            "name": "first",
-            "content": {
-              "type": "SYMBOL",
-              "name": "binding_core"
-            }
+            "type": "SYMBOL",
+            "name": "binding_core"
           },
           {
             "type": "REPEAT",
@@ -3606,12 +3602,8 @@
                   }
                 },
                 {
-                  "type": "FIELD",
-                  "name": "rest",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "binding_core"
-                  }
+                  "type": "SYMBOL",
+                  "name": "binding_core"
                 }
               ]
             }
@@ -3620,16 +3612,11 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "REPEAT1",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  }
-                ]
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "newline"
+                }
               },
               {
                 "type": "BLANK"
@@ -3644,8 +3631,41 @@
             "type": "FIELD",
             "name": "value",
             "content": {
-              "type": "SYMBOL",
-              "name": "expression"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "expression"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "indent"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "expression"
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "newline"
+                      }
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "dedent"
+                    }
+                  ]
+                }
+              ]
             }
           }
         ]

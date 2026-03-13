@@ -634,11 +634,11 @@ module.exports = grammar({
 		let_expression: ($) =>
 			prec.right(seq(
 				$.kw_let,
-				field("first", $.binding_core),
-				many(seq(many1($.newline), field("rest", $.binding_core))),
-				opt(seq(many1($.newline))),
+				$.binding_core,
+				many(seq(many1($.newline), $.binding_core)),
+				opt(many1($.newline)),
 				$.kw_in,
-				field("value", $.expression),
+				field("value", inlineOrBlock($, $.expression)),
 			)),
 
 		when_expression: ($) =>
