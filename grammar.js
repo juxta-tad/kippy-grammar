@@ -636,7 +636,7 @@ module.exports = grammar({
 		field_name: ($) => reserved("global", $.identifier),
 
 		tuple_expression: ($) =>
-			tuple($, $.lparen_hash, $.rbrace, $.expression, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.expression, $.semicolon),
 
 		parenthesized_expression: ($) =>
 			seq(
@@ -758,7 +758,7 @@ module.exports = grammar({
 			),
 
 		binding_tuple_pattern: ($) =>
-			tuple($, $.lparen_hash, $.rbrace, $.binding_pattern, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.binding_pattern, $.semicolon),
 
 		binding_record_pattern: ($) =>
 			seq(
@@ -812,7 +812,7 @@ module.exports = grammar({
 				$.pattern,
 				$.semicolon,
 				trailingSep($.pattern, $.semicolon),
-				$.rbrace,
+				$.rparen,
 			),
 
 		record_pattern: ($) =>
@@ -893,7 +893,7 @@ module.exports = grammar({
 		type_record: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
 		type_tuple: ($) =>
-			tuple($, $.lparen_hash, $.rbrace, $.non_arrow_type, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.non_arrow_type, $.semicolon),
 		type_wildcard: ($) => $.wildcard,
 		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 

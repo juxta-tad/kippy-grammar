@@ -874,7 +874,7 @@
           "named": true
         },
         {
-          "type": "rbrace",
+          "type": "rparen",
           "named": true
         },
         {
@@ -3396,7 +3396,7 @@
           "named": true
         },
         {
-          "type": "rbrace",
+          "type": "rparen",
           "named": true
         },
         {
@@ -3423,7 +3423,7 @@
           "named": true
         },
         {
-          "type": "rbrace",
+          "type": "rparen",
           "named": true
         },
         {
@@ -3757,7 +3757,7 @@
           "named": true
         },
         {
-          "type": "rbrace",
+          "type": "rparen",
           "named": true
         },
         {

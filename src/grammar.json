@@ -3733,7 +3733,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "rbrace"
+              "name": "rparen"
             }
           ]
         },
@@ -3867,7 +3867,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "rbrace"
+              "name": "rparen"
             }
           ]
         }
@@ -4673,7 +4673,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "rbrace"
+              "name": "rparen"
             }
           ]
         },
@@ -4807,7 +4807,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "rbrace"
+              "name": "rparen"
             }
           ]
         }
@@ -5173,7 +5173,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "rbrace"
+          "name": "rparen"
         }
       ]
     },
@@ -5927,7 +5927,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "rbrace"
+              "name": "rparen"
             }
           ]
         },
@@ -6061,7 +6061,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "rbrace"
+              "name": "rparen"
             }
           ]
         }
