@@ -590,7 +590,7 @@ module.exports = grammar({
 			seq(
 				field("key", $.expression),
 				$.fat_arrow,
-				field("value", inlineOrBlock($, $.expression)),
+				field("value", softBody($, $.expression)),
 			),
 
 		record_expression: ($) => $.record_body,
@@ -605,7 +605,7 @@ module.exports = grammar({
 				seq(
 					field("name", $.field_name),
 					$.equals,
-					field("value", inlineOrBlock($, $.expression)),
+					field("value", softBody($, $.expression)),
 				),
 				$.spread_element,
 			),
