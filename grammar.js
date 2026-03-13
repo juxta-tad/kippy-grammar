@@ -59,6 +59,10 @@ function layoutSeparated1($, rule) {
 	return seq(rule, many(seq(many1($.newline), rule)));
 }
 
+function layoutItems1($, rule) {
+	return seq(rule, many(seq(many($.newline), rule)));
+}
+
 function blockSeparated1($, rule, separator) {
 	return seq(
 		rule,
@@ -542,7 +546,9 @@ module.exports = grammar({
 		call_suffix: ($) =>
 			choice(
 				// Inline
-				prec.right(seq($.kw_with, field("arg", $.call_argument))),
+				prec.right(
+					seq($.kw_with, sep1(field("arg", $.call_argument), $.comma)),
+				),
 				// Block
 				seq(
 					$.kw_with,
@@ -652,14 +658,17 @@ module.exports = grammar({
 				$.kw_match,
 				field("subject", $.pipe_expression),
 				$.kw_to,
-				field("arms", block($, newlineSeparated1($, $.match_arm))),
+				field("arms", block($, layoutItems1($, $.match_arm))),
 			)),
 
 		match_arm: ($) =>
 			seq(
 				field("pattern", $.pattern),
 				$.arrow,
-				field("value", inlineOrBlock($, $.expression)),
+				choice(
+					seq(field("value", $.expression), many1($.newline)),
+					block($, field("value", $.expression)),
+				),
 			),
 
 		lambda_expression: ($) =>
