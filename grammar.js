@@ -428,6 +428,7 @@ module.exports = grammar({
 			seq(
 				field("name", $.identifier),
 				$.equals,
+				opt(many1($.newline)),
 				$.kw_fn,
 				$.kw_self,
 				opt(seq($.comma, sep1(field("param", $.identifier), $.comma))),

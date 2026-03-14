@@ -1455,6 +1455,10 @@
         {
           "type": "kw_self",
           "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
         }
       ]
     }
