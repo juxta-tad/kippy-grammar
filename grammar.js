@@ -343,7 +343,10 @@ module.exports = grammar({
 		derives_clause: ($) =>
 			seq(
 				$.kw_derives,
-				looseSeparated1($, field("ability", $.type_term), $.comma),
+				choice(
+					sep1(field("ability", $.type_term), $.comma),
+					block($, layoutList1($, field("ability", $.type_term))),
+				),
 			),
 		variant_type_value: ($) => prec(2, $.type_variant_block),
 

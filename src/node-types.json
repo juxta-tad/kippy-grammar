@@ -607,6 +607,10 @@
           "named": true
         },
         {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "rparen",
           "named": true
         }
@@ -1094,7 +1098,19 @@
           "named": true
         },
         {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
           "type": "kw_derives",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -1216,6 +1232,10 @@
       "types": [
         {
           "type": "comma",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -1736,14 +1756,6 @@
       "required": true,
       "types": [
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
           "type": "lbracket",
           "named": true
         },
@@ -1930,14 +1942,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
         {
           "type": "lbracket_hash",
           "named": true
@@ -2522,14 +2526,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
         {
           "type": "lbrace",
           "named": true
@@ -3208,6 +3204,10 @@
           "named": true
         },
         {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "pattern",
           "named": true
         },
@@ -3414,6 +3414,10 @@
           "named": true
         },
         {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "rparen",
           "named": true
         },
@@ -3543,6 +3547,10 @@
           "named": true
         },
         {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "rparen",
           "named": true
         },
@@ -3596,14 +3604,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
         {
           "type": "lbrace",
           "named": true
@@ -3795,6 +3795,10 @@
           "named": true
         },
         {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "rparen",
           "named": true
         },
@@ -3900,15 +3904,7 @@
           "named": true
         },
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
           "type": "import_name",
-          "named": true
-        },
-        {
-          "type": "indent",
           "named": true
         },
         {
