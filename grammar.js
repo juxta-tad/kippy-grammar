@@ -460,17 +460,11 @@ module.exports = grammar({
 				),
 			),
 
-		implementation_method: ($) =>
-			seq(
-				field("name", $.identifier),
-				$.equals,
-				opt(many1($.newline)),
-				$.kw_fn,
-				field("receiver", $.receiver_parameter),
-				opt(seq($.comma, sep1(field("param", $.binding_pattern), $.comma))),
-				$.fat_arrow,
-				field("body", softBody($, $.expression)),
-			),
+			method_parameter_list: ($) =>
+				choice(
+					sep1(field("param", $.binding_pattern), $.comma),
+					block($, looseSeparated1($, field("param", $.binding_pattern), $.comma)),
+				),
 
 		ability_declaration: ($) =>
 			seq(
