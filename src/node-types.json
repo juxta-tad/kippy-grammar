@@ -936,7 +936,7 @@
     "fields": {
       "name": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "field_name",
@@ -946,7 +946,7 @@
       },
       "value": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "dedent",
@@ -977,10 +977,6 @@
       "types": [
         {
           "type": "left_arrow",
-          "named": true
-        },
-        {
-          "type": "spread_element",
           "named": true
         }
       ]

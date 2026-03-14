@@ -659,8 +659,7 @@ module.exports = grammar({
 					field("name", $.field_name),
 					$.left_arrow,
 					field("value", softBody($, $.expression)),
-				),
-				$.spread_element,
+				)
 			),
 
 		field_name: ($) => reserved("global", $.identifier),

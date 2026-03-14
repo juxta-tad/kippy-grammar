@@ -3888,10 +3888,6 @@
               }
             }
           ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "spread_element"
         }
       ]
     },
