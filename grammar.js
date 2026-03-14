@@ -639,8 +639,8 @@ module.exports = grammar({
 		record_body: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_field, $.semicolon),
 
-	builder_body: ($) =>
-		collection($, $.lbrace, $.rbrace, $.builder_field, $.semicolon),
+		builder_body: ($) =>
+			collection($, $.lbrace, $.rbrace, $.builder_field, $.semicolon),
 
 		// Allow spread natively as a valid "field" inside records instead of complicating helpers
 		record_field: ($) =>
@@ -653,15 +653,15 @@ module.exports = grammar({
 				$.spread_element,
 			),
 
-	builder_field: ($) =>
-		choice(
-			seq(
-				field("name", $.field_name),
-				$.left_arrow,
-				field("value", softBody($, $.expression)),
+		builder_field: ($) =>
+			choice(
+				seq(
+					field("name", $.field_name),
+					$.left_arrow,
+					field("value", softBody($, $.expression)),
+				),
+				$.spread_element,
 			),
-			$.spread_element,
-		),
 
 		field_name: ($) => reserved("global", $.identifier),
 
