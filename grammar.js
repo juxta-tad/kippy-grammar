@@ -460,12 +460,19 @@ module.exports = grammar({
 				),
 			),
 
-			method_parameter_list: ($) =>
-				choice(
-					sep1(field("param", $.binding_pattern), $.comma),
-					block($, looseSeparated1($, field("param", $.binding_pattern), $.comma)),
+			implementation_method: ($) =>
+				seq(
+					field("name", $.identifier),
+					opt(field("parameters", $.method_parameter_list)),
+					$.fat_arrow,
+					field("body", softBody($, $.expression)),
 				),
 
+				method_parameter_list: ($) =>
+					choice(
+						sep1(field("param", $.binding_pattern), $.comma),
+						block($, looseSeparated1($, field("param", $.binding_pattern), $.comma)),
+					),
 		ability_declaration: ($) =>
 			seq(
 				attrPrefix($),
@@ -726,13 +733,16 @@ module.exports = grammar({
 				),
 			),
 
-		lambda_expression: ($) =>
-			prec.right(seq(
-				$.kw_fn,
-				sep1(field("param", $.binding_pattern), $.comma),
-				$.fat_arrow,
-				field("body", softBody($, $.expression)),
-			)),
+			lambda_expression: ($) =>
+  prec.right(seq(
+    $.kw_fn,
+    choice(
+      sep1(field("param", $.binding_pattern), $.comma),
+      block($, layoutList1($, field("param", $.binding_pattern)))
+    ),
+    $.fat_arrow,
+    field("body", softBody($, $.expression)),
+  )),
 
 		if_expression: ($) =>
 			prec.right(seq(
