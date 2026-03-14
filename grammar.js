@@ -742,28 +742,32 @@ module.exports = grammar({
 
 		// Binding-safe destructuring patterns (for let-bindings, excludes literals/or-patterns)
 		binding_list_pattern: ($) =>
-	seq(
-		$.lbracket,
-		separatedWithOptionalRest($.binding_pattern, $.semicolon, $.rest_pattern),
-		$.rbracket,
-	),
+			seq(
+				$.lbracket,
+				separatedWithOptionalRest(
+					$.binding_pattern,
+					$.semicolon,
+					$.rest_pattern,
+				),
+				$.rbracket,
+			),
 
 		binding_tuple_pattern: ($) =>
 			tuple($, $.lparen_hash, $.rparen, $.binding_pattern, $.semicolon),
 
 		binding_record_pattern: ($) =>
-	seq(
-		$.lbrace,
-		separatedWithOptionalRest(
-			$.binding_record_pattern_field,
-			$.semicolon,
-			$.rest_op,
-		),
-		$.rbrace,
-	),
+			seq(
+				$.lbrace,
+				separatedWithOptionalRest(
+					$.binding_record_pattern_field,
+					$.semicolon,
+					$.rest_op,
+				),
+				$.rbrace,
+			),
 
 		binding_record_pattern_field: ($) =>
-	fieldPattern($.field_name, $.colon, $.binding_pattern),
+			fieldPattern($.field_name, $.colon, $.binding_pattern),
 
 		simple_tag_argument_pattern: ($) =>
 			choice($.literal, $.wildcard_pattern, $.identifier),
@@ -778,11 +782,11 @@ module.exports = grammar({
 			),
 
 		list_pattern: ($) =>
-	seq(
-		$.lbracket,
-		separatedWithOptionalRest($.pattern, $.semicolon, $.rest_pattern),
-		$.rbracket,
-	),
+			seq(
+				$.lbracket,
+				separatedWithOptionalRest($.pattern, $.semicolon, $.rest_pattern),
+				$.rbracket,
+			),
 
 		rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
 
@@ -790,14 +794,17 @@ module.exports = grammar({
 			tuple($, $.lparen_hash, $.rparen, $.pattern, $.semicolon),
 
 		record_pattern: ($) =>
-	seq(
-		$.lbrace,
-		separatedWithOptionalRest($.record_pattern_field, $.semicolon, $.rest_op),
-		$.rbrace,
-	),
+			seq(
+				$.lbrace,
+				separatedWithOptionalRest(
+					$.record_pattern_field,
+					$.semicolon,
+					$.rest_op,
+				),
+				$.rbrace,
+			),
 
-		record_pattern_field: ($) =>
-	fieldPattern($.field_name, $.colon, $.pattern),
+		record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.13: TYPE SYSTEM
