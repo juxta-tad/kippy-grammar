@@ -2924,71 +2924,22 @@
                   {
                     "type": "REPEAT",
                     "content": {
-                      "type": "CHOICE",
+                      "type": "SEQ",
                       "members": [
                         {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "comma"
-                            },
-                            {
-                              "type": "FIELD",
-                              "name": "arg",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "call_argument"
-                              }
-                            }
-                          ]
+                          "type": "SYMBOL",
+                          "name": "comma"
                         },
                         {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "CHOICE",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "comma"
-                                },
-                                {
-                                  "type": "BLANK"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "REPEAT1",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "newline"
-                              }
-                            },
-                            {
-                              "type": "FIELD",
-                              "name": "arg",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "call_argument"
-                              }
-                            }
-                          ]
+                          "type": "FIELD",
+                          "name": "arg",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "call_argument"
+                          }
                         }
                       ]
                     }
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "comma"
-                      },
-                      {
-                        "type": "BLANK"
-                      }
-                    ]
                   }
                 ]
               },

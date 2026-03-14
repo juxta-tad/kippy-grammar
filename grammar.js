@@ -574,7 +574,13 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_with,
-					inlineOrBlock($, looseSeparated1($, field("arg", $.call_argument), $.comma)),
+					choice(
+						sep1(field("arg", $.call_argument), $.comma),
+						block(
+							$,
+							looseSeparated1($, field("arg", $.call_argument), $.comma),
+						),
+					),
 				),
 			),
 
