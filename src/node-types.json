@@ -900,6 +900,93 @@
     }
   },
   {
+    "type": "builder_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "builder_field",
+          "named": true
+        },
+        {
+          "type": "lbrace",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rbrace",
+          "named": true
+        },
+        {
+          "type": "semicolon",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "builder_field",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "field_name",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "left_arrow",
+          "named": true
+        },
+        {
+          "type": "spread_element",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "call_argument",
     "named": true,
     "fields": {},
@@ -2569,11 +2656,11 @@
       "required": true,
       "types": [
         {
-          "type": "kw_build",
+          "type": "builder_body",
           "named": true
         },
         {
-          "type": "record_body",
+          "type": "kw_build",
           "named": true
         }
       ]
@@ -4214,6 +4301,10 @@
   },
   {
     "type": "le_op",
+    "named": true
+  },
+  {
+    "type": "left_arrow",
     "named": true
   },
   {
