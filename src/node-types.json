@@ -1385,9 +1385,45 @@
     "type": "implementation_method",
     "named": true,
     "fields": {
+      "body": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "dedent",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "param": {
+        "multiple": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -1401,11 +1437,23 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "equals",
           "named": true
         },
         {
-          "type": "lambda_expression",
+          "type": "fat_arrow",
+          "named": true
+        },
+        {
+          "type": "kw_fn",
+          "named": true
+        },
+        {
+          "type": "kw_self",
           "named": true
         }
       ]

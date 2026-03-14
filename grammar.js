@@ -425,7 +425,15 @@ module.exports = grammar({
 			),
 
 		implementation_method: ($) =>
-			seq(field("name", $.identifier), $.equals, $.lambda_expression),
+			seq(
+				field("name", $.identifier),
+				$.equals,
+				$.kw_fn,
+				$.kw_self,
+				opt(seq($.comma, sep1(field("param", $.identifier), $.comma))),
+				$.fat_arrow,
+				field("body", softBody($, $.expression)),
+			),
 
 		ability_declaration: ($) =>
 			seq(
