@@ -694,13 +694,21 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 
 		let_expression: ($) =>
-			prec.right(seq(
-				$.kw_let,
-				$.binding_core,
-				many(seq(many1($.newline), $.binding_core)),
-				opt(many1($.newline)),
-				$.kw_in,
-				field("value", softBody($, $.expression)),
+			prec.right(choice(
+				seq(
+					$.kw_let,
+					$.binding_core,
+					many(seq(many1($.newline), $.binding_core)),
+					opt(many1($.newline)),
+					$.kw_in,
+					field("value", softBody($, $.expression)),
+				),
+				seq(
+					$.kw_let,
+					block($, layoutList1($, $.binding_core)),
+					$.kw_in,
+					field("value", softBody($, $.expression)),
+				),
 			)),
 
 		match_expression: ($) =>
