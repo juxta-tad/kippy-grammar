@@ -7036,7 +7036,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "name"
+                "name": "identifier"
               },
               {
                 "type": "SYMBOL",

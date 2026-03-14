@@ -510,7 +510,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
 
-	arm_inline_expression: ($) => $.arm_pipe_expression,
+		arm_inline_expression: ($) => $.arm_pipe_expression,
 		call_argument: ($) => $["restricted_pipe_expression"],
 
 		...buildExpressionLadder("", "postfix_expression"),
@@ -600,15 +600,15 @@ module.exports = grammar({
 			),
 
 		constructed_record_expression: ($) =>
-		seq(
-			field("constructor", $.type_name),
-			field("body", $.record_body),
-		),
+			seq(
+				field("constructor", $.type_name),
+				field("body", $.record_body),
+			),
 
-	inline_expression: ($) =>
+		inline_expression: ($) =>
 			choice(
 				$.constructed_record_expression,
-			$.record_builder,
+				$.record_builder,
 				$.literal,
 				$.long_identifier,
 				$.placeholder,
@@ -667,7 +667,7 @@ module.exports = grammar({
 					field("name", $.field_name),
 					$.left_arrow,
 					field("value", softBody($, $.expression)),
-				)
+				),
 			),
 
 		field_name: ($) => reserved("global", $.identifier),
@@ -1004,7 +1004,7 @@ module.exports = grammar({
 		value_name: ($) => choice($.identifier, $.kw_self),
 		long_identifier: ($) =>
 			prec.left(
-				seq(choice($.name, $.kw_self), many(seq($.module_sep, $.name))),
+				seq(choice($.identifier, $.kw_self), many(seq($.module_sep, $.name))),
 			),
 		placeholder: ($) => token("__"),
 		wildcard: ($) => "_",

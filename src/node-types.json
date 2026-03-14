@@ -1119,6 +1119,32 @@
     }
   },
   {
+    "type": "constructed_record_expression",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "record_body",
+            "named": true
+          }
+        ]
+      },
+      "constructor": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "declaration",
     "named": true,
     "fields": {},
@@ -1624,6 +1650,10 @@
       "required": true,
       "types": [
         {
+          "type": "constructed_record_expression",
+          "named": true
+        },
+        {
           "type": "list_expression",
           "named": true
         },
@@ -1950,6 +1980,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
         {
           "type": "kw_self",
           "named": true
