@@ -26,11 +26,7 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-function trailingSep1(rule, separator) {
-	return seq(rule, many(seq(separator, rule)), opt(separator));
-}
-
-// --- Block & Layout Helpers (Your Compact Set) ---
+// --- Block & Layout Helpers ---
 function block($, body) {
 	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
@@ -39,37 +35,57 @@ function inlineOrBlock($, inlineRule, blockRule = inlineRule) {
 	return choice(inlineRule, block($, blockRule));
 }
 
-function softBody($, inlineRule, blockRule = inlineRule) {
+function body($, inlineRule, blockRule = inlineRule) {
 	return choice(
 		inlineRule,
 		block($, blockRule),
+	);
+}
+
+function softBody($, inlineRule, blockRule = inlineRule) {
+	return choice(
+		body($, inlineRule, blockRule),
 		seq(many1($.newline), $.parenthesized_expression),
 	);
 }
 
-function layoutSeparated1($, rule) {
-	return seq(rule, many(seq(many1($.newline), rule)));
-}
-
-function blockSeparated1($, rule, separator) {
+// --- Loose List Forms ---
+function looseSeparated1($, rule, separator) {
 	return seq(
 		rule,
-		many(seq(seq(opt(separator), many1($.newline)), rule)),
+		many(choice(
+			seq(separator, rule),
+			seq(opt(separator), many1($.newline), rule),
+		)),
 		opt(separator),
 	);
 }
 
-function blockSeparated($, rule, separator) {
-	return opt(blockSeparated1($, rule, separator));
+function looseSeparated($, rule, separator) {
+	return opt(looseSeparated1($, rule, separator));
 }
 
-function collection($, open, close, item, sepToken) {
-	return choice(
-		seq(open, opt(trailingSep1(item, sepToken)), close),
-		seq(open, block($, blockSeparated($, item, sepToken)), close),
+function layoutList1($, rule) {
+	return seq(
+		rule,
+		many(seq(many1($.newline), rule)),
 	);
 }
 
+// --- Unified Delimited Collections ---
+function collection($, open, close, item, separator) {
+	return seq(
+		open,
+		opt(seq(
+			many($.newline),
+			looseSeparated1($, item, separator),
+			many($.newline),
+		)),
+		close,
+	);
+}
+
+// --- Specific Construct Helpers ---
 function separatedWithOptionalRest(item, separator, rest) {
 	return opt(choice(
 		seq(
@@ -327,7 +343,7 @@ module.exports = grammar({
 		derives_clause: ($) =>
 			seq(
 				$.kw_derives,
-				trailingSep1(field("ability", $.type_term), $.comma),
+				looseSeparated1($, field("ability", $.type_term), $.comma),
 			),
 		variant_type_value: ($) => prec(2, $.type_variant_block),
 
@@ -343,11 +359,11 @@ module.exports = grammar({
 		type_parameter_list: ($) =>
 			seq(
 				$.lparen,
-				opt(trailingSep1($.type_variable, $.comma)),
+				looseSeparated($, $.type_variable, $.comma),
 				$.rparen,
 			),
 
-		type_variant_block: ($) => block($, layoutSeparated1($, $.type_variant)),
+		type_variant_block: ($) => block($, layoutList1($, $.type_variant)),
 
 		type_variant: ($) =>
 			seq(
@@ -359,7 +375,7 @@ module.exports = grammar({
 		type_variant_payload: ($) =>
 			seq(
 				$.lparen,
-				opt(trailingSep1($.type_expression, $.comma)),
+				looseSeparated($, $.type_expression, $.comma),
 				$.rparen,
 			),
 
@@ -410,7 +426,7 @@ module.exports = grammar({
 		attribute_arguments_inline: ($) =>
 			seq(
 				$.lparen,
-				opt(trailingSep1($.attribute_argument, $.comma)),
+				looseSeparated($, $.attribute_argument, $.comma),
 				$.rparen,
 			),
 
@@ -437,7 +453,7 @@ module.exports = grammar({
 				field("ability", $.type_name),
 				field(
 					"methods",
-					block($, layoutSeparated1($, $.implementation_method)),
+					block($, layoutList1($, $.implementation_method)),
 				),
 			),
 
@@ -460,7 +476,7 @@ module.exports = grammar({
 				$.kw_ability,
 				field("name", $.type_name),
 				opt($.type_parameter_list),
-				field("methods", block($, layoutSeparated1($, $.annotation))),
+				field("methods", block($, layoutList1($, $.annotation))),
 			),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -555,15 +571,10 @@ module.exports = grammar({
 			),
 
 		call_suffix: ($) =>
-			choice(
-				// Inline
-				prec.right(
-					seq($.kw_with, sep1(field("arg", $.call_argument), $.comma)),
-				),
-				// Block
+			prec.right(
 				seq(
 					$.kw_with,
-					block($, blockSeparated1($, field("arg", $.call_argument), $.comma)),
+					inlineOrBlock($, looseSeparated1($, field("arg", $.call_argument), $.comma)),
 				),
 			),
 
@@ -776,7 +787,7 @@ module.exports = grammar({
 			seq(
 				$.tag_name,
 				opt(choice(
-					seq($.lparen, trailingSep1($.pattern, $.comma), $.rparen),
+					seq($.lparen, looseSeparated1($, $.pattern, $.comma), $.rparen),
 					$.simple_tag_argument_pattern,
 				)),
 			),
@@ -812,7 +823,7 @@ module.exports = grammar({
 		type_expression: ($) => choice($.type_term, $.variadic_type),
 
 		function_type_parameters: ($) =>
-			trailingSep1(field("param", $.type_expression), $.comma),
+			looseSeparated1($, field("param", $.type_expression), $.comma),
 
 		variadic_type: ($) => seq($.ellipsis, field("item", $.type_term)),
 		ellipsis: ($) => token(prec(1, "...")),
@@ -858,7 +869,7 @@ module.exports = grammar({
 		type_argument_list: ($) =>
 			seq(
 				$.lparen,
-				opt(trailingSep1($.type_expression, $.comma)),
+				looseSeparated($, $.type_expression, $.comma),
 				$.rparen,
 			),
 
