@@ -509,7 +509,8 @@ module.exports = grammar({
 		// 3.8: EXPRESSION HIERARCHY
 		// ─────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
-		arm_inline_expression: ($) => $.arm_pipe_expression,
+
+	arm_inline_expression: ($) => $.arm_pipe_expression,
 		call_argument: ($) => $["restricted_pipe_expression"],
 
 		...buildExpressionLadder("", "postfix_expression"),
@@ -598,9 +599,16 @@ module.exports = grammar({
 				$.block_expression,
 			),
 
-		inline_expression: ($) =>
+		constructed_record_expression: ($) =>
+		seq(
+			field("constructor", $.type_name),
+			field("body", $.record_body),
+		),
+
+	inline_expression: ($) =>
 			choice(
-				$.record_builder,
+				$.constructed_record_expression,
+			$.record_builder,
 				$.literal,
 				$.long_identifier,
 				$.placeholder,
