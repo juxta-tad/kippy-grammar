@@ -623,6 +623,8 @@ module.exports = grammar({
 			),
 
 		record_expression: ($) => $.record_body,
+
+		//for applicative/product composition.
 		record_builder: ($) =>
 			seq($.kw_build, field("builder", $.long_identifier), $.builder_body),
 		record_body: ($) =>
