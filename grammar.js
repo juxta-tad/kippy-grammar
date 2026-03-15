@@ -70,11 +70,16 @@ function softPaddedBody($, inlineRule, blockRule = inlineRule) {
 }
 
 function fileBody($, header, item) {
+	const items = sep1(item, many1($.newline));
 	return seq(
 		many($.newline),
-		opt(seq(header, many1($.newline))),
-		opt(sep1(item, many1($.newline))),
-		many($.newline),
+		opt(seq(
+			choice(
+				seq(header, opt(seq(many1($.newline), items))),
+				items
+			),
+			many($.newline)
+		))
 	);
 }
 
