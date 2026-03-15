@@ -459,7 +459,7 @@
                         "type": "SEQ",
                         "members": [
                           {
-                            "type": "REPEAT",
+                            "type": "REPEAT1",
                             "content": {
                               "type": "SYMBOL",
                               "name": "newline"
@@ -695,7 +695,7 @@
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "REPEAT",
+                    "type": "REPEAT1",
                     "content": {
                       "type": "SYMBOL",
                       "name": "newline"
@@ -1386,7 +1386,7 @@
                       "type": "SEQ",
                       "members": [
                         {
-                          "type": "REPEAT",
+                          "type": "REPEAT1",
                           "content": {
                             "type": "SYMBOL",
                             "name": "newline"
@@ -1746,7 +1746,7 @@
                       "type": "SEQ",
                       "members": [
                         {
-                          "type": "REPEAT",
+                          "type": "REPEAT1",
                           "content": {
                             "type": "SYMBOL",
                             "name": "newline"
@@ -4370,7 +4370,7 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "REPEAT",
+                              "type": "REPEAT1",
                               "content": {
                                 "type": "SYMBOL",
                                 "name": "newline"
@@ -4418,7 +4418,7 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "REPEAT",
+                              "type": "REPEAT1",
                               "content": {
                                 "type": "SYMBOL",
                                 "name": "newline"
@@ -4563,7 +4563,7 @@
                       "type": "SEQ",
                       "members": [
                         {
-                          "type": "REPEAT",
+                          "type": "REPEAT1",
                           "content": {
                             "type": "SYMBOL",
                             "name": "newline"
@@ -4751,7 +4751,7 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "REPEAT",
+                              "type": "REPEAT1",
                               "content": {
                                 "type": "SYMBOL",
                                 "name": "newline"
