@@ -17,54 +17,124 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
+              "type": "CHOICE",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "module_declaration"
-                },
-                {
-                  "type": "REPEAT1",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "newline"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "module_item"
-                },
-                {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "REPEAT1",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "newline"
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "module_declaration"
+                    },
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "REPEAT1",
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "newline"
+                              }
+                            },
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SEQ",
+                                      "members": [
+                                        {
+                                          "type": "SYMBOL",
+                                          "name": "module_item"
+                                        },
+                                        {
+                                          "type": "REPEAT",
+                                          "content": {
+                                            "type": "SEQ",
+                                            "members": [
+                                              {
+                                                "type": "REPEAT1",
+                                                "content": {
+                                                  "type": "SYMBOL",
+                                                  "name": "newline"
+                                                }
+                                              },
+                                              {
+                                                "type": "SYMBOL",
+                                                "name": "module_item"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "BLANK"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "BLANK"
                         }
-                      },
-                      {
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "module_item"
+                        },
+                        {
+                          "type": "REPEAT",
+                          "content": {
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "REPEAT1",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "module_item"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
                         "type": "SYMBOL",
-                        "name": "module_item"
+                        "name": "newline"
                       }
-                    ]
-                  }
+                    }
+                  ]
                 }
               ]
             },
@@ -72,13 +142,6 @@
               "type": "BLANK"
             }
           ]
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "newline"
-          }
         }
       ]
     },
@@ -2844,20 +2907,25 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "call_suffix"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "call_suffix"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "postfix_suffix"
+                    }
+                  }
+                ]
               },
               {
                 "type": "BLANK"
               }
             ]
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "postfix_suffix"
-            }
           }
         ]
       }
@@ -2883,20 +2951,25 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "call_suffix"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "call_suffix"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "postfix_suffix"
+                    }
+                  }
+                ]
               },
               {
                 "type": "BLANK"
               }
             ]
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "postfix_suffix"
-            }
           }
         ]
       }
@@ -2922,20 +2995,25 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "call_suffix"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "call_suffix"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "postfix_suffix"
+                    }
+                  }
+                ]
               },
               {
                 "type": "BLANK"
               }
             ]
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "postfix_suffix"
-            }
           }
         ]
       }
@@ -7425,7 +7503,7 @@
     },
     "kw_if": {
       "type": "STRING",
-      "value": "if"
+      "value": "then"
     },
     "kw_then": {
       "type": "STRING",
