@@ -314,9 +314,11 @@ module.exports = grammar({
 		source_file: ($) =>
 			seq(
 				many($.newline),
-				opt(seq($.module_declaration, opt(many1($.newline)))),
-				topLevelList($, $.module_item),
-				many($.newline),
+				opt(seq(
+					opt(seq($.module_declaration, many1($.newline))),
+					topLevelList($, $.module_item),
+					many($.newline),
+				)),
 			),
 
 		module_item: ($) =>
