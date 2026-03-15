@@ -90,19 +90,6 @@ function inlineThenLayoutList1($, rule) {
 	return seq(layoutList1($, rule), many($.newline));
 }
 
-// --- Unified Delimited Collections ---
-function collection($, open, close, item, separator) {
-	return seq(
-		open,
-		opt(seq(
-			many($.newline),
-			looseSeparated1($, item, separator),
-			many($.newline),
-		)),
-		close,
-	);
-}
-
 // --- Specific Construct Helpers ---
 function separatedWithOptionalRest(item, separator, rest) {
 	return opt(choice(
@@ -121,29 +108,47 @@ function fieldPattern(fieldName, colon, valueRule) {
 	);
 }
 
-function delimited(open, close, body) {
-	return seq(open, body, close);
-}
-
-function tuple_body($, item, sep) {
+function delimitedLoose($, open, close, body) {
 	return seq(
-		field("element", item),
-		sep,
-		field("element", item),
-		many(seq(sep, field("element", item))),
-		opt(sep),
+		open,
+		opt(seq(
+			many($.newline),
+			body,
+			many($.newline),
+		)),
+		close,
 	);
 }
 
-function tuple($, open, close, item, sep) {
-	return delimited(
+function looseSeparated2Plus($, rule, separator) {
+	const next = choice(
+		seq(separator, rule),
+		seq(opt(separator), many($.newline), rule),
+	);
+
+	return seq(
+		rule,
+		next,
+		many(next),
+		opt(separator),
+	);
+}
+
+function collection($, open, close, item, separator) {
+	return delimitedLoose(
+		$,
 		open,
 		close,
-		seq(
-			many($.newline),
-			tuple_body($, item, sep),
-			many($.newline),
-		),
+		looseSeparated1($, item, separator),
+	);
+}
+
+function tuple($, open, close, item, separator) {
+	return delimitedLoose(
+		$,
+		open,
+		close,
+		looseSeparated2Plus($, field("element", item), separator),
 	);
 }
 // --- Common Patterns ---

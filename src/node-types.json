@@ -628,7 +628,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binding_pattern",
@@ -2981,7 +2981,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
@@ -3019,7 +3019,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "pattern",
@@ -3333,7 +3333,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "type_term",
