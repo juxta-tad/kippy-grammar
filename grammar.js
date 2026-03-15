@@ -70,23 +70,11 @@ function softPaddedBody($, inlineRule, blockRule = inlineRule) {
 }
 
 function fileBody($, header, item) {
-	const items = seq(
-		sep1(item, many1($.newline)),
-		many($.newline)
-	);
-
 	return seq(
 		many($.newline),
-		opt(choice(
-			seq(
-				header,
-				opt(seq(
-					many1($.newline),
-					opt(items)
-				))
-			),
-			items
-		))
+		opt(seq(header, many1($.newline))),
+		opt(sep1(item, many1($.newline))),
+		many($.newline),
 	);
 }
 
@@ -565,7 +553,8 @@ module.exports = grammar({
 				seq(
 					$.inline_expression,
 					many($.postfix_suffix),
-					opt(seq($.call_suffix, many($.postfix_suffix))),
+					opt($.call_suffix),
+					many($.postfix_suffix),
 				),
 			),
 
@@ -575,7 +564,8 @@ module.exports = grammar({
 				seq(
 					$.primary_expression,
 					many($.postfix_suffix),
-					opt(seq($.call_suffix, many($.postfix_suffix))),
+					opt($.call_suffix),
+					many($.postfix_suffix),
 				),
 			),
 
@@ -585,7 +575,8 @@ module.exports = grammar({
 				seq(
 					$.primary_expression,
 					many($.postfix_suffix),
-					opt(seq($.call_suffix, many($.postfix_suffix))),
+					opt($.call_suffix),
+					many($.postfix_suffix),
 				),
 			),
 
@@ -1045,7 +1036,7 @@ module.exports = grammar({
 		kw_let: () => "let",
 		kw_cert: () => "cert",
 		kw_expect: () => "expect",
-		kw_if: () => "then",
+		kw_if: () => "if",
 		kw_then: () => "then",
 		kw_else: () => "else",
 		kw_match: () => "match",
