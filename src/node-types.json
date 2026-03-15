@@ -2416,11 +2416,23 @@
     "named": true,
     "fields": {
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
+            "type": "dedent",
+            "named": true
+          },
+          {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "indent",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -2431,19 +2443,7 @@
       "required": true,
       "types": [
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
           "type": "lparen",
-          "named": true
-        },
-        {
-          "type": "newline",
           "named": true
         },
         {

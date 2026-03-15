@@ -92,12 +92,16 @@ function layoutList1($, rule) {
 	);
 }
 
+function inlineThenLayoutList1($, rule) {
+	return seq(layoutList1($, rule), many($.newline));
+}
+
 function topLevelList($, rule) {
-	return seq(
+	return opt(seq(
+		rule,
+		many(seq(many1($.newline), rule)),
 		many($.newline),
-		opt(seq(rule, many(seq(many1($.newline), rule)))),
-		many($.newline),
-	);
+	));
 }
 
 // --- Unified Delimited Collections ---
@@ -311,7 +315,7 @@ module.exports = grammar({
 		source_file: ($) =>
 			seq(
 				many($.newline),
-				opt(seq($.module_declaration, many1($.newline))),
+				opt(seq($.module_declaration, opt(many1($.newline)))),
 				topLevelList($, $.module_item),
 			),
 
@@ -388,11 +392,7 @@ module.exports = grammar({
 			),
 
 		type_parameter_list: ($) =>
-			seq(
-				$.lparen,
-				looseSeparated($, $.type_variable, $.comma),
-				$.rparen,
-			),
+			collection($, $.lparen, $.rparen, $.type_variable, $.comma),
 
 		type_variant_block: ($) => padded($, layoutList1($, $.type_variant)),
 
@@ -404,11 +404,7 @@ module.exports = grammar({
 			),
 
 		type_variant_payload: ($) =>
-			seq(
-				$.lparen,
-				looseSeparated($, $.type_expression, $.comma),
-				$.rparen,
-			),
+			collection($, $.lparen, $.rparen, $.type_expression, $.comma),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
@@ -455,11 +451,7 @@ module.exports = grammar({
 			),
 
 		attribute_arguments_inline: ($) =>
-			seq(
-				$.lparen,
-				looseSeparated($, $.attribute_argument, $.comma),
-				$.rparen,
-			),
+			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
 
 		attribute_argument: ($) =>
 			choice(
@@ -722,7 +714,7 @@ module.exports = grammar({
 			prec.right(seq(
 				$.kw_let,
 				choice(
-					seq(layoutList1($, $.binding_core), many($.newline)),
+					inlineThenLayoutList1($, $.binding_core),
 					padded($, layoutList1($, $.binding_core)),
 				),
 				$.kw_in,
@@ -927,11 +919,7 @@ module.exports = grammar({
 		type_name: ($) => seq($.tag_name, many(seq($.module_sep, $.tag_name))),
 
 		type_argument_list: ($) =>
-			seq(
-				$.lparen,
-				looseSeparated($, $.type_expression, $.comma),
-				$.rparen,
-			),
+			collection($, $.lparen, $.rparen, $.type_expression, $.comma),
 
 		record_type_field: ($) =>
 			seq($.field_name, $.colon, inlineOrIndented($, $.type_expression)),
