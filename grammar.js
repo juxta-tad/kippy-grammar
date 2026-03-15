@@ -28,7 +28,7 @@ function sep1(rule, separator) {
 
 // --- Fundamental Block Patterns ---
 function indented($, body) {
-	return seq($.newline, $.indent, body, $.dedent);
+	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
 
 function padded($, body) {
@@ -70,16 +70,10 @@ function softPaddedBody($, inlineRule, blockRule = inlineRule) {
 }
 
 function fileBody($, header, item) {
-	const items = sep1(item, many1($.newline));
 	return seq(
 		many($.newline),
-		opt(seq(
-			choice(
-				seq(header, opt(seq(many1($.newline), items))),
-				items
-			),
-			many($.newline)
-		))
+		opt(seq(header, many($.newline))),
+		many(seq(item, many($.newline)))
 	);
 }
 
@@ -102,7 +96,7 @@ function looseSeparated($, rule, separator) {
 function layoutList1($, rule) {
 	return seq(
 		rule,
-		many(seq(many1($.newline), rule)),
+		many(seq(many($.newline), rule)),
 	);
 }
 
