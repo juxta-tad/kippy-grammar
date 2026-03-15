@@ -319,11 +319,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
 		// ─────────────────────────────────────────────────────────────────────────
-		source_file: ($) =>
-			seq(
-				many($.newline),
-				fileBody($, $.module_declaration, $.module_item),
-			),
+		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 
 		module_item: ($) =>
 			choice(
