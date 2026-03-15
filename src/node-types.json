@@ -2403,25 +2403,6 @@
     }
   },
   {
-    "type": "prefix_tag_pattern",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "simple_tag_argument_pattern",
-          "named": true
-        },
-        {
-          "type": "tag_name",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "primary_expression",
     "named": true,
     "fields": {},
@@ -2813,29 +2794,6 @@
     }
   },
   {
-    "type": "simple_tag_argument_pattern",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "literal",
-          "named": true
-        },
-        {
-          "type": "wildcard_pattern",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "source_file",
     "named": true,
     "root": true,
@@ -2959,10 +2917,6 @@
         },
         {
           "type": "paren_tag_pattern",
-          "named": true
-        },
-        {
-          "type": "prefix_tag_pattern",
           "named": true
         }
       ]

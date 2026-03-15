@@ -4705,23 +4705,6 @@
         }
       ]
     },
-    "simple_tag_argument_pattern": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "wildcard_pattern"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        }
-      ]
-    },
     "tag_pattern": {
       "type": "CHOICE",
       "members": [
@@ -4732,10 +4715,6 @@
         {
           "type": "SYMBOL",
           "name": "paren_tag_pattern"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "prefix_tag_pattern"
         }
       ]
     },
@@ -4827,19 +4806,6 @@
         {
           "type": "SYMBOL",
           "name": "rparen"
-        }
-      ]
-    },
-    "prefix_tag_pattern": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "tag_name"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "simple_tag_argument_pattern"
         }
       ]
     },

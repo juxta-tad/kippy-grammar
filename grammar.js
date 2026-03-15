@@ -785,14 +785,11 @@ module.exports = grammar({
 		binding_record_pattern_field: ($) =>
 			fieldPattern($.field_name, $.colon, $.binding_pattern),
 
-		simple_tag_argument_pattern: ($) =>
-			choice($.literal, $.wildcard_pattern, $.identifier),
 
 		tag_pattern: ($) =>
 			choice(
 				$.nullary_tag_pattern,
 				$.paren_tag_pattern,
-				$.prefix_tag_pattern,
 			),
 
 		nullary_tag_pattern: ($) => $.tag_name,
@@ -805,11 +802,6 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		prefix_tag_pattern: ($) =>
-			seq(
-				$.tag_name,
-				$.simple_tag_argument_pattern,
-			),
 
 		list_pattern: ($) =>
 			seq(
