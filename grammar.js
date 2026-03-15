@@ -151,6 +151,7 @@ function tuple($, open, close, item, separator) {
 		looseSeparated2Plus($, field("element", item), separator),
 	);
 }
+
 // --- Common Patterns ---
 function attributePrefix($) {
 	return many(seq($.attribute, opt($.newline)));
