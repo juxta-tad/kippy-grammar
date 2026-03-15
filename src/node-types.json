@@ -536,7 +536,7 @@
           "named": true
         },
         {
-          "type": "hash_sign",
+          "type": "double_dash",
           "named": true
         },
         {
@@ -1270,6 +1270,16 @@
     "type": "function_type",
     "named": true,
     "fields": {
+      "param": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
       "result": {
         "multiple": true,
         "required": true,
@@ -1302,7 +1312,7 @@
           "named": true
         },
         {
-          "type": "function_type_parameters",
+          "type": "comma",
           "named": true
         },
         {
@@ -1314,37 +1324,11 @@
           "named": true
         },
         {
-          "type": "rparen",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "function_type_parameters",
-    "named": true,
-    "fields": {
-      "param": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "type_expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "comma",
+          "type": "newline",
           "named": true
         },
         {
-          "type": "newline",
+          "type": "rparen",
           "named": true
         }
       ]
@@ -2098,7 +2082,7 @@
       },
       "value": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "arm_inline_expression",
@@ -2130,6 +2114,10 @@
         {
           "type": "newline",
           "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
         }
       ]
     }
@@ -2138,16 +2126,6 @@
     "type": "match_expression",
     "named": true,
     "fields": {
-      "arms": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "match_arm",
-            "named": true
-          }
-        ]
-      },
       "subject": {
         "multiple": false,
         "required": true,
@@ -2177,6 +2155,10 @@
         },
         {
           "type": "kw_to",
+          "named": true
+        },
+        {
+          "type": "match_arm",
           "named": true
         },
         {
@@ -4184,6 +4166,10 @@
     "named": true
   },
   {
+    "type": "double_dash",
+    "named": true
+  },
+  {
     "type": "ellipsis",
     "named": true
   },
@@ -4213,10 +4199,6 @@
   },
   {
     "type": "gt_op",
-    "named": true
-  },
-  {
-    "type": "hash_sign",
     "named": true
   },
   {
