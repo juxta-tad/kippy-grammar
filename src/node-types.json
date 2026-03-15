@@ -3547,7 +3547,7 @@
           "named": true
         },
         {
-          "type": "lparen",
+          "type": "lbracket",
           "named": true
         },
         {
@@ -3555,7 +3555,7 @@
           "named": true
         },
         {
-          "type": "rparen",
+          "type": "rbracket",
           "named": true
         },
         {

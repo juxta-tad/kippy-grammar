@@ -36,7 +36,7 @@ function padded($, body) {
 }
 
 // --- Block & Layout Helpers ---
-function wrapped($, open, close, body) {
+function wrapped(open, close, body) {
 	return seq(open, body, close);
 }
 
@@ -62,18 +62,11 @@ function softIndentedBody($, inlineRule, blockRule = inlineRule) {
 	);
 }
 
-function softPaddedBody($, inlineRule, blockRule = inlineRule) {
-	return choice(
-		inlineOrPadded($, inlineRule, blockRule),
-		seq(many1($.newline), $.parenthesized_expression),
-	);
-}
-
 function fileBody($, header, item) {
 	return seq(
 		many($.newline),
 		opt(seq(header, many($.newline))),
-		many(seq(item, many($.newline)))
+		many(seq(item, many($.newline))),
 	);
 }
 
@@ -83,32 +76,21 @@ function looseSeparated1($, rule, separator) {
 		rule,
 		many(choice(
 			seq(separator, rule),
-			seq(opt(separator), many1($.newline), rule),
+			seq(opt(separator), many($.newline), rule),
 		)),
 		opt(separator),
 	);
 }
 
-function looseSeparated($, rule, separator) {
-	return opt(looseSeparated1($, rule, separator));
-}
-
 function layoutList1($, rule) {
 	return seq(
 		rule,
-		many(seq(many1($.newline), rule)),
+		many(seq(many($.newline), rule)),
 	);
 }
 
 function inlineThenLayoutList1($, rule) {
 	return seq(layoutList1($, rule), many($.newline));
-}
-
-function topLevelList($, rule) {
-	return opt(seq(
-		rule,
-		many(seq(many1($.newline), rule)),
-	));
 }
 
 // --- Unified Delimited Collections ---
@@ -159,10 +141,10 @@ function tuple($, open, close, item, sepToken) {
 				$,
 				seq(
 					field("element", item),
-					seq(opt(sepToken), many1($.newline)),
+					seq(opt(sepToken), many($.newline)),
 					field("element", item),
 					many(
-						seq(seq(opt(sepToken), many1($.newline)), field("element", item)),
+						seq(seq(opt(sepToken), many($.newline)), field("element", item)),
 					),
 					opt(sepToken),
 				),
@@ -625,10 +607,10 @@ module.exports = grammar({
 			),
 
 		constructed_record_expression: ($) =>
-			seq(
+			prec(1, seq(
 				field("constructor", $.type_name),
 				field("body", $.record_body),
-			),
+			)),
 
 		inline_expression: ($) =>
 			choice(
@@ -702,7 +684,6 @@ module.exports = grammar({
 
 		parenthesized_expression: ($) =>
 			wrapped(
-				$,
 				$.lparen,
 				$.rparen,
 				field("value", inlineOrInnerPadded($, $.expression)),
@@ -834,12 +815,15 @@ module.exports = grammar({
 			choice($.literal, $.wildcard_pattern, $.identifier),
 
 		tag_pattern: ($) =>
-			seq(
-				$.tag_name,
-				opt(choice(
-					seq($.lparen, looseSeparated1($, $.pattern, $.comma), $.rparen),
-					$.simple_tag_argument_pattern,
-				)),
+			prec.right(
+				1,
+				seq(
+					$.tag_name,
+					opt(choice(
+						seq($.lparen, looseSeparated1($, $.pattern, $.comma), $.rparen),
+						$.simple_tag_argument_pattern,
+					)),
+				),
 			),
 
 		list_pattern: ($) =>
@@ -904,7 +888,7 @@ module.exports = grammar({
 				field("result", inlineOrIndented($, $.type_expression)),
 			),
 
-		type_application: ($) => seq($.type_name, $.type_argument_list),
+		type_application: ($) => prec(1, seq($.type_name, $.type_argument_list)),
 		type_variable: ($) => reserved("global", $.identifier),
 
 		self_type: ($) => $.kw_Self,
@@ -921,7 +905,7 @@ module.exports = grammar({
 		type_name: ($) => seq($.tag_name, many(seq($.module_sep, $.tag_name))),
 
 		type_argument_list: ($) =>
-			collection($, $.lparen, $.rparen, $.type_expression, $.comma),
+			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
 
 		record_type_field: ($) =>
 			seq($.field_name, $.colon, inlineOrIndented($, $.type_expression)),
