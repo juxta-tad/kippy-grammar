@@ -100,7 +100,6 @@ function topLevelList($, rule) {
 	return opt(seq(
 		rule,
 		many(seq(many1($.newline), rule)),
-		many($.newline),
 	));
 }
 
@@ -317,6 +316,7 @@ module.exports = grammar({
 				many($.newline),
 				opt(seq($.module_declaration, opt(many1($.newline)))),
 				topLevelList($, $.module_item),
+				many($.newline),
 			),
 
 		module_item: ($) =>
