@@ -73,7 +73,7 @@ function looseSeparated1($, rule, separator) {
 		rule,
 		many(choice(
 			seq(separator, rule),
-			seq(opt(separator), many($.newline), rule),
+			seq(opt(separator), many1($.newline), rule),
 		)),
 		opt(separator),
 	);
@@ -123,7 +123,7 @@ function delimitedLoose($, open, close, body) {
 function looseSeparated2Plus($, rule, separator) {
 	const next = choice(
 		seq(separator, rule),
-		seq(opt(separator), many($.newline), rule),
+		seq(opt(separator), many1($.newline), rule),
 	);
 
 	return seq(
@@ -789,15 +789,26 @@ module.exports = grammar({
 			choice($.literal, $.wildcard_pattern, $.identifier),
 
 		tag_pattern: ($) =>
-			prec.right(
-				1,
-				seq(
-					$.tag_name,
-					opt(choice(
-						seq($.lparen, looseSeparated1($, $.pattern, $.comma), $.rparen),
-						$.simple_tag_argument_pattern,
-					)),
-				),
+			choice(
+				$.nullary_tag_pattern,
+				$.paren_tag_pattern,
+				$.prefix_tag_pattern,
+			),
+
+		nullary_tag_pattern: ($) => $.tag_name,
+
+		paren_tag_pattern: ($) =>
+			seq(
+				$.tag_name,
+				$.lparen,
+				looseSeparated1($, $.pattern, $.comma),
+				$.rparen,
+			),
+
+		prefix_tag_pattern: ($) =>
+			seq(
+				$.tag_name,
+				$.simple_tag_argument_pattern,
 			),
 
 		list_pattern: ($) =>

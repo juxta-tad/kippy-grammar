@@ -2115,6 +2115,21 @@
     }
   },
   {
+    "type": "nullary_tag_pattern",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "tag_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "or_expression",
     "named": true,
     "fields": {},
@@ -2162,6 +2177,41 @@
         },
         {
           "type": "pipe_bar",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "paren_tag_pattern",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "lparen",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "pattern",
+          "named": true
+        },
+        {
+          "type": "rparen",
+          "named": true
+        },
+        {
+          "type": "tag_name",
           "named": true
         }
       ]
@@ -2347,6 +2397,25 @@
         },
         {
           "type": "try_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "prefix_tag_pattern",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "simple_tag_argument_pattern",
+          "named": true
+        },
+        {
+          "type": "tag_name",
           "named": true
         }
       ]
@@ -2881,35 +2950,19 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "comma",
+          "type": "nullary_tag_pattern",
           "named": true
         },
         {
-          "type": "lparen",
+          "type": "paren_tag_pattern",
           "named": true
         },
         {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "pattern",
-          "named": true
-        },
-        {
-          "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "simple_tag_argument_pattern",
-          "named": true
-        },
-        {
-          "type": "tag_name",
+          "type": "prefix_tag_pattern",
           "named": true
         }
       ]
