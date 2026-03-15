@@ -36,6 +36,17 @@ function padded($, body) {
 }
 
 // --- Block & Layout Helpers ---
+function wrapped($, open, close, body) {
+	return seq(open, body, close);
+}
+
+function inlineOrInnerPadded($, rule) {
+	return choice(
+		seq(many($.newline), rule, many($.newline)),
+		padded($, rule),
+	);
+}
+
 function inlineOrIndented($, inlineRule, blockRule = inlineRule) {
 	return choice(inlineRule, indented($, blockRule));
 }
@@ -78,6 +89,14 @@ function layoutList1($, rule) {
 	return seq(
 		rule,
 		many(seq(many1($.newline), rule)),
+	);
+}
+
+function topLevelList($, rule) {
+	return seq(
+		many($.newline),
+		opt(seq(rule, many(seq(many1($.newline), rule)))),
+		many($.newline),
 	);
 }
 
@@ -143,7 +162,7 @@ function tuple($, open, close, item, sepToken) {
 }
 
 // --- Common Patterns ---
-function attrPrefix($) {
+function attributePrefix($) {
 	return many(seq($.attribute, opt($.newline)));
 }
 
@@ -293,7 +312,7 @@ module.exports = grammar({
 			seq(
 				many($.newline),
 				opt(seq($.module_declaration, many1($.newline))),
-				many(seq($.module_item, many($.newline))),
+				topLevelList($, $.module_item),
 			),
 
 		module_item: ($) =>
@@ -340,7 +359,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		type_declaration: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				visibility_modifier($),
 				$.kw_type,
 				field("name", $.type_name),
@@ -396,7 +415,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		annotation: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				field("name", $.binding_name),
 				$.colon,
 				field("type", inlineOrPadded($, $.type_expression)),
@@ -405,7 +424,7 @@ module.exports = grammar({
 
 		signature: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				visibility_modifier($),
 				$.kw_sig,
 				field("name", $.identifier),
@@ -419,7 +438,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		let_binding: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				visibility_modifier($),
 				$.kw_let,
 				$.binding_core,
@@ -457,7 +476,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		implementation: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				visibility_modifier($),
 				$.kw_extend,
 				field("type", $.type_term),
@@ -484,7 +503,7 @@ module.exports = grammar({
 			),
 		ability_declaration: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				visibility_modifier($),
 				$.kw_ability,
 				field("name", $.type_name),
@@ -496,7 +515,7 @@ module.exports = grammar({
 
 		test_declaration: ($) =>
 			seq(
-				attrPrefix($),
+				attributePrefix($),
 				$.kw_test,
 				field("name", $.static_string),
 				$.colon,
@@ -688,17 +707,11 @@ module.exports = grammar({
 			tuple($, $.lparen_hash, $.rparen, $.expression, $.semicolon),
 
 		parenthesized_expression: ($) =>
-			seq(
+			wrapped(
+				$,
 				$.lparen,
-				choice(
-					seq(
-						many($.newline),
-						field("value", $.expression),
-						many($.newline),
-					),
-					padded($, field("value", $.expression)),
-				),
 				$.rparen,
+				field("value", inlineOrInnerPadded($, $.expression)),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -706,21 +719,14 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 
 		let_expression: ($) =>
-			prec.right(choice(
-				seq(
-					$.kw_let,
-					$.binding_core,
-					many(seq(many1($.newline), $.binding_core)),
-					opt(many1($.newline)),
-					$.kw_in,
-					field("value", softIndentedBody($, $.expression)),
-				),
-				seq(
-					$.kw_let,
+			prec.right(seq(
+				$.kw_let,
+				choice(
+					seq(layoutList1($, $.binding_core), many($.newline)),
 					padded($, layoutList1($, $.binding_core)),
-					$.kw_in,
-					field("value", softIndentedBody($, $.expression)),
 				),
+				$.kw_in,
+				field("value", softIndentedBody($, $.expression)),
 			)),
 
 		match_expression: ($) =>
