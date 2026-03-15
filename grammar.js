@@ -132,7 +132,7 @@ function tuple($, open, close, item, sepToken) {
 		seq(open, tail, close),
 		seq(open, $.newline, $.indent, tail, many($.newline), $.dedent, close),
 	);
-},
+}
 
 // --- Common Patterns ---
 function attributePrefix($) {
