@@ -56,10 +56,7 @@ function inlineOrPadded($, inlineRule, blockRule = inlineRule) {
 }
 
 function softIndentedBody($, inlineRule, blockRule = inlineRule) {
-	return choice(
-		inlineOrIndented($, inlineRule, blockRule),
-		seq(many1($.newline), $.parenthesized_expression),
-	);
+	return choice(inlineRule, indented($, blockRule));
 }
 
 function fileBody($, header, item) {
@@ -525,17 +522,6 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS
 		// ─────────────────────────────────────────────────────────────────────────
-
-		arm_postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.inline_expression,
-					many($.postfix_suffix),
-					opt($.call_suffix),
-					many($.postfix_suffix),
-				),
-			),
 
 		postfix_expression: ($) =>
 			prec.left(

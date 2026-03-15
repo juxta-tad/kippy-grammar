@@ -472,10 +472,6 @@
           {
             "type": "newline",
             "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
           }
         ]
       }
@@ -762,10 +758,6 @@
           },
           {
             "type": "newline",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
             "named": true
           }
         ]
@@ -1167,10 +1159,6 @@
           {
             "type": "newline",
             "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
           }
         ]
       },
@@ -1192,10 +1180,6 @@
           },
           {
             "type": "newline",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
             "named": true
           }
         ]
@@ -1316,10 +1300,6 @@
           },
           {
             "type": "newline",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
             "named": true
           }
         ]
@@ -1502,10 +1482,6 @@
           {
             "type": "newline",
             "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
           }
         ]
       },
@@ -1604,10 +1580,6 @@
           },
           {
             "type": "newline",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
             "named": true
           }
         ]
@@ -1816,10 +1788,6 @@
           {
             "type": "newline",
             "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
           }
         ]
       }
@@ -1882,7 +1850,7 @@
       },
       "value": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "arm_inline_expression",
@@ -1913,10 +1881,6 @@
         },
         {
           "type": "newline",
-          "named": true
-        },
-        {
-          "type": "parenthesized_expression",
           "named": true
         }
       ]
@@ -2563,10 +2527,6 @@
           },
           {
             "type": "newline",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
             "named": true
           }
         ]
