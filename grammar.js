@@ -1,3 +1,5 @@
+--- START OF FILE Paste March 15, 2026 - 2:33PM ---
+
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 1: CONSTANTS & PRECEDENCE
 // ═════════════════════════════════════════════════════════════════════════════
@@ -96,7 +98,7 @@ function looseSeparated($, rule, separator) {
 function layoutList1($, rule) {
 	return seq(
 		rule,
-		many(seq(many($.newline), rule)),
+		many(seq(many1($.newline), rule)),
 	);
 }
 
