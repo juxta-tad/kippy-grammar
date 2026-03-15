@@ -121,19 +121,31 @@ function fieldPattern(fieldName, colon, valueRule) {
 	);
 }
 
-function tuple($, open, close, item, sepToken) {
-	const tail = seq(
-		field("element", item),
-		many(seq(sepToken, field("element", item))),
-		opt(sepToken),
-	);
+function delimited(open, close, body) {
+	return seq(open, body, close);
+}
 
-	return choice(
-		seq(open, tail, close),
-		seq(open, $.newline, $.indent, tail, many($.newline), $.dedent, close),
+function tuple_body($, item, sep) {
+	return seq(
+		field("element", item),
+		sep,
+		field("element", item),
+		many(seq(sep, field("element", item))),
+		opt(sep),
 	);
 }
 
+function tuple($, open, close, item, sep) {
+	return delimited(
+		open,
+		close,
+		seq(
+			many($.newline),
+			tuple_body($, item, sep),
+			many($.newline),
+		),
+	);
+}
 // --- Common Patterns ---
 function attributePrefix($) {
 	return many(seq($.attribute, opt($.newline)));

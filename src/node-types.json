@@ -642,14 +642,6 @@
       "required": true,
       "types": [
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
           "type": "lparen_hash",
           "named": true
         },
@@ -3003,14 +2995,6 @@
       "required": true,
       "types": [
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
           "type": "lparen_hash",
           "named": true
         },
@@ -3048,14 +3032,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
         {
           "type": "lparen_hash",
           "named": true
@@ -3370,14 +3346,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
         {
           "type": "lparen_hash",
           "named": true

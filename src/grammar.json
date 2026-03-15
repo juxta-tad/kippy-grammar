@@ -3356,14 +3356,21 @@
       "context_name": "global"
     },
     "tuple_expression": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "lparen_hash"
+        },
         {
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
             },
             {
               "type": "SEQ",
@@ -3377,63 +3384,9 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "semicolon"
-                      },
-                      {
-                        "type": "FIELD",
-                        "name": "element",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "expression"
-                        }
-                      }
-                    ]
-                  }
+                  "type": "SYMBOL",
+                  "name": "semicolon"
                 },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "semicolon"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "newline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "indent"
-            },
-            {
-              "type": "SEQ",
-              "members": [
                 {
                   "type": "FIELD",
                   "name": "element",
@@ -3482,16 +3435,12 @@
                 "type": "SYMBOL",
                 "name": "newline"
               }
-            },
-            {
-              "type": "SYMBOL",
-              "name": "dedent"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
             }
           ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rparen"
         }
       ]
     },
@@ -4387,14 +4336,21 @@
       ]
     },
     "binding_tuple_pattern": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "lparen_hash"
+        },
         {
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
             },
             {
               "type": "SEQ",
@@ -4408,63 +4364,9 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "semicolon"
-                      },
-                      {
-                        "type": "FIELD",
-                        "name": "element",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "binding_pattern"
-                        }
-                      }
-                    ]
-                  }
+                  "type": "SYMBOL",
+                  "name": "semicolon"
                 },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "semicolon"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "newline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "indent"
-            },
-            {
-              "type": "SEQ",
-              "members": [
                 {
                   "type": "FIELD",
                   "name": "element",
@@ -4513,16 +4415,12 @@
                 "type": "SYMBOL",
                 "name": "newline"
               }
-            },
-            {
-              "type": "SYMBOL",
-              "name": "dedent"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
             }
           ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rparen"
         }
       ]
     },
@@ -4862,14 +4760,21 @@
       ]
     },
     "tuple_pattern": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "lparen_hash"
+        },
         {
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
             },
             {
               "type": "SEQ",
@@ -4883,63 +4788,9 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "semicolon"
-                      },
-                      {
-                        "type": "FIELD",
-                        "name": "element",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "pattern"
-                        }
-                      }
-                    ]
-                  }
+                  "type": "SYMBOL",
+                  "name": "semicolon"
                 },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "semicolon"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "newline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "indent"
-            },
-            {
-              "type": "SEQ",
-              "members": [
                 {
                   "type": "FIELD",
                   "name": "element",
@@ -4988,16 +4839,12 @@
                 "type": "SYMBOL",
                 "name": "newline"
               }
-            },
-            {
-              "type": "SYMBOL",
-              "name": "dedent"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
             }
           ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rparen"
         }
       ]
     },
@@ -5815,14 +5662,21 @@
       ]
     },
     "type_tuple": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "lparen_hash"
+        },
         {
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
             },
             {
               "type": "SEQ",
@@ -5836,63 +5690,9 @@
                   }
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "semicolon"
-                      },
-                      {
-                        "type": "FIELD",
-                        "name": "element",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "type_term"
-                        }
-                      }
-                    ]
-                  }
+                  "type": "SYMBOL",
+                  "name": "semicolon"
                 },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "semicolon"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "lparen_hash"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "newline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "indent"
-            },
-            {
-              "type": "SEQ",
-              "members": [
                 {
                   "type": "FIELD",
                   "name": "element",
@@ -5941,16 +5741,12 @@
                 "type": "SYMBOL",
                 "name": "newline"
               }
-            },
-            {
-              "type": "SYMBOL",
-              "name": "dedent"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rparen"
             }
           ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rparen"
         }
       ]
     },
