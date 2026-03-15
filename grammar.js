@@ -69,6 +69,14 @@ function softPaddedBody($, inlineRule, blockRule = inlineRule) {
 	);
 }
 
+function fileBody($, header, item) {
+	return seq(
+		opt(seq(header, many1($.newline))),
+		opt(seq(item, many(seq(many1($.newline), item)))),
+		many($.newline),
+	);
+}
+
 // --- Loose List Forms ---
 function looseSeparated1($, rule, separator) {
 	return seq(
@@ -314,11 +322,7 @@ module.exports = grammar({
 		source_file: ($) =>
 			seq(
 				many($.newline),
-				opt(seq(
-					opt(seq($.module_declaration, many1($.newline))),
-					topLevelList($, $.module_item),
-					many($.newline),
-				)),
+				fileBody($, $.module_declaration, $.module_item),
 			),
 
 		module_item: ($) =>
