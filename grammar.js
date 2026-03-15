@@ -518,10 +518,9 @@ module.exports = grammar({
 		expression: ($) => $.pipe_expression,
 
 		arm_inline_expression: ($) => $.arm_pipe_expression,
-		call_argument: ($) => $["restricted_pipe_expression"],
+		call_argument: ($) => $.pipe_expression,
 
 		...buildExpressionLadder("", "postfix_expression"),
-		...buildExpressionLadder("restricted_", "restricted_postfix_expression"),
 		...buildExpressionLadder("arm_", "arm_postfix_expression"),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -540,17 +539,6 @@ module.exports = grammar({
 			),
 
 		postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					many($.postfix_suffix),
-					opt($.call_suffix),
-					many($.postfix_suffix),
-				),
-			),
-
-		restricted_postfix_expression: ($) =>
 			prec.left(
 				PREC.POSTFIX,
 				seq(
