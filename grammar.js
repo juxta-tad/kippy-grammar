@@ -517,11 +517,10 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
 
-		arm_inline_expression: ($) => $.arm_pipe_expression,
+		arm_inline_expression: ($) => $.inline_expression,
 		call_argument: ($) => $.pipe_expression,
 
 		...buildExpressionLadder("", "postfix_expression"),
-		...buildExpressionLadder("arm_", "arm_postfix_expression"),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS
