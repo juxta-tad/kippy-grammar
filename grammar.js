@@ -73,7 +73,7 @@ function fileBody($, header, item) {
 	return seq(
 		many($.newline),
 		opt(seq(header, many1($.newline))),
-		opt(seq(item, many(seq(many1($.newline), item)))),
+		opt(sep1(item, many1($.newline))),
 		many($.newline),
 	);
 }
