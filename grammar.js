@@ -122,34 +122,17 @@ function fieldPattern(fieldName, colon, valueRule) {
 }
 
 function tuple($, open, close, item, sepToken) {
-	return choice(
-		seq(
-			open,
-			field("element", item),
-			sepToken,
-			field("element", item),
-			many(seq(sepToken, field("element", item))),
-			opt(sepToken),
-			close,
-		),
-		seq(
-			open,
-			padded(
-				$,
-				seq(
-					field("element", item),
-					seq(opt(sepToken), many($.newline)),
-					field("element", item),
-					many(
-						seq(seq(opt(sepToken), many($.newline)), field("element", item)),
-					),
-					opt(sepToken),
-				),
-			),
-			close,
-		),
+	const tail = seq(
+		field("element", item),
+		many(seq(sepToken, field("element", item))),
+		opt(sepToken),
 	);
-}
+
+	return choice(
+		seq(open, tail, close),
+		seq(open, $.newline, $.indent, tail, many($.newline), $.dedent, close),
+	);
+},
 
 // --- Common Patterns ---
 function attributePrefix($) {
