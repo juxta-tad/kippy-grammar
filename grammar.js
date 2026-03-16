@@ -576,14 +576,20 @@ module.exports = grammar({
 		primary_expression: ($) =>
 			choice(
 				$.inline_expression,
-				$.block_expression,
+				$.match_expression,
+				$.if_expression,
+				$.lambda_expression,
+				$.let_expression,
 			),
 
 		constructed_record_expression: ($) =>
-			prec(1, seq(
-				field("constructor", $.type_name),
-				field("body", $.record_body),
-			)),
+			prec(
+				1,
+				seq(
+					field("constructor", $.type_name),
+					field("body", $.record_body),
+				),
+			),
 
 		inline_expression: ($) =>
 			choice(
@@ -778,7 +784,6 @@ module.exports = grammar({
 		binding_record_pattern_field: ($) =>
 			fieldPattern($.field_name, $.colon, $.binding_pattern),
 
-
 		tag_pattern: ($) =>
 			choice(
 				$.nullary_tag_pattern,
@@ -794,7 +799,6 @@ module.exports = grammar({
 				looseSeparated1($, $.pattern, $.comma),
 				$.rparen,
 			),
-
 
 		list_pattern: ($) =>
 			seq(

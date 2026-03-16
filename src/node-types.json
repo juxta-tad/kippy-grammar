@@ -661,33 +661,6 @@
     }
   },
   {
-    "type": "block_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "if_expression",
-          "named": true
-        },
-        {
-          "type": "lambda_expression",
-          "named": true
-        },
-        {
-          "type": "let_expression",
-          "named": true
-        },
-        {
-          "type": "match_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "builder_body",
     "named": true,
     "fields": {},
@@ -2380,11 +2353,23 @@
       "required": true,
       "types": [
         {
-          "type": "block_expression",
+          "type": "if_expression",
           "named": true
         },
         {
           "type": "inline_expression",
+          "named": true
+        },
+        {
+          "type": "lambda_expression",
+          "named": true
+        },
+        {
+          "type": "let_expression",
+          "named": true
+        },
+        {
+          "type": "match_expression",
           "named": true
         }
       ]

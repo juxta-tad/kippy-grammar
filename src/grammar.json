@@ -2582,7 +2582,19 @@
         },
         {
           "type": "SYMBOL",
-          "name": "block_expression"
+          "name": "match_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "if_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "lambda_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "let_expression"
         }
       ]
     },
@@ -2653,27 +2665,6 @@
         {
           "type": "SYMBOL",
           "name": "parenthesized_expression"
-        }
-      ]
-    },
-    "block_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "match_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "if_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "lambda_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "let_expression"
         }
       ]
     },
