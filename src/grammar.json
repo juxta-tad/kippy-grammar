@@ -6668,7 +6668,7 @@
     },
     "kw_where": {
       "type": "STRING",
-      "value": "where"
+      "value": "with"
     },
     "kw_with": {
       "type": "STRING",

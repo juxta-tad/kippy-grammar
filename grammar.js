@@ -31,16 +31,12 @@ function indented($, body) {
 	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
 
-function padded($, body) {
-	return seq($.newline, $.indent, body, many($.newline), $.dedent);
-}
-
 // --- Block & Layout Helpers ---
 function wrapped(open, close, body) {
 	return seq(open, body, close);
 }
 
-function inlineOrInnerPadded($, rule) {
+function inlineOrInnerIndented($, rule) {
 	return choice(
 		seq(many($.newline), rule, many($.newline)),
 		indented($, rule),
@@ -48,6 +44,10 @@ function inlineOrInnerPadded($, rule) {
 }
 
 function inlineOrIndented($, inlineRule, blockRule = inlineRule) {
+	return choice(inlineRule, indented($, blockRule));
+}
+
+function softIndentedBody($, inlineRule, blockRule = inlineRule) {
 	return choice(inlineRule, indented($, blockRule));
 }
 
@@ -388,7 +388,7 @@ module.exports = grammar({
 				attributePrefix($),
 				field("name", $.binding_name),
 				$.colon,
-				field("type", inlineOrindented($, $.type_expression)),
+				field("type", inlineOrIndented($, $.type_expression)),
 				opt(field("constraints", $.constraint_clause)),
 			),
 
@@ -399,7 +399,7 @@ module.exports = grammar({
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
-				field("type", inlineOrindented($, $.type_expression)),
+				field("type", inlineOrIndented($, $.type_expression)),
 				opt(field("constraints", $.constraint_clause)),
 			),
 
@@ -557,7 +557,7 @@ module.exports = grammar({
 					$.kw_with,
 					choice(
 						sep1(field("arg", $.call_argument), $.comma),
-						padded(
+						indented(
 							$,
 							looseSeparated1($, field("arg", $.call_argument), $.comma),
 						),
@@ -654,7 +654,7 @@ module.exports = grammar({
 			wrapped(
 				$.lparen,
 				$.rparen,
-				field("value", inlineOrInnerPadded($, $.expression)),
+				field("value", inlineOrInnerIndented($, $.expression)),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -666,7 +666,7 @@ module.exports = grammar({
 				$.kw_let,
 				choice(
 					inlineThenLayoutList1($, $.binding_core),
-					padded($, layoutList1($, $.binding_core)),
+					indented($, layoutList1($, $.binding_core)),
 				),
 				$.kw_in,
 				field("value", softIndentedBody($, $.expression)),
@@ -677,7 +677,7 @@ module.exports = grammar({
 				$.kw_match,
 				field("subject", $.pipe_expression),
 				$.kw_to,
-				padded($, layoutList1($, $.match_arm)),
+				indented($, layoutList1($, $.match_arm)),
 			)),
 
 		match_arm: ($) =>
@@ -696,7 +696,7 @@ module.exports = grammar({
 				$.kw_fn,
 				choice(
 					sep1(field("param", $.binding_pattern), $.comma),
-					padded($, layoutList1($, field("param", $.binding_pattern))),
+					indented($, layoutList1($, field("param", $.binding_pattern))),
 				),
 				$.fat_arrow,
 				field("body", softIndentedBody($, $.expression)),
@@ -994,7 +994,7 @@ module.exports = grammar({
 		kw_match: () => "match",
 		kw_to: () => "to",
 		kw_in: () => "in",
-		kw_where: () => "where",
+		kw_where: () => "with",
 		kw_with: () => "with",
 		kw_extend: () => "extend",
 		kw_ability: () => "ability",
