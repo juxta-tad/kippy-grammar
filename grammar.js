@@ -835,9 +835,25 @@ module.exports = grammar({
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
+				choice(
+					sep1($.constraint_entry, $.comma),
+					indented($, layoutList1($, $.constraint_entry)),
+				),
+			),
+
+		constraint_entry: ($) =>
+			seq(
 				field("type_var", $.identifier),
 				$.colon,
-				field("constraint", $.type_term),
+				field("constraint", $.constraint_sum),
+			),
+
+		constraint_sum: ($) =>
+			prec.left(
+				seq(
+					field("ability", $.type_name),
+					many(seq($.plus, field("ability", $.type_name))),
+				),
 			),
 
 		type_term: ($) =>
