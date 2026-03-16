@@ -30,11 +30,6 @@ function sep1(rule, separator) {
 function indented($, body) {
 	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
-
-function padded($, body) {
-	return seq($.newline, $.indent, body, many($.newline), $.dedent);
-}
-
 // --- Block & Layout Helpers ---
 function wrapped(open, close, body) {
 	return seq(open, body, close);
@@ -52,7 +47,7 @@ function inlineOrIndented($, inlineRule, blockRule = inlineRule) {
 }
 
 function inlineOrPadded($, inlineRule, blockRule = inlineRule) {
-	return choice(inlineRule, padded($, blockRule));
+	return choice(inlineRule, indented($, blockRule));
 }
 
 function softIndentedBody($, inlineRule, blockRule = inlineRule) {
@@ -376,7 +371,7 @@ module.exports = grammar({
 		type_parameter_list: ($) =>
 			collection($, $.lparen, $.rparen, $.type_variable, $.comma),
 
-		type_variant_block: ($) => padded($, layoutList1($, $.type_variant)),
+		type_variant_block: ($) => indented($, layoutList1($, $.type_variant)),
 
 		type_variant: ($) =>
 			seq(
@@ -460,7 +455,7 @@ module.exports = grammar({
 				field("type", $.type_term),
 				$.kw_with,
 				field("ability", $.type_name),
-				field("methods", padded($, layoutList1($, $.implementation_method))),
+				field("methods", indented($, layoutList1($, $.implementation_method))),
 			),
 
 		implementation_method: ($) =>
@@ -486,7 +481,7 @@ module.exports = grammar({
 				$.kw_ability,
 				field("name", $.type_name),
 				opt($.type_parameter_list),
-				field("methods", padded($, layoutList1($, $.annotation))),
+				field("methods", indented($, layoutList1($, $.annotation))),
 			),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -497,7 +492,7 @@ module.exports = grammar({
 				$.kw_test,
 				field("name", $.static_string),
 				$.colon,
-				field("body", padded($, $.expression)),
+				field("body", indented($, $.expression)),
 			),
 
 		binding_core: ($) =>
@@ -647,12 +642,10 @@ module.exports = grammar({
 			),
 
 		builder_field: ($) =>
-			choice(
-				seq(
-					field("name", $.field_name),
-					$.left_arrow,
-					field("value", softIndentedBody($, $.expression)),
-				),
+			seq(
+				field("name", $.field_name),
+				$.left_arrow,
+				field("value", softIndentedBody($, $.expression)),
 			),
 
 		field_name: ($) => reserved("global", $.identifier),
