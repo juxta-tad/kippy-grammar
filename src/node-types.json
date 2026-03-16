@@ -40,7 +40,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -332,15 +332,15 @@
       "required": true,
       "types": [
         {
-          "type": "ampersand",
-          "named": true
-        },
-        {
           "type": "attribute_arguments_inline",
           "named": true
         },
         {
-          "type": "long_identifier",
+          "type": "path",
+          "named": true
+        },
+        {
+          "type": "tilde",
           "named": true
         }
       ]
@@ -852,19 +852,19 @@
           "named": true
         },
         {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
           "type": "kw_where",
           "named": true
         },
         {
+          "type": "lbrace",
+          "named": true
+        },
+        {
           "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rbrace",
           "named": true
         }
       ]
@@ -915,7 +915,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -951,7 +951,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -1075,6 +1075,32 @@
       "types": [
         {
           "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "field_suffix",
+    "named": true,
+    "fields": {
+      "field": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "field_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "dot",
           "named": true
         }
       ]
@@ -1235,7 +1261,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -1369,10 +1395,6 @@
         {
           "type": "identifier",
           "named": true
-        },
-        {
-          "type": "tag_name",
-          "named": true
         }
       ]
     }
@@ -1428,15 +1450,15 @@
           "named": true
         },
         {
-          "type": "long_identifier",
-          "named": true
-        },
-        {
           "type": "map_expression",
           "named": true
         },
         {
           "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "path",
           "named": true
         },
         {
@@ -1720,33 +1742,6 @@
     }
   },
   {
-    "type": "long_identifier",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "kw_self",
-          "named": true
-        },
-        {
-          "type": "module_sep",
-          "named": true
-        },
-        {
-          "type": "name",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "map_entry",
     "named": true,
     "fields": {
@@ -1962,6 +1957,32 @@
     }
   },
   {
+    "type": "method_qualification",
+    "named": true,
+    "fields": {
+      "ability": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "hash_sign",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "method_suffix",
     "named": true,
     "fields": {
@@ -1977,11 +1998,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "dot",
+          "type": "at_sign",
+          "named": true
+        },
+        {
+          "type": "method_qualification",
           "named": true
         }
       ]
@@ -1996,7 +2021,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -2095,25 +2120,6 @@
     }
   },
   {
-    "type": "name",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "tag_name",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "nullary_tag_pattern",
     "named": true,
     "fields": {},
@@ -2122,7 +2128,7 @@
       "required": true,
       "types": [
         {
-          "type": "tag_name",
+          "type": "qualified_path",
           "named": true
         }
       ]
@@ -2206,11 +2212,11 @@
           "named": true
         },
         {
-          "type": "rparen",
+          "type": "qualified_path",
           "named": true
         },
         {
-          "type": "tag_name",
+          "type": "rparen",
           "named": true
         }
       ]
@@ -2276,6 +2282,29 @@
         },
         {
           "type": "type_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "kw_self",
+          "named": true
+        },
+        {
+          "type": "module_sep",
           "named": true
         }
       ]
@@ -2357,16 +2386,6 @@
     "type": "postfix_suffix",
     "named": true,
     "fields": {
-      "field": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "field_name",
-            "named": true
-          }
-        ]
-      },
       "indexing": {
         "multiple": false,
         "required": false,
@@ -2383,15 +2402,11 @@
       "required": false,
       "types": [
         {
+          "type": "field_suffix",
+          "named": true
+        },
+        {
           "type": "method_suffix",
-          "named": true
-        },
-        {
-          "type": "possessive",
-          "named": true
-        },
-        {
-          "type": "qualified_method_suffix",
           "named": true
         },
         {
@@ -2433,40 +2448,23 @@
     }
   },
   {
-    "type": "qualified_method_suffix",
+    "type": "qualified_path",
     "named": true,
-    "fields": {
-      "ability": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_name",
-            "named": true
-          }
-        ]
-      },
-      "method": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "at_sign",
+          "type": "identifier",
           "named": true
         },
         {
-          "type": "dot",
+          "type": "kw_self",
+          "named": true
+        },
+        {
+          "type": "module_sep",
           "named": true
         }
       ]
@@ -2512,7 +2510,7 @@
         "required": true,
         "types": [
           {
-            "type": "long_identifier",
+            "type": "path",
             "named": true
           }
         ]
@@ -3078,11 +3076,11 @@
       "required": true,
       "types": [
         {
-          "type": "type_argument_list",
+          "type": "path",
           "named": true
         },
         {
-          "type": "type_name",
+          "type": "type_argument_list",
           "named": true
         }
       ]
@@ -3128,7 +3126,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -3203,25 +3201,6 @@
     }
   },
   {
-    "type": "type_name",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "module_sep",
-          "named": true
-        },
-        {
-          "type": "tag_name",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "type_parameter_list",
     "named": true,
     "fields": {},
@@ -3234,6 +3213,10 @@
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
           "type": "lparen",
           "named": true
         },
@@ -3243,10 +3226,6 @@
         },
         {
           "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "type_variable",
           "named": true
         }
       ]
@@ -3265,19 +3244,15 @@
           "named": true
         },
         {
+          "type": "path",
+          "named": true
+        },
+        {
           "type": "self_type",
           "named": true
         },
         {
           "type": "type_application",
-          "named": true
-        },
-        {
-          "type": "type_name",
-          "named": true
-        },
-        {
-          "type": "type_variable",
           "named": true
         },
         {
@@ -3384,21 +3359,6 @@
     }
   },
   {
-    "type": "type_variable",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "type_variant",
     "named": true,
     "fields": {
@@ -3407,7 +3367,7 @@
         "required": true,
         "types": [
           {
-            "type": "tag_name",
+            "type": "identifier",
             "named": true
           }
         ]
@@ -3562,7 +3522,7 @@
         "required": false,
         "types": [
           {
-            "type": "tag_name",
+            "type": "identifier",
             "named": true
           }
         ]
@@ -3572,7 +3532,7 @@
         "required": true,
         "types": [
           {
-            "type": "type_name",
+            "type": "path",
             "named": true
           }
         ]
@@ -3760,10 +3720,6 @@
     }
   },
   {
-    "type": "ampersand",
-    "named": true
-  },
-  {
     "type": "arrow",
     "named": true
   },
@@ -3831,6 +3787,10 @@
   },
   {
     "type": "gt_op",
+    "named": true
+  },
+  {
+    "type": "hash_sign",
     "named": true
   },
   {
@@ -4055,10 +4015,6 @@
     "named": true
   },
   {
-    "type": "possessive",
-    "named": true
-  },
-  {
     "type": "quote",
     "named": true
   },
@@ -4091,7 +4047,7 @@
     "named": true
   },
   {
-    "type": "tag_name",
+    "type": "tilde",
     "named": true
   },
   {

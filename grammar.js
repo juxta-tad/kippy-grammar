@@ -316,8 +316,8 @@ module.exports = grammar({
 		use_statement: ($) =>
 			seq(
 				$.kw_use,
-				field("module", $.type_name),
-				opt(seq($.kw_as, field("alias", $.tag_name))),
+				field("module", $.path),
+				opt(seq($.kw_as, field("alias", $.identifier))),
 				opt(
 					seq(
 						$.kw_using,
@@ -329,7 +329,7 @@ module.exports = grammar({
 		module_declaration: ($) =>
 			seq(
 				$.kw_module,
-				field("name", $.type_name),
+				field("name", $.path),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -340,7 +340,7 @@ module.exports = grammar({
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_type,
-				field("name", $.type_name),
+				field("name", $.path),
 				opt($.type_parameter_list),
 				$.equals,
 				field("value", choice($.variant_type_value, $.alias_type_value)),
@@ -366,14 +366,13 @@ module.exports = grammar({
 			),
 
 		type_parameter_list: ($) =>
-			collection($, $.lparen, $.rparen, $.type_variable, $.comma),
-
+			collection($, $.lparen, $.rparen, $.identifier, $.comma),
 		type_variant_block: ($) => indented($, layoutList1($, $.type_variant)),
 
 		type_variant: ($) =>
 			seq(
 				$.pipe_bar,
-				field("name", $.tag_name),
+				field("name", $.identifier),
 				opt(field("payload", $.type_variant_payload)),
 			),
 
@@ -423,8 +422,8 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		attribute: ($) =>
 			seq(
-				$.ampersand,
-				$.long_identifier,
+				$.tilde,
+				$.path,
 				opt($.attribute_arguments_inline),
 			),
 
@@ -451,7 +450,7 @@ module.exports = grammar({
 				$.kw_extend,
 				field("type", $.type_term),
 				$.kw_with,
-				field("ability", $.type_name),
+				field("ability", $.path),
 				field("methods", indented($, layoutList1($, $.implementation_method))),
 			),
 
@@ -476,7 +475,7 @@ module.exports = grammar({
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_ability,
-				field("name", $.type_name),
+				field("name", $.path),
 				opt($.type_parameter_list),
 				field("methods", indented($, layoutList1($, $.annotation))),
 			),
@@ -534,21 +533,27 @@ module.exports = grammar({
 		postfix_suffix: ($) =>
 			choice(
 				field("indexing", $.index_suffix),
+				$.field_suffix,
 				$.method_suffix,
-				$.qualified_method_suffix,
 				$.try_op,
-				seq($.possessive, field("field", $.field_name)),
 			),
 
 		index_suffix: ($) =>
 			seq($.lbracket, field("index", $.expression), $.rbracket),
-		method_suffix: ($) => seq($.dot, field("method", $.identifier)),
-		qualified_method_suffix: ($) =>
+
+		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
+
+		method_suffix: ($) =>
 			seq(
 				$.at_sign,
-				field("ability", $.type_name),
-				$.dot,
 				field("method", $.identifier),
+				opt($.method_qualification),
+			),
+
+		method_qualification: ($) =>
+			seq(
+				$.hash_sign,
+				field("ability", $.path),
 			),
 
 		call_suffix: ($) =>
@@ -583,7 +588,7 @@ module.exports = grammar({
 			prec(
 				1,
 				seq(
-					field("constructor", $.type_name),
+					field("constructor", $.path),
 					field("body", $.record_body),
 				),
 			),
@@ -593,7 +598,7 @@ module.exports = grammar({
 				$.constructed_record_expression,
 				$.record_builder,
 				$.literal,
-				$.long_identifier,
+				$.path,
 				$.placeholder,
 				$.list_expression,
 				$.map_expression,
@@ -620,7 +625,7 @@ module.exports = grammar({
 
 		//for applicative/product composition.
 		record_builder: ($) =>
-			seq($.kw_build, field("builder", $.long_identifier), $.builder_body),
+			seq($.kw_build, field("builder", $.path), $.builder_body),
 		record_body: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_field, $.semicolon),
 
@@ -785,11 +790,11 @@ module.exports = grammar({
 				$.paren_tag_pattern,
 			),
 
-		nullary_tag_pattern: ($) => $.tag_name,
+		nullary_tag_pattern: ($) => $.qualified_path,
 
 		paren_tag_pattern: ($) =>
 			seq(
-				$.tag_name,
+				$.qualified_path,
 				$.lparen,
 				looseSeparated1($, $.pattern, $.comma),
 				$.rparen,
@@ -835,11 +840,7 @@ module.exports = grammar({
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
-				inlineOrIndented(
-					$,
-					sep1($.constraint_entry, $.comma),
-					layoutList1($, $.constraint_entry),
-				),
+				collection($, $.lbrace, $.rbrace, $.constraint_entry, $.comma),
 			),
 
 		constraint_entry: ($) =>
@@ -852,8 +853,8 @@ module.exports = grammar({
 		constraint_sum: ($) =>
 			prec.left(
 				seq(
-					field("ability", $.type_name),
-					many(seq($.plus, field("ability", $.type_name))),
+					field("ability", $.path),
+					many(seq($.plus, field("ability", $.path))),
 				),
 			),
 
@@ -874,21 +875,18 @@ module.exports = grammar({
 				field("result", inlineOrIndented($, $.type_expression)),
 			),
 
-		type_application: ($) => prec(1, seq($.type_name, $.type_argument_list)),
-		type_variable: ($) => reserved("global", $.identifier),
+		type_application: ($) => prec(1, seq($.path, $.type_argument_list)),
 
 		self_type: ($) => $.kw_Self,
 
 		type_primary: ($) =>
 			choice(
 				$.type_application,
-				$.type_name,
-				$.type_variable,
+				$.path,
 				$.self_type,
 				$.type_wildcard,
 				$.parenthesized_type,
 			),
-		type_name: ($) => seq($.tag_name, many(seq($.module_sep, $.tag_name))),
 
 		type_argument_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
@@ -988,15 +986,28 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.16: IDENTIFIERS & OPERATORS
 		// ─────────────────────────────────────────────────────────────────────────
-		identifier: ($) => /(_*[a-z][a-zA-Z0-9_]*!?)/,
-		tag_name: ($) => token(/(_*[A-Z][a-zA-Z0-9_]*)/),
-		import_name: ($) => choice($.identifier, $.tag_name),
-		name: ($) => choice($.identifier, $.tag_name),
+		identifier: ($) => token(/[_\p{ID_Start}][\p{ID_Continue}]*!?/u),
+		import_name: ($) => $.identifier,
 		value_name: ($) => choice($.identifier, $.kw_self),
-		long_identifier: ($) =>
+
+		path: ($) =>
 			prec.left(
-				seq(choice($.identifier, $.kw_self), many(seq($.module_sep, $.name))),
+				seq(
+					choice($.identifier, $.kw_self),
+					many(seq($.module_sep, $.identifier)),
+				),
 			),
+
+		qualified_path: ($) =>
+			prec.left(
+				seq(
+					choice($.identifier, $.kw_self),
+					$.module_sep,
+					$.identifier,
+					many(seq($.module_sep, $.identifier)),
+				),
+			),
+
 		placeholder: ($) => token("__"),
 		wildcard: ($) => "_",
 
@@ -1053,7 +1064,7 @@ module.exports = grammar({
 		dot: () => token.immediate("."),
 		module_sep: () => token.immediate("::"),
 		at_sign: () => token.immediate("@"),
-		ampersand: () => token.immediate("&"),
+		tilde: () => token.immediate("~"),
 		hash_sign: () => token.immediate("#"),
 
 		pipe: () => token("|>"),
@@ -1078,6 +1089,5 @@ module.exports = grammar({
 		left_arrow: () => "<-",
 		fat_arrow: () => "=>",
 		try_op: () => "?",
-		possessive: () => token.immediate("'s"),
 	},
 });
