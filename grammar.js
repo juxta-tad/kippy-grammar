@@ -30,6 +30,11 @@ function sep1(rule, separator) {
 function indented($, body) {
 	return seq($.newline, $.indent, body, many($.newline), $.dedent);
 }
+
+function padded($, body) {
+	return seq($.newline, $.indent, body, many($.newline), $.dedent);
+}
+
 // --- Block & Layout Helpers ---
 function wrapped(open, close, body) {
 	return seq(open, body, close);
@@ -38,19 +43,11 @@ function wrapped(open, close, body) {
 function inlineOrInnerPadded($, rule) {
 	return choice(
 		seq(many($.newline), rule, many($.newline)),
-		padded($, rule),
+		indented($, rule),
 	);
 }
 
 function inlineOrIndented($, inlineRule, blockRule = inlineRule) {
-	return choice(inlineRule, indented($, blockRule));
-}
-
-function inlineOrPadded($, inlineRule, blockRule = inlineRule) {
-	return choice(inlineRule, indented($, blockRule));
-}
-
-function softIndentedBody($, inlineRule, blockRule = inlineRule) {
 	return choice(inlineRule, indented($, blockRule));
 }
 
@@ -354,7 +351,7 @@ module.exports = grammar({
 				$.kw_derives,
 				choice(
 					sep1(field("ability", $.type_term), $.comma),
-					padded($, layoutList1($, field("ability", $.type_term))),
+					indented($, layoutList1($, field("ability", $.type_term))),
 				),
 			),
 		variant_type_value: ($) => prec(2, $.type_variant_block),
@@ -391,7 +388,7 @@ module.exports = grammar({
 				attributePrefix($),
 				field("name", $.binding_name),
 				$.colon,
-				field("type", inlineOrPadded($, $.type_expression)),
+				field("type", inlineOrindented($, $.type_expression)),
 				opt(field("constraints", $.constraint_clause)),
 			),
 
@@ -402,7 +399,7 @@ module.exports = grammar({
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
-				field("type", inlineOrPadded($, $.type_expression)),
+				field("type", inlineOrindented($, $.type_expression)),
 				opt(field("constraints", $.constraint_clause)),
 			),
 
@@ -481,7 +478,7 @@ module.exports = grammar({
 				$.kw_ability,
 				field("name", $.type_name),
 				opt($.type_parameter_list),
-				field("methods", indented($, layoutList1($, $.annotation))),
+				field("methods", padded($, layoutList1($, $.annotation))),
 			),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -492,7 +489,7 @@ module.exports = grammar({
 				$.kw_test,
 				field("name", $.static_string),
 				$.colon,
-				field("body", indented($, $.expression)),
+				field("body", padded($, $.expression)),
 			),
 
 		binding_core: ($) =>
