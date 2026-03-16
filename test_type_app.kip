@@ -1,5 +1,5 @@
 type User = { name: String, items: List[Item] }
 
-let x: Dict[String, Int] = empty
-let y: Point = Point { x = 1, y = 2 }
-let z = map[String, List[Int]]
+x: Dict[String, Int] = empty
+y: Point = Point { x = 1, y = 2 }
+z = map[String, List[Int]]

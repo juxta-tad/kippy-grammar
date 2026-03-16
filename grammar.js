@@ -418,7 +418,12 @@ module.exports = grammar({
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
-				$.binding_core,
+				field("name", $.binding_name),
+				opt(
+					seq($.colon, field("type", inlineOrIndented($, $.type_expression))),
+				),
+				$.equals,
+				field("value", softIndentedBody($, $.expression)),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
