@@ -599,14 +599,6 @@ module.exports = grammar({
 				$.parenthesized_expression,
 			),
 
-		block_expression: ($) =>
-			choice(
-				$.match_expression,
-				$.if_expression,
-				$.lambda_expression,
-				$.let_expression,
-			),
-
 		// Collections
 		list_expression: ($) =>
 			collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
