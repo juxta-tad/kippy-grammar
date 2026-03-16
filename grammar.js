@@ -617,8 +617,8 @@ module.exports = grammar({
 					$.kw_with,
 					choice(
 						sep1(field("arg", $.call_argument), $.comma),
-						indented(
-							$,
+						seq(
+							many1($.newline),
 							separated1($, field("arg", $.call_argument), $.comma, {
 								allow_newline_separator: false,
 							}),
@@ -626,7 +626,6 @@ module.exports = grammar({
 					),
 				),
 			),
-
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 
 		// ─────────────────────────────────────────────────────────────────────────

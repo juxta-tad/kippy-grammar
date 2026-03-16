@@ -44,7 +44,7 @@ typedef struct {
     uint32_t emitted_dedents;
 } Scanner;
 
-// Forward declaration of our runtime assert check
+// Forward declaration
 static void check_invariants(const Scanner *s);
 
 // =============================================================================
@@ -65,7 +65,8 @@ static inline void format_lookahead(int32_t lookahead, char *buf) {
         case 0:    strcpy(buf, "EOF"); break;
         default:
             if (lookahead >= 32 && lookahead <= 126) {
-                buf[0] = (char)lookahead; buf[1] = '\0';
+                buf[0] = (char)lookahead;
+                buf[1] = '\0';
             } else {
                 strcpy(buf, ".");
             }
@@ -93,12 +94,13 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
     Scanner *s = (Scanner *)payload;
     check_invariants(s);
 
-    // Check actual stack state instead of counter difference
-    // net_open_indents = indents above base + pending dedents queued to emit
-    uint16_t net_open_indents = (s->indent_count - 1) + s->pending_dedents;
+    uint16_t net_open_indents = (uint16_t)((s->indent_count - 1) + s->pending_dedents);
     if (net_open_indents > 0) {
-        DEBUG_LOG("[DESTROY]     | WARN  | Unclosed indentation (stack depth: %u, pending dedents: %u)\n",
-            s->indent_count - 1, s->pending_dedents);
+        DEBUG_LOG(
+            "[DESTROY]     | WARN  | Unclosed indentation (stack depth: %u, pending dedents: %u)\n",
+            (unsigned)(s->indent_count - 1),
+            (unsigned)s->pending_dedents
+        );
     }
 
     s->magic = 0;
@@ -106,7 +108,7 @@ void tree_sitter_kippy_external_scanner_destroy(void *payload) {
 }
 
 // =============================================================================
-// Serialization (Saving & Restoring State)
+// Serialization
 // =============================================================================
 
 unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffer) {
@@ -128,7 +130,6 @@ unsigned tree_sitter_kippy_external_scanner_serialize(void *payload, char *buffe
 void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *s = (Scanner *)payload;
 
-    // Default state
     s->indent_count = 1;
     s->indents[0] = 0;
     s->pending_dedents = 0;
@@ -139,15 +140,17 @@ void tree_sitter_kippy_external_scanner_deserialize(void *payload, const char *b
         if (pos + 1 < length) {
             uint8_t low = (uint8_t)buffer[pos++];
             uint8_t high = (uint8_t)buffer[pos++];
-            s->pending_dedents = low | (high << 8);
+            s->pending_dedents = (uint16_t)(low | (high << 8));
         }
 
         if (pos < length) {
             uint8_t extra_indents = (uint8_t)buffer[pos++];
-            for (uint8_t i = 0; i < extra_indents && (pos + 1) < length; i++) {
+            for (uint8_t i = 0;
+                 i < extra_indents && (pos + 1) < length && s->indent_count <= MAX_INDENT_DEPTH;
+                 i++) {
                 uint8_t low = (uint8_t)buffer[pos++];
                 uint8_t high = (uint8_t)buffer[pos++];
-                s->indents[s->indent_count++] = low | (high << 8);
+                s->indents[s->indent_count++] = (uint16_t)(low | (high << 8));
             }
         }
     }
@@ -163,22 +166,29 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
     Scanner *s = (Scanner *)payload;
     check_invariants(s);
 
-    char la_str[4];
+    char la_str[8];
     format_lookahead(lexer->lookahead, la_str);
-    DEBUG_LOG("[SCAN]        | INFO  | Lookahead: '%s' (0x%02X) | Col: %u | Valid: [IND:%d DED:%d NL:%d]\n",
-        la_str, (uint32_t)lexer->lookahead, lexer->get_column(lexer),
-        valid_symbols[INDENT], valid_symbols[DEDENT], valid_symbols[NEWLINE]);
+    DEBUG_LOG(
+        "[SCAN]        | INFO  | Lookahead: '%s' (0x%02X) | Col: %u | Valid: [IND:%d DED:%d NL:%d]\n",
+        la_str,
+        (unsigned)lexer->lookahead,
+        (unsigned)lexer->get_column(lexer),
+        valid_symbols[INDENT],
+        valid_symbols[DEDENT],
+        valid_symbols[NEWLINE]
+    );
 
-    // 1. Emit pending dedents from previous scan calls
+    // 1. Emit queued DEDENTs first.
     if (s->pending_dedents > 0 && valid_symbols[DEDENT]) {
         s->pending_dedents--;
         s->emitted_dedents++;
         lexer->result_symbol = DEDENT;
-        DEBUG_LOG("[EMIT]        | TOKEN | PENDING DEDENT (%u remaining)\n", s->pending_dedents);
+        DEBUG_LOG("[EMIT]        | TOKEN | PENDING DEDENT (%u remaining)\n",
+                  (unsigned)s->pending_dedents);
         return true;
     }
 
-    // 2. Handle EOF (Emit all remaining DEDENTs safely)
+    // 2. EOF: drain remaining indentation stack.
     if (lexer->eof(lexer)) {
         if (valid_symbols[DEDENT] && s->indent_count > 1) {
             s->indent_count--;
@@ -190,18 +200,20 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
         return false;
     }
 
-    // 3. Layout decisions strictly bound to line beginnings (Column 0)
+    // 3. Only compute indentation at the start of a physical line.
     if (lexer->get_column(lexer) == 0) {
-        // Consume indentation as part of the scanner's traversal
-        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-            advance(lexer);   // NOT skip(lexer)
+        while (is_hspace(lexer->lookahead)) {
+            skip(lexer);
         }
 
-        uint16_t indent = lexer->get_column(lexer);
-        if (indent > MAX_INDENT_COLUMN) indent = MAX_INDENT_COLUMN;
+        uint16_t indent = (uint16_t)lexer->get_column(lexer);
+        if (indent > MAX_INDENT_COLUMN) {
+            indent = MAX_INDENT_COLUMN;
+        }
 
-        if (is_newline(lexer->lookahead) || lexer->eof(lexer)) {
-            if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
+        // Blank line: emit NEWLINE, but do not touch indent stack.
+        if (is_newline(lexer->lookahead)) {
+            if (valid_symbols[NEWLINE]) {
                 if (lexer->lookahead == '\r') advance(lexer);
                 if (lexer->lookahead == '\n') advance(lexer);
                 lexer->result_symbol = NEWLINE;
@@ -215,20 +227,28 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
 
         if (valid_symbols[DEDENT] && indent < previous_indent) {
             uint16_t pop_count = 0;
+
             while (s->indent_count > 1 && s->indents[s->indent_count - 1] > indent) {
                 s->indent_count--;
                 pop_count++;
             }
 
+            // Reject half-dedents: indentation must match a previous level exactly.
             if (s->indents[s->indent_count - 1] != indent) {
+                DEBUG_LOG(
+                    "[SCAN]        | WARN  | Invalid dedent target: got %u, nearest stack top %u\n",
+                    (unsigned)indent,
+                    (unsigned)s->indents[s->indent_count - 1]
+                );
                 return false;
             }
 
             if (pop_count > 0) {
-                s->pending_dedents = pop_count - 1;
+                s->pending_dedents = (uint16_t)(pop_count - 1);
                 s->emitted_dedents++;
                 lexer->result_symbol = DEDENT;
-                DEBUG_LOG("[EMIT]        | TOKEN | DEDENT (pending: %u)\n", s->pending_dedents);
+                DEBUG_LOG("[EMIT]        | TOKEN | DEDENT (pending: %u)\n",
+                          (unsigned)s->pending_dedents);
                 return true;
             }
         }
@@ -241,12 +261,13 @@ bool tree_sitter_kippy_external_scanner_scan(void *payload, TSLexer *lexer, cons
             }
             s->emitted_indents++;
             lexer->result_symbol = INDENT;
-            DEBUG_LOG("[EMIT]        | TOKEN | INDENT (level: %u)\n", indent);
+            DEBUG_LOG("[EMIT]        | TOKEN | INDENT (level: %u)\n",
+                      (unsigned)indent);
             return true;
         }
     }
 
-    // 4. Standard NEWLINE mapping (When we aren't at column 0 / End-of-statement)
+    // 4. Standard NEWLINE tokenization elsewhere.
     if (valid_symbols[NEWLINE] && is_newline(lexer->lookahead)) {
         if (lexer->lookahead == '\r') advance(lexer);
         if (lexer->lookahead == '\n') advance(lexer);
@@ -267,27 +288,23 @@ static void check_invariants(const Scanner *s) {
     assert(s->magic == SCANNER_MAGIC);
     assert(s->indent_count >= 1);
     assert(s->indent_count <= MAX_INDENT_DEPTH + 1);
-    assert(s->indents[0] == 0); // Base level must always be 0
+    assert(s->indents[0] == 0);
 
-    // Ensure indent stack is strictly monotonically increasing
     for (uint16_t i = 1; i < s->indent_count; i++) {
         assert(s->indents[i] > s->indents[i - 1]);
     }
 }
 
-// Ensure our external grammar definition matches our token enum mapping exactly
 _Static_assert(NEWLINE == 0, "Token order must match grammar externals[0]");
 _Static_assert(INDENT  == 1, "Token order must match grammar externals[1]");
 _Static_assert(DEDENT  == 2, "Token order must match grammar externals[2]");
 
-// Ensure safe bit shifting and masking limits
 _Static_assert(CHAR_BIT == 8,         "Serialization assumes 8-bit bytes");
 _Static_assert(sizeof(uint16_t) == 2, "Serialization assumes 16-bit uint16_t");
 _Static_assert(UINT16_MAX == 65535,   "Serialization assumes 16-bit uint16_t range");
 _Static_assert(UINT8_MAX  == 255,     "Serialization assumes 8-bit uint8_t range");
 
-// Ensure Tree-sitter allocated buffer size is large enough to save state
 _Static_assert(
-    TREE_SITTER_SERIALIZATION_BUFFER_SIZE >= 4 + (MAX_INDENT_DEPTH * 2),
+    TREE_SITTER_SERIALIZATION_BUFFER_SIZE >= 3 + (MAX_INDENT_DEPTH * 2),
     "Tree-sitter serialization buffer is too small for max indent depth"
 );
