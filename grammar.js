@@ -36,21 +36,6 @@ function wrapped(open, close, body) {
 	return seq(open, body, close);
 }
 
-function inlineOrInnerIndented($, rule) {
-	return choice(
-		seq(many($.newline), rule, many($.newline)),
-		indented($, rule),
-	);
-}
-
-function inlineOrIndented($, inlineRule, blockRule = inlineRule) {
-	return choice(inlineRule, indented($, blockRule));
-}
-
-function softIndentedBody($, inlineRule, blockRule = inlineRule) {
-	return choice(inlineRule, indented($, blockRule));
-}
-
 function fileBody($, header, item) {
 	return seq(
 		many($.newline),
@@ -60,13 +45,22 @@ function fileBody($, header, item) {
 }
 
 // --- Loose List Forms ---
-function looseSeparated1($, rule, separator) {
-	return seq(
-		rule,
-		many(choice(
+function separated1(
+	$,
+	rule,
+	separator,
+	{ allow_newline_separator = true } = {},
+) {
+	const next = allow_newline_separator
+		? choice(
 			seq(separator, rule),
 			seq(opt(separator), many1($.newline), rule),
-		)),
+		)
+		: seq(separator, many($.newline), rule);
+
+	return seq(
+		rule,
+		many(next),
 		opt(separator),
 	);
 }
@@ -131,7 +125,7 @@ function collection($, open, close, item, separator) {
 		$,
 		open,
 		close,
-		looseSeparated1($, item, separator),
+		separated1($, item, separator),
 	);
 }
 
@@ -281,6 +275,7 @@ module.exports = grammar({
 		$.line_comment,
 		$.block_comment,
 		$.doc_comment,
+		$.doc_block_comment,
 	],
 
 	supertypes: ($) => [
@@ -361,7 +356,7 @@ module.exports = grammar({
 				1,
 				seq(
 					opt($.kw_distinct),
-					inlineOrIndented($, $.type_expression),
+					$.type_body,
 				),
 			),
 
@@ -387,7 +382,7 @@ module.exports = grammar({
 				attributePrefix($),
 				field("name", $.binding_name),
 				$.colon,
-				field("type", inlineOrIndented($, $.type_expression)),
+				$.type_body,
 				opt(field("constraints", $.constraint_clause)),
 			),
 
@@ -398,7 +393,7 @@ module.exports = grammar({
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
-				field("type", inlineOrIndented($, $.type_expression)),
+				$.type_body,
 				opt(field("constraints", $.constraint_clause)),
 			),
 
@@ -410,11 +405,9 @@ module.exports = grammar({
 				attributePrefix($),
 				visibility_modifier($),
 				field("name", $.binding_name),
-				opt(
-					seq($.colon, field("type", inlineOrIndented($, $.type_expression))),
-				),
+				opt(seq($.colon, $.type_body)),
 				$.equals,
-				field("value", softIndentedBody($, $.expression)),
+				$.value_slot,
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -459,7 +452,7 @@ module.exports = grammar({
 				field("name", $.identifier),
 				opt(field("parameters", $.method_parameter_list)),
 				$.fat_arrow,
-				field("body", softIndentedBody($, $.expression)),
+				$.method_body,
 			),
 
 		method_parameter_list: ($) =>
@@ -467,7 +460,7 @@ module.exports = grammar({
 				sep1(field("param", $.binding_pattern), $.comma),
 				indented(
 					$,
-					looseSeparated1($, field("param", $.binding_pattern), $.comma),
+					separated1($, field("param", $.binding_pattern), $.comma),
 				),
 			),
 		ability_declaration: ($) =>
@@ -488,17 +481,36 @@ module.exports = grammar({
 				$.kw_test,
 				field("name", $.static_string),
 				$.colon,
-				field("body", indented($, $.expression)),
+				field("body", indented($, layoutList1($, $.test_statement))),
+			),
+
+		test_statement: ($) =>
+			choice(
+				$.test_binding,
+				$.test_value_declaration,
+				$.expect_statement,
+			),
+
+		test_binding: ($) =>
+			seq(
+				$.kw_let,
+				$.binding_core,
+			),
+
+		test_value_declaration: ($) =>
+			seq(
+				field("name", $.binding_name),
+				opt(seq($.colon, $.type_body)),
+				$.equals,
+				$.value_slot,
 			),
 
 		binding_core: ($) =>
 			seq(
 				field("pattern", $.binding_pattern),
-				opt(
-					seq($.colon, field("type", inlineOrIndented($, $.type_expression))),
-				),
+				opt(seq($.colon, $.type_body)),
 				$.equals,
-				field("value", softIndentedBody($, $.expression)),
+				$.value_slot,
 			),
 
 		binding_name: ($) => reserved("global", $.identifier),
@@ -512,6 +524,49 @@ module.exports = grammar({
 
 		arm_inline_expression: ($) => $.inline_expression,
 		call_argument: ($) => $.pipe_expression,
+
+		// Semantic wrapper rules for layout fields (slot-first naming)
+		value_slot: ($) =>
+			choice(
+				field("value", $.expression),
+				indented($, field("value", $.expression)),
+			),
+
+		match_arm_value: ($) =>
+			choice(
+				field("value", $.arm_inline_expression),
+				indented($, field("value", $.expression)),
+			),
+
+		method_body: ($) =>
+			choice(
+				field("body", $.expression),
+				indented($, field("body", $.expression)),
+			),
+
+		lambda_body: ($) =>
+			choice(
+				field("body", $.expression),
+				indented($, field("body", $.expression)),
+			),
+
+		let_body: ($) =>
+			choice(
+				field("body", $.expression),
+				indented($, field("body", $.expression)),
+			),
+
+		if_then_value: ($) =>
+			choice(
+				field("then_value", $.expression),
+				indented($, field("then_value", $.expression)),
+			),
+
+		if_else_value: ($) =>
+			choice(
+				field("else_value", $.expression),
+				indented($, field("else_value", $.expression)),
+			),
 
 		...buildExpressionLadder("", "postfix_expression"),
 
@@ -564,7 +619,9 @@ module.exports = grammar({
 						sep1(field("arg", $.call_argument), $.comma),
 						indented(
 							$,
-							looseSeparated1($, field("arg", $.call_argument), $.comma),
+							separated1($, field("arg", $.call_argument), $.comma, {
+								allow_newline_separator: false,
+							}),
 						),
 					),
 				),
@@ -618,7 +675,7 @@ module.exports = grammar({
 			seq(
 				field("key", $.expression),
 				$.fat_arrow,
-				field("value", softIndentedBody($, $.expression)),
+				$.value_slot,
 			),
 
 		record_expression: ($) => $.record_body,
@@ -638,7 +695,7 @@ module.exports = grammar({
 				seq(
 					field("name", $.field_name),
 					$.equals,
-					field("value", softIndentedBody($, $.expression)),
+					$.value_slot,
 				),
 				$.spread_element,
 			),
@@ -647,7 +704,7 @@ module.exports = grammar({
 			seq(
 				field("name", $.field_name),
 				$.left_arrow,
-				field("value", softIndentedBody($, $.expression)),
+				$.value_slot,
 			),
 
 		field_name: ($) => reserved("global", $.identifier),
@@ -659,7 +716,10 @@ module.exports = grammar({
 			wrapped(
 				$.lparen,
 				$.rparen,
-				field("value", inlineOrInnerIndented($, $.expression)),
+				choice(
+					seq(many($.newline), field("value", $.expression), many($.newline)),
+					indented($, field("value", $.expression)),
+				),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -674,7 +734,7 @@ module.exports = grammar({
 					indented($, layoutList1($, $.binding_core)),
 				),
 				$.kw_in,
-				field("value", softIndentedBody($, $.expression)),
+				$.let_body,
 			)),
 
 		match_expression: ($) =>
@@ -689,11 +749,7 @@ module.exports = grammar({
 			seq(
 				field("pattern", $.pattern),
 				$.arrow,
-				softIndentedBody(
-					$,
-					field("value", $.arm_inline_expression),
-					field("value", $.expression),
-				),
+				$.match_arm_value,
 			),
 
 		lambda_expression: ($) =>
@@ -704,7 +760,7 @@ module.exports = grammar({
 					indented($, layoutList1($, field("param", $.binding_pattern))),
 				),
 				$.fat_arrow,
-				field("body", softIndentedBody($, $.expression)),
+				$.lambda_body,
 			)),
 
 		if_expression: ($) =>
@@ -712,9 +768,9 @@ module.exports = grammar({
 				$.kw_if,
 				field("condition", $.expression),
 				$.kw_then,
-				field("then_value", softIndentedBody($, $.expression)),
+				$.if_then_value,
 				$.kw_else,
-				field("else_value", softIndentedBody($, $.expression)),
+				$.if_else_value,
 			)),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -796,7 +852,7 @@ module.exports = grammar({
 			seq(
 				$.qualified_path,
 				$.lparen,
-				looseSeparated1($, $.pattern, $.comma),
+				separated1($, $.pattern, $.comma),
 				$.rparen,
 			),
 
@@ -830,8 +886,26 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		type_expression: ($) => choice($.type_term, $.variadic_type),
 
+		type_body: ($) =>
+			choice(
+				field("type", $.type_expression),
+				indented($, field("type", $.type_expression)),
+			),
+
+		function_result: ($) =>
+			choice(
+				field("result", $.type_expression),
+				indented($, field("result", $.type_expression)),
+			),
+
+		record_field_type: ($) =>
+			choice(
+				field("type", $.type_expression),
+				indented($, field("type", $.type_expression)),
+			),
+
 		function_type_parameters: ($) =>
-			looseSeparated1($, field("param", $.type_expression), $.comma),
+			separated1($, field("param", $.type_expression), $.comma),
 
 		variadic_type: ($) => seq($.ellipsis, field("item", $.type_term)),
 		ellipsis: ($) => token(prec(1, "...")),
@@ -872,7 +946,7 @@ module.exports = grammar({
 					$.comma,
 				),
 				$.arrow,
-				field("result", inlineOrIndented($, $.type_expression)),
+				$.function_result,
 			),
 
 		type_application: ($) => prec(1, seq($.path, $.type_argument_list)),
@@ -892,7 +966,11 @@ module.exports = grammar({
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
 
 		record_type_field: ($) =>
-			seq($.field_name, $.colon, inlineOrIndented($, $.type_expression)),
+			seq(
+				field("name", $.field_name),
+				$.colon,
+				$.record_field_type,
+			),
 		type_record: ($) =>
 			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
 		type_tuple: ($) =>
@@ -982,6 +1060,17 @@ module.exports = grammar({
 		line_comment: (_) => token(prec(1, /\/\/[^\n]*/)),
 		block_comment: (_) =>
 			token(prec(-3, seq("</", many(choice(/[^/]/, /\/[^>]/)), "/>"))),
+		doc_block_comment: (_) =>
+			token(
+				prec(
+					2,
+					seq(
+						"<///",
+						/[\s\S]*?/,
+						"///>",
+					),
+				),
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.16: IDENTIFIERS & OPERATORS
