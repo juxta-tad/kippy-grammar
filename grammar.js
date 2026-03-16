@@ -206,7 +206,7 @@ function buildExpressionLadder(prefix, baseRule) {
 					$[`${prefix}unary_expression`],
 					many(
 						seq(
-							choice($.star, $.slash, $.percent),
+							choice($.star, $.slash, $.kw_mod),
 							$[`${prefix}unary_expression`],
 						),
 					),
@@ -423,7 +423,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		attribute: ($) =>
 			seq(
-				$.double_dash,
+				$.ampersand,
 				$.long_identifier,
 				opt($.attribute_arguments_inline),
 			),
@@ -835,9 +835,10 @@ module.exports = grammar({
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
-				choice(
+				inlineOrIndented(
+					$,
 					sep1($.constraint_entry, $.comma),
-					indented($, layoutList1($, $.constraint_entry)),
+					layoutList1($, $.constraint_entry),
 				),
 			),
 
@@ -915,18 +916,18 @@ module.exports = grammar({
 
 		float_literal: ($) =>
 			token(choice(
-				/[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
-				/[0-9][0-9_]*\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
-				/\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?/,
-				/[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?/,
+				/[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?/,
+				/[0-9][0-9_]*\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?/,
+				/\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?/,
+				/[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?%?/,
 			)),
 
 		int_literal: ($) =>
 			token(choice(
-				/0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-				/0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-				/0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
-				/[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?/,
+				/0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
+				/0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
+				/0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
+				/[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
 			)),
 
 		string: ($) =>
@@ -1027,6 +1028,7 @@ module.exports = grammar({
 		kw_or: () => "or",
 		kw_and: () => "and",
 		kw_not: () => "not",
+		kw_mod: () => "mod",
 		kw_as: () => "as",
 		kw_self: () => "self",
 		kw_Self: () => "Self",
@@ -1051,8 +1053,8 @@ module.exports = grammar({
 		dot: () => token.immediate("."),
 		module_sep: () => token.immediate("::"),
 		at_sign: () => token.immediate("@"),
+		ampersand: () => token.immediate("&"),
 		hash_sign: () => token.immediate("#"),
-		double_dash: () => token("--"),
 
 		pipe: () => token("|>"),
 		pipe_bar: () => token("|"),
@@ -1064,7 +1066,6 @@ module.exports = grammar({
 		minus: () => "-",
 		star: () => "*",
 		slash: () => "/",
-		percent: () => "%",
 
 		eq_op: () => "==",
 		ne_op: () => "!=",

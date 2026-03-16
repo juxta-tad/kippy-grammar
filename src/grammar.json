@@ -1235,7 +1235,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "double_dash"
+          "name": "ampersand"
         },
         {
           "type": "SYMBOL",
@@ -2305,7 +2305,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "percent"
+                      "name": "kw_mod"
                     }
                   ]
                 },
@@ -6338,19 +6338,19 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "[0-9][0-9_]*\\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?"
+            "value": "[0-9][0-9_]*\\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?"
           },
           {
             "type": "PATTERN",
-            "value": "[0-9][0-9_]*\\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?"
+            "value": "[0-9][0-9_]*\\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?"
           },
           {
             "type": "PATTERN",
-            "value": "\\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?"
+            "value": "\\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?"
           },
           {
             "type": "PATTERN",
-            "value": "[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?"
+            "value": "[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?%?"
           }
         ]
       }
@@ -6362,19 +6362,19 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?"
+            "value": "0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?"
           },
           {
             "type": "PATTERN",
-            "value": "0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?"
+            "value": "0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?"
           },
           {
             "type": "PATTERN",
-            "value": "0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?"
+            "value": "0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?"
           },
           {
             "type": "PATTERN",
-            "value": "[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?"
+            "value": "[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?"
           }
         ]
       }
@@ -6858,6 +6858,10 @@
       "type": "STRING",
       "value": "not"
     },
+    "kw_mod": {
+      "type": "STRING",
+      "value": "mod"
+    },
     "kw_as": {
       "type": "STRING",
       "value": "as"
@@ -6956,18 +6960,18 @@
         "value": "@"
       }
     },
+    "ampersand": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "&"
+      }
+    },
     "hash_sign": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
         "type": "STRING",
         "value": "#"
-      }
-    },
-    "double_dash": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "--"
       }
     },
     "pipe": {
@@ -7007,10 +7011,6 @@
     "slash": {
       "type": "STRING",
       "value": "/"
-    },
-    "percent": {
-      "type": "STRING",
-      "value": "%"
     },
     "eq_op": {
       "type": "STRING",

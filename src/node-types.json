@@ -332,11 +332,11 @@
       "required": true,
       "types": [
         {
-          "type": "attribute_arguments_inline",
+          "type": "ampersand",
           "named": true
         },
         {
-          "type": "double_dash",
+          "type": "attribute_arguments_inline",
           "named": true
         },
         {
@@ -2041,7 +2041,7 @@
       "required": true,
       "types": [
         {
-          "type": "percent",
+          "type": "kw_mod",
           "named": true
         },
         {
@@ -3760,6 +3760,10 @@
     }
   },
   {
+    "type": "ampersand",
+    "named": true
+  },
+  {
     "type": "arrow",
     "named": true
   },
@@ -3795,10 +3799,6 @@
   },
   {
     "type": "dot",
-    "named": true
-  },
-  {
-    "type": "double_dash",
     "named": true
   },
   {
@@ -3911,6 +3911,10 @@
   },
   {
     "type": "kw_match",
+    "named": true
+  },
+  {
+    "type": "kw_mod",
     "named": true
   },
   {
@@ -4032,10 +4036,6 @@
   },
   {
     "type": "newline",
-    "named": true
-  },
-  {
-    "type": "percent",
     "named": true
   },
   {
