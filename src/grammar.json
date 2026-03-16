@@ -84,7 +84,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "let_binding"
+          "name": "value_declaration"
         },
         {
           "type": "SYMBOL",
@@ -1078,7 +1078,7 @@
         }
       ]
     },
-    "let_binding": {
+    "value_declaration": {
       "type": "SEQ",
       "members": [
         {
@@ -1116,10 +1116,6 @@
               "type": "BLANK"
             }
           ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "kw_let"
         },
         {
           "type": "SYMBOL",

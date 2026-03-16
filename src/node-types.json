@@ -949,10 +949,6 @@
           "named": true
         },
         {
-          "type": "let_binding",
-          "named": true
-        },
-        {
           "type": "signature",
           "named": true
         },
@@ -962,6 +958,10 @@
         },
         {
           "type": "type_declaration",
+          "named": true
+        },
+        {
+          "type": "value_declaration",
           "named": true
         }
       ]
@@ -1510,37 +1510,6 @@
         },
         {
           "type": "kw_fn",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "let_binding",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "binding_core",
-          "named": true
-        },
-        {
-          "type": "kw_let",
-          "named": true
-        },
-        {
-          "type": "kw_pub",
           "named": true
         },
         {
@@ -3601,6 +3570,33 @@
         },
         {
           "type": "rparen",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "value_declaration",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "binding_core",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]

@@ -311,7 +311,7 @@ module.exports = grammar({
 			choice(
 				$.type_declaration,
 				$.signature,
-				$.let_binding,
+				$.value_declaration,
 				$.ability_declaration,
 				$.test_declaration,
 				$.expect_statement,
@@ -414,11 +414,10 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.5: VALUE BINDINGS & LET DECLARATIONS
 		// ─────────────────────────────────────────────────────────────────────────
-		let_binding: ($) =>
+		value_declaration: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
-				$.kw_let,
 				$.binding_core,
 			),
 
