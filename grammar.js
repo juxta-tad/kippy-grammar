@@ -397,7 +397,7 @@ module.exports = grammar({
 					many1($.newline),
 					lineSeparated1($, $.type_variant),
 					many($.newline),
-					opt($.kw_nd),
+					$.kw_nd,
 				),
 			),
 
