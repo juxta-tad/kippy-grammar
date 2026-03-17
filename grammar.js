@@ -555,8 +555,6 @@ module.exports = grammar({
 
 		binding_name: ($) => reserved("global", $.identifier),
 
-		receiver_parameter: ($) => $.kw_self,
-
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY
 		// ─────────────────────────────────────────────────────────────────────────

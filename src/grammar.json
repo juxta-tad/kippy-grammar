@@ -1871,10 +1871,6 @@
       },
       "context_name": "global"
     },
-    "receiver_parameter": {
-      "type": "SYMBOL",
-      "name": "kw_self"
-    },
     "expression": {
       "type": "SYMBOL",
       "name": "pipe_expression"
