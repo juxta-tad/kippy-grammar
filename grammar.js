@@ -1,7 +1,3 @@
-// ═════════════════════════════════════════════════════════════════════════════
-// SECTION 1: CONSTANTS & PRECEDENCE
-// ═════════════════════════════════════════════════════════════════════════════
-
 const PREC = {
 	PIPE: 1,
 	OR: 2,
@@ -13,9 +9,18 @@ const PREC = {
 	POSTFIX: 8,
 };
 
-// ═════════════════════════════════════════════════════════════════════════════
-// SECTION 2: HELPER FUNCTIONS
-// ═════════════════════════════════════════════════════════════════════════════
+// --- Lexical Regex Constants ---
+const DEC_DIGITS = '[0-9][0-9_]*';
+const HEX_DIGITS = '[0-9a-fA-F][0-9a-fA-F_]*';
+const OCT_DIGITS = '[0-7][0-7_]*';
+const BIN_DIGITS = '[01][01_]*';
+
+const INT_SUFFIX = '(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?';
+const FLOAT_SUFFIX = '(?:f32|f64)?%?';
+const EXPONENT = '(?:[eE][+-]?[0-9_]+)';
+
+const CHAR_ESCAPE = `(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
+const STRING_ESCAPE = `(?:u\\([0-9A-Fa-f]{1,8}\\)|[\\\\'"ntrbfv])`;
 
 const opt = optional;
 const many = repeat;
@@ -26,15 +31,7 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-// --- Fundamental Block Patterns ---
-function indented($, body) {
-	return seq($.newline, $.indent, body, many($.newline), $.dedent);
-}
-
 // --- Block & Layout Helpers ---
-function wrapped(open, close, body) {
-	return seq(open, body, close);
-}
 
 function fileBody($, header, item) {
 	return seq(
@@ -65,15 +62,22 @@ function separated1(
 	);
 }
 
-function layoutList1($, rule) {
+// Pure list helper (newline separated)
+function lineSeparated1($, rule) {
 	return seq(
 		rule,
-		many(seq(many($.newline), rule)),
+		many(seq(many1($.newline), rule)),
 	);
 }
 
-function inlineThenLayoutList1($, rule) {
-	return seq(layoutList1($, rule), many($.newline));
+// Explicitly terminated scope block helper
+function ndBlock($, rule) {
+	return seq(
+		many1($.newline),
+		lineSeparated1($, rule),
+		many($.newline),
+		$.kw_nd,
+	);
 }
 
 // --- Specific Construct Helpers ---
@@ -145,6 +149,32 @@ function attributePrefix($) {
 
 function visibility_modifier($) {
 	return opt($.kw_pub);
+}
+
+// Explicit braced separator form
+function bracedSeparated1($, rule, separator) {
+	const next = choice(
+		seq(separator, many($.newline), rule),
+		seq(many1($.newline), rule),
+	);
+
+	return seq(
+		rule,
+		many(next),
+		opt(separator),
+	);
+}
+
+function bracedCollection($, rule, separator) {
+	return seq(
+		$.lbrace,
+		opt(seq(
+			many($.newline),
+			bracedSeparated1($, rule, separator),
+			many($.newline),
+		)),
+		$.rbrace,
+	);
 }
 
 // --- Expression Ladder Generator ---
@@ -220,10 +250,6 @@ function buildExpressionLadder(prefix, baseRule) {
 	};
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// SECTION 3: GRAMMAR DEFINITION
-// ═════════════════════════════════════════════════════════════════════════════
-
 module.exports = grammar({
 	name: "kippy",
 
@@ -261,17 +287,16 @@ module.exports = grammar({
 			$.kw_as,
 			$.kw_self,
 			$.kw_Self,
+			$.kw_nd,
 		],
 	},
 
 	externals: ($) => [
 		$.newline,
-		$.indent,
-		$.dedent,
 	],
 
 	extras: ($) => [
-		/[ \t\r\f]+/,
+		new RustRegex('[ \\t\\r\\f]+'),
 		$.line_comment,
 		$.block_comment,
 		$.doc_comment,
@@ -281,7 +306,15 @@ module.exports = grammar({
 	supertypes: ($) => [
 		$.expression,
 	],
-
+	inline: ($) => [
+		$.value_slot,
+		$.match_arm_value,
+		$.method_body,
+		$.lambda_body,
+		$.let_body,
+		$.if_then_value,
+		$.if_else_value,
+	],
 	rules: {
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
@@ -341,12 +374,13 @@ module.exports = grammar({
 				field("value", choice($.variant_type_value, $.alias_type_value)),
 				opt($.derives_clause),
 			),
+
 		derives_clause: ($) =>
 			seq(
 				$.kw_derives,
 				choice(
 					sep1(field("ability", $.type_term), $.comma),
-					indented($, layoutList1($, field("ability", $.type_term))),
+					ndBlock($, field("ability", $.type_term)),
 				),
 			),
 		variant_type_value: ($) => prec(2, $.type_variant_block),
@@ -362,7 +396,8 @@ module.exports = grammar({
 
 		type_parameter_list: ($) =>
 			collection($, $.lparen, $.rparen, $.identifier, $.comma),
-		type_variant_block: ($) => indented($, layoutList1($, $.type_variant)),
+
+		type_variant_block: ($) => ndBlock($, $.type_variant),
 
 		type_variant: ($) =>
 			seq(
@@ -444,7 +479,7 @@ module.exports = grammar({
 				field("type", $.type_term),
 				$.kw_with,
 				field("ability", $.path),
-				field("methods", indented($, layoutList1($, $.implementation_method))),
+				field("methods", ndBlock($, $.implementation_method)),
 			),
 
 		implementation_method: ($) =>
@@ -458,11 +493,13 @@ module.exports = grammar({
 		method_parameter_list: ($) =>
 			choice(
 				sep1(field("param", $.binding_pattern), $.comma),
-				indented(
-					$,
+				seq(
+					many1($.newline),
 					separated1($, field("param", $.binding_pattern), $.comma),
+					many($.newline),
 				),
 			),
+
 		ability_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -470,7 +507,7 @@ module.exports = grammar({
 				$.kw_ability,
 				field("name", $.path),
 				opt($.type_parameter_list),
-				field("methods", indented($, layoutList1($, $.annotation))),
+				field("methods", ndBlock($, $.annotation)),
 			),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -481,7 +518,7 @@ module.exports = grammar({
 				$.kw_test,
 				field("name", $.static_string),
 				$.colon,
-				field("body", indented($, layoutList1($, $.test_statement))),
+				field("body", ndBlock($, $.test_statement)),
 			),
 
 		test_statement: ($) =>
@@ -522,51 +559,17 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		expression: ($) => $.pipe_expression,
 
-		arm_inline_expression: ($) => $.inline_expression,
+		arm_inline_expression: ($) => $.pipe_expression,
 		call_argument: ($) => $.pipe_expression,
 
-		// Semantic wrapper rules for layout fields (slot-first naming)
-		value_slot: ($) =>
-			choice(
-				field("value", $.expression),
-				indented($, field("value", $.expression)),
-			),
-
-		match_arm_value: ($) =>
-			choice(
-				field("value", $.arm_inline_expression),
-				indented($, field("value", $.expression)),
-			),
-
-		method_body: ($) =>
-			choice(
-				field("body", $.expression),
-				indented($, field("body", $.expression)),
-			),
-
-		lambda_body: ($) =>
-			choice(
-				field("body", $.expression),
-				indented($, field("body", $.expression)),
-			),
-
-		let_body: ($) =>
-			choice(
-				field("body", $.expression),
-				indented($, field("body", $.expression)),
-			),
-
-		if_then_value: ($) =>
-			choice(
-				field("then_value", $.expression),
-				indented($, field("then_value", $.expression)),
-			),
-
-		if_else_value: ($) =>
-			choice(
-				field("else_value", $.expression),
-				indented($, field("else_value", $.expression)),
-			),
+		// Semantic wrapper rules for layout fields
+		value_slot: ($) => field("value", $.expression),
+		match_arm_value: ($) => field("value", $.expression),
+		method_body: ($) => field("body", $.expression),
+		lambda_body: ($) => field("body", $.expression),
+		let_body: ($) => field("body", $.expression),
+		if_then_value: ($) => field("then_value", $.expression),
+		if_else_value: ($) => field("else_value", $.expression),
 
 		...buildExpressionLadder("", "postfix_expression"),
 
@@ -682,13 +685,13 @@ module.exports = grammar({
 		//for applicative/product composition.
 		record_builder: ($) =>
 			seq($.kw_build, field("builder", $.path), $.builder_body),
-		record_body: ($) =>
-			collection($, $.lbrace, $.rbrace, $.record_field, $.semicolon),
 
-		builder_body: ($) =>
-			collection($, $.lbrace, $.rbrace, $.builder_field, $.semicolon),
+		// Use bracedCollection for record bodies
+		record_body: ($) => bracedCollection($, $.record_field, $.semicolon),
 
-		// Allow spread natively as a valid "field" inside records instead of complicating helpers
+		builder_body: ($) => bracedCollection($, $.builder_field, $.semicolon),
+
+		// Allow spread natively as a valid "field" inside records
 		record_field: ($) =>
 			choice(
 				seq(
@@ -712,13 +715,12 @@ module.exports = grammar({
 			tuple($, $.lparen_hash, $.rparen, $.expression, $.semicolon),
 
 		parenthesized_expression: ($) =>
-			wrapped(
+			seq(
 				$.lparen,
+				many($.newline),
+				field("value", $.expression),
+				many($.newline),
 				$.rparen,
-				choice(
-					seq(many($.newline), field("value", $.expression), many($.newline)),
-					indented($, field("value", $.expression)),
-				),
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -729,8 +731,12 @@ module.exports = grammar({
 			prec.right(seq(
 				$.kw_let,
 				choice(
-					inlineThenLayoutList1($, $.binding_core),
-					indented($, layoutList1($, $.binding_core)),
+					seq(lineSeparated1($, $.binding_core), many($.newline)),
+					seq(
+						many1($.newline),
+						lineSeparated1($, $.binding_core),
+						many($.newline),
+					),
 				),
 				$.kw_in,
 				$.let_body,
@@ -741,7 +747,7 @@ module.exports = grammar({
 				$.kw_match,
 				field("subject", $.pipe_expression),
 				$.kw_to,
-				indented($, layoutList1($, $.match_arm)),
+				ndBlock($, $.match_arm),
 			)),
 
 		match_arm: ($) =>
@@ -751,13 +757,20 @@ module.exports = grammar({
 				$.match_arm_value,
 			),
 
+		lambda_parameters: ($) =>
+			choice(
+				sep1(field("param", $.binding_pattern), $.comma),
+				seq(
+					many1($.newline),
+					lineSeparated1($, field("param", $.binding_pattern)),
+					many($.newline),
+				),
+			),
+
 		lambda_expression: ($) =>
 			prec.right(seq(
 				$.kw_fn,
-				choice(
-					sep1(field("param", $.binding_pattern), $.comma),
-					indented($, layoutList1($, field("param", $.binding_pattern))),
-				),
+				$.lambda_parameters,
 				$.fat_arrow,
 				$.lambda_body,
 			)),
@@ -765,7 +778,7 @@ module.exports = grammar({
 		if_expression: ($) =>
 			prec.right(seq(
 				$.kw_if,
-				field("condition", $.expression),
+				field("condition", $.pipe_expression),
 				$.kw_then,
 				$.if_then_value,
 				$.kw_else,
@@ -810,7 +823,7 @@ module.exports = grammar({
 
 		wildcard_pattern: ($) => $.wildcard,
 
-		// Binding-safe destructuring patterns (for let-bindings, excludes literals/or-patterns)
+		// Binding-safe destructuring patterns
 		binding_list_pattern: ($) =>
 			seq(
 				$.lbracket,
@@ -885,23 +898,9 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		type_expression: ($) => choice($.type_term, $.variadic_type),
 
-		type_body: ($) =>
-			choice(
-				field("type", $.type_expression),
-				indented($, field("type", $.type_expression)),
-			),
-
-		function_result: ($) =>
-			choice(
-				field("result", $.type_expression),
-				indented($, field("result", $.type_expression)),
-			),
-
-		record_field_type: ($) =>
-			choice(
-				field("type", $.type_expression),
-				indented($, field("type", $.type_expression)),
-			),
+		type_body: ($) => field("type", $.type_expression),
+		function_result: ($) => field("result", $.type_expression),
+		record_field_type: ($) => field("type", $.type_expression),
 
 		function_type_parameters: ($) =>
 			separated1($, field("param", $.type_expression), $.comma),
@@ -910,10 +909,11 @@ module.exports = grammar({
 		ellipsis: ($) => token(prec(1, "...")),
 		rest_op: ($) => "..",
 
+		// Use bracedCollection for constraint clauses
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
-				collection($, $.lbrace, $.rbrace, $.constraint_entry, $.comma),
+				bracedCollection($, $.constraint_entry, $.comma),
 			),
 
 		constraint_entry: ($) =>
@@ -970,8 +970,10 @@ module.exports = grammar({
 				$.colon,
 				$.record_field_type,
 			),
-		type_record: ($) =>
-			collection($, $.lbrace, $.rbrace, $.record_type_field, $.semicolon),
+
+		// Use bracedCollection for type records
+		type_record: ($) => bracedCollection($, $.record_type_field, $.semicolon),
+
 		type_tuple: ($) =>
 			tuple($, $.lparen_hash, $.rparen, $.type_term, $.semicolon),
 		type_wildcard: ($) => $.wildcard,
@@ -991,18 +993,18 @@ module.exports = grammar({
 
 		float_literal: ($) =>
 			token(choice(
-				/[0-9][0-9_]*\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?/,
-				/[0-9][0-9_]*\.(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?/,
-				/\.[0-9][0-9_]*(?:[eE][+-]?[0-9_]+)?(?:f32|f64)?%?/,
-				/[0-9][0-9_]*[eE][+-]?[0-9_]+(?:f32|f64)?%?/,
+				new RustRegex(`${DEC_DIGITS}\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`),
+				new RustRegex(`${DEC_DIGITS}\\.${EXPONENT}?${FLOAT_SUFFIX}`),
+				new RustRegex(`\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`),
+				new RustRegex(`${DEC_DIGITS}${EXPONENT}${FLOAT_SUFFIX}`),
 			)),
 
 		int_literal: ($) =>
 			token(choice(
-				/0[bB][01][01_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
-				/0[oO][0-7][0-7_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
-				/0[xX][0-9a-fA-F][0-9a-fA-F_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
-				/[0-9][0-9_]*(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?/,
+				new RustRegex(`0[bB]${BIN_DIGITS}${INT_SUFFIX}`),
+				new RustRegex(`0[oO]${OCT_DIGITS}${INT_SUFFIX}`),
+				new RustRegex(`0[xX]${HEX_DIGITS}${INT_SUFFIX}`),
+				new RustRegex(`${DEC_DIGITS}${INT_SUFFIX}`),
 			)),
 
 		string: ($) =>
@@ -1028,20 +1030,20 @@ module.exports = grammar({
 		char_literal: ($) =>
 			token(
 				choice(
-					/'[^'\\]'/,
-					/'\\(?:[nrt0\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})'/,
+					new RustRegex("'[^'\\\\]'"),
+					new RustRegex(`'\\\\${CHAR_ESCAPE}'`),
 				),
 			),
 
 		interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
-		interpolation_start: ($) => token(/\\\(/),
+		interpolation_start: ($) => token(new RustRegex('\\\\\\(')),
 
-		string_text: ($) => token(/[^"\\\n]+/),
-		multiline_text: ($) => token(/[^\\"]+/),
-		multiline_quote: ($) => token(/"[^"]/),
-		multiline_double_quote: ($) => token(/""[^"]/),
+		string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
+		multiline_text: ($) => token(new RustRegex('[^\\\\"]+')),
+		multiline_quote: ($) => token(new RustRegex('"[^"]')),
+		multiline_double_quote: ($) => token(new RustRegex('""[^"]')),
 
-		escape_sequence: ($) => token(/\\(u\([0-9A-Fa-f]{1,8}\)|[\\'"ntrbfv])/),
+		escape_sequence: ($) => token(new RustRegex(`\\\\${STRING_ESCAPE}`)),
 
 		static_string: ($) =>
 			seq(
@@ -1049,23 +1051,23 @@ module.exports = grammar({
 				many(choice($.static_string_text, $.escape_sequence)),
 				$.quote,
 			),
-		static_string_text: ($) => token(/[^"\\\n]+/),
+		static_string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.15: COMMENTS
 		// ─────────────────────────────────────────────────────────────────────────
 		doc_comment: (_) =>
-			token(prec(2, seq("///", /[^\n]*/, many(seq("\n", "///", /[^\n]*/))))),
-		line_comment: (_) => token(prec(1, /\/\/[^\n]*/)),
+			token(prec(2, seq("///", new RustRegex('[^\\n]*'), many(seq("\n", "///", new RustRegex('[^\\n]*')))))),
+		line_comment: (_) => token(prec(1, new RustRegex('//[^\\n]*'))),
 		block_comment: (_) =>
-			token(prec(-3, seq("</", many(choice(/[^/]/, /\/[^>]/)), "/>"))),
+			token(prec(-3, seq("</", many(choice(new RustRegex('[^/]'), new RustRegex('/[^>]'))), "/>"))),
 		doc_block_comment: (_) =>
 			token(
 				prec(
 					2,
 					seq(
 						"<///",
-						/[\s\S]*?/,
+						new RustRegex('[\\s\\S]*?'),
 						"///>",
 					),
 				),
@@ -1074,7 +1076,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.16: IDENTIFIERS & OPERATORS
 		// ─────────────────────────────────────────────────────────────────────────
-		identifier: ($) => token(/[_\p{ID_Start}][\p{ID_Continue}]*!?/u),
+		identifier: ($) => token(new RustRegex('[_\\p{ID_Start}][\\p{ID_Continue}]*!?')),
 		import_name: ($) => $.identifier,
 		value_name: ($) => choice($.identifier, $.kw_self),
 
@@ -1131,6 +1133,7 @@ module.exports = grammar({
 		kw_as: () => "as",
 		kw_self: () => "self",
 		kw_Self: () => "Self",
+		kw_nd: () => "nd",
 
 		// Punctuation
 		lparen: () => "(",
