@@ -377,10 +377,10 @@
           "members": [
             {
               "type": "FIELD",
-              "name": "conformances",
+              "name": "fitting",
               "content": {
                 "type": "SYMBOL",
-                "name": "fits_clause"
+                "name": "fitting_clause"
               }
             },
             {
@@ -518,12 +518,12 @@
         }
       ]
     },
-    "fits_clause": {
+    "fitting_clause": {
       "type": "SEQ",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "kw_fits"
+          "name": "kw_fitting"
         },
         {
           "type": "SEQ",
@@ -6453,9 +6453,9 @@
       "type": "STRING",
       "value": "fit"
     },
-    "kw_fits": {
+    "kw_fitting": {
       "type": "STRING",
-      "value": "fits"
+      "value": "fitting"
     },
     "kw_sig": {
       "type": "STRING",
@@ -6789,7 +6789,7 @@
       },
       {
         "type": "SYMBOL",
-        "name": "kw_fits"
+        "name": "kw_fitting"
       },
       {
         "type": "SYMBOL",

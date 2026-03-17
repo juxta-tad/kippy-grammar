@@ -283,7 +283,7 @@ module.exports = grammar({
 			$.kw_build,
 			$.kw_type,
 			$.kw_fit,
-			$.kw_fits,
+			$.kw_fitting,
 			$.kw_sig,
 			$.kw_fn,
 			$.kw_test,
@@ -372,7 +372,7 @@ module.exports = grammar({
 				$.kw_type,
 				field("name", $.path),
 				opt($.type_parameter_list),
-				opt(field("conformances", $.fits_clause)),
+				opt(field("fitting", $.fitting_clause)),
 				choice(
 					seq($.equals, field("value", $.alias_type_value)),
 					seq($.colon, field("value", $.defined_type_value)),
@@ -401,9 +401,9 @@ module.exports = grammar({
 				),
 			),
 
-		fits_clause: ($) =>
+		fitting_clause: ($) =>
 			seq(
-				$.kw_fits,
+				$.kw_fitting,
 				sep1(field("shape", $.type_term), $.comma),
 			),
 
@@ -1164,7 +1164,7 @@ module.exports = grammar({
 		kw_build: () => "build",
 		kw_type: () => "type",
 		kw_fit: () => "fit",
-		kw_fits: () => "fits",
+		kw_fitting: () => "fitting",
 		kw_sig: () => "sig",
 		kw_fn: () => "fn",
 		kw_test: () => "test",

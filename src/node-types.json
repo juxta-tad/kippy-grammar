@@ -936,7 +936,7 @@
     }
   },
   {
-    "type": "fits_clause",
+    "type": "fitting_clause",
     "named": true,
     "fields": {
       "shape": {
@@ -959,7 +959,7 @@
           "named": true
         },
         {
-          "type": "kw_fits",
+          "type": "kw_fitting",
           "named": true
         }
       ]
@@ -3077,12 +3077,12 @@
     "type": "type_declaration",
     "named": true,
     "fields": {
-      "conformances": {
+      "fitting": {
         "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "fits_clause",
+            "type": "fitting_clause",
             "named": true
           }
         ]
@@ -3735,7 +3735,7 @@
     "named": true
   },
   {
-    "type": "kw_fits",
+    "type": "kw_fitting",
     "named": true
   },
   {

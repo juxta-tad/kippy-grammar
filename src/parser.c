@@ -56,7 +56,7 @@ enum ts_symbol_identifiers {
   sym_kw_build = 34,
   sym_kw_type = 35,
   sym_kw_fit = 36,
-  sym_kw_fits = 37,
+  sym_kw_fitting = 37,
   sym_kw_sig = 38,
   sym_kw_fn = 39,
   sym_kw_test = 40,
@@ -112,7 +112,7 @@ enum ts_symbol_identifiers {
   sym_alias_type_value = 90,
   sym_defined_type_value = 91,
   sym_variant_type_value = 92,
-  sym_fits_clause = 93,
+  sym_fitting_clause = 93,
   sym_type_parameter_list = 94,
   sym_type_variant = 95,
   sym_annotation = 96,
@@ -228,7 +228,7 @@ enum ts_symbol_identifiers {
   aux_sym_type_declaration_repeat1 = 206,
   aux_sym_variant_type_value_repeat1 = 207,
   aux_sym_variant_type_value_repeat2 = 208,
-  aux_sym_fits_clause_repeat1 = 209,
+  aux_sym_fitting_clause_repeat1 = 209,
   aux_sym_type_parameter_list_repeat1 = 210,
   aux_sym_attribute_arguments_inline_repeat1 = 211,
   aux_sym_implementation_repeat1 = 212,
@@ -311,7 +311,7 @@ static const char * const ts_symbol_names[] = {
   [sym_kw_build] = "kw_build",
   [sym_kw_type] = "kw_type",
   [sym_kw_fit] = "kw_fit",
-  [sym_kw_fits] = "kw_fits",
+  [sym_kw_fitting] = "kw_fitting",
   [sym_kw_sig] = "kw_sig",
   [sym_kw_fn] = "kw_fn",
   [sym_kw_test] = "kw_test",
@@ -367,7 +367,7 @@ static const char * const ts_symbol_names[] = {
   [sym_alias_type_value] = "alias_type_value",
   [sym_defined_type_value] = "defined_type_value",
   [sym_variant_type_value] = "variant_type_value",
-  [sym_fits_clause] = "fits_clause",
+  [sym_fitting_clause] = "fitting_clause",
   [sym_type_parameter_list] = "type_parameter_list",
   [sym_type_variant] = "type_variant",
   [sym_annotation] = "annotation",
@@ -483,7 +483,7 @@ static const char * const ts_symbol_names[] = {
   [aux_sym_type_declaration_repeat1] = "type_declaration_repeat1",
   [aux_sym_variant_type_value_repeat1] = "variant_type_value_repeat1",
   [aux_sym_variant_type_value_repeat2] = "variant_type_value_repeat2",
-  [aux_sym_fits_clause_repeat1] = "fits_clause_repeat1",
+  [aux_sym_fitting_clause_repeat1] = "fitting_clause_repeat1",
   [aux_sym_type_parameter_list_repeat1] = "type_parameter_list_repeat1",
   [aux_sym_attribute_arguments_inline_repeat1] = "attribute_arguments_inline_repeat1",
   [aux_sym_implementation_repeat1] = "implementation_repeat1",
@@ -566,7 +566,7 @@ static const TSSymbol ts_symbol_map[] = {
   [sym_kw_build] = sym_kw_build,
   [sym_kw_type] = sym_kw_type,
   [sym_kw_fit] = sym_kw_fit,
-  [sym_kw_fits] = sym_kw_fits,
+  [sym_kw_fitting] = sym_kw_fitting,
   [sym_kw_sig] = sym_kw_sig,
   [sym_kw_fn] = sym_kw_fn,
   [sym_kw_test] = sym_kw_test,
@@ -622,7 +622,7 @@ static const TSSymbol ts_symbol_map[] = {
   [sym_alias_type_value] = sym_alias_type_value,
   [sym_defined_type_value] = sym_defined_type_value,
   [sym_variant_type_value] = sym_variant_type_value,
-  [sym_fits_clause] = sym_fits_clause,
+  [sym_fitting_clause] = sym_fitting_clause,
   [sym_type_parameter_list] = sym_type_parameter_list,
   [sym_type_variant] = sym_type_variant,
   [sym_annotation] = sym_annotation,
@@ -738,7 +738,7 @@ static const TSSymbol ts_symbol_map[] = {
   [aux_sym_type_declaration_repeat1] = aux_sym_type_declaration_repeat1,
   [aux_sym_variant_type_value_repeat1] = aux_sym_variant_type_value_repeat1,
   [aux_sym_variant_type_value_repeat2] = aux_sym_variant_type_value_repeat2,
-  [aux_sym_fits_clause_repeat1] = aux_sym_fits_clause_repeat1,
+  [aux_sym_fitting_clause_repeat1] = aux_sym_fitting_clause_repeat1,
   [aux_sym_type_parameter_list_repeat1] = aux_sym_type_parameter_list_repeat1,
   [aux_sym_attribute_arguments_inline_repeat1] = aux_sym_attribute_arguments_inline_repeat1,
   [aux_sym_implementation_repeat1] = aux_sym_implementation_repeat1,
@@ -932,7 +932,7 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = true,
     .named = true,
   },
-  [sym_kw_fits] = {
+  [sym_kw_fitting] = {
     .visible = true,
     .named = true,
   },
@@ -1156,7 +1156,7 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = true,
     .named = true,
   },
-  [sym_fits_clause] = {
+  [sym_fitting_clause] = {
     .visible = true,
     .named = true,
   },
@@ -1621,7 +1621,7 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = false,
     .named = false,
   },
-  [aux_sym_fits_clause_repeat1] = {
+  [aux_sym_fitting_clause_repeat1] = {
     .visible = false,
     .named = false,
   },
@@ -1803,13 +1803,13 @@ enum ts_field_identifiers {
   field_body = 5,
   field_builder = 6,
   field_condition = 7,
-  field_conformances = 8,
-  field_constraint = 9,
-  field_constraints = 10,
-  field_constructor = 11,
-  field_element = 12,
-  field_else_value = 13,
-  field_field = 14,
+  field_constraint = 8,
+  field_constraints = 9,
+  field_constructor = 10,
+  field_element = 11,
+  field_else_value = 12,
+  field_field = 13,
+  field_fitting = 14,
   field_guard = 15,
   field_imports = 16,
   field_index = 17,
@@ -1842,13 +1842,13 @@ static const char * const ts_field_names[] = {
   [field_body] = "body",
   [field_builder] = "builder",
   [field_condition] = "condition",
-  [field_conformances] = "conformances",
   [field_constraint] = "constraint",
   [field_constraints] = "constraints",
   [field_constructor] = "constructor",
   [field_element] = "element",
   [field_else_value] = "else_value",
   [field_field] = "field",
+  [field_fitting] = "fitting",
   [field_guard] = "guard",
   [field_imports] = "imports",
   [field_index] = "index",
@@ -2133,7 +2133,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_shape, 1},
     {field_shape, 2, .inherited = true},
   [62] =
-    {field_conformances, 2},
+    {field_fitting, 2},
     {field_name, 1},
     {field_value, 4},
   [65] =
@@ -2153,7 +2153,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_methods, 5},
     {field_name, 2},
   [76] =
-    {field_conformances, 3},
+    {field_fitting, 3},
     {field_name, 2},
     {field_value, 5},
   [79] =
@@ -2213,7 +2213,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_shape, 0, .inherited = true},
     {field_shape, 1, .inherited = true},
   [120] =
-    {field_conformances, 3},
+    {field_fitting, 3},
     {field_name, 1},
     {field_value, 5},
   [123] =
@@ -2250,7 +2250,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_methods, 6},
     {field_name, 2},
   [147] =
-    {field_conformances, 4},
+    {field_fitting, 4},
     {field_name, 2},
     {field_value, 6},
   [150] =
@@ -2337,7 +2337,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_methods, 6},
     {field_name, 3},
   [212] =
-    {field_conformances, 4},
+    {field_fitting, 4},
     {field_name, 3},
     {field_value, 6},
   [215] =
@@ -2474,7 +2474,7 @@ static const TSFieldMapEntry ts_field_map_entries[] = {
     {field_methods, 7},
     {field_name, 3},
   [316] =
-    {field_conformances, 5},
+    {field_fitting, 5},
     {field_name, 3},
     {field_value, 7},
   [319] =
@@ -6640,7 +6640,7 @@ static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 52:
       ACCEPT_TOKEN(sym_kw_fit);
-      if (lookahead == 's') ADVANCE(72);
+      if (lookahead == 't') ADVANCE(72);
       END_STATE();
     case 53:
       ACCEPT_TOKEN(sym_kw_let);
@@ -6701,19 +6701,19 @@ static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
       if (lookahead == 'c') ADVANCE(83);
       END_STATE();
     case 72:
-      ACCEPT_TOKEN(sym_kw_fits);
+      if (lookahead == 'i') ADVANCE(84);
       END_STATE();
     case 73:
-      if (lookahead == 'h') ADVANCE(84);
+      if (lookahead == 'h') ADVANCE(85);
       END_STATE();
     case 74:
-      if (lookahead == 'l') ADVANCE(85);
+      if (lookahead == 'l') ADVANCE(86);
       END_STATE();
     case 75:
       ACCEPT_TOKEN(sym_kw_self);
       END_STATE();
     case 76:
-      if (lookahead == 'e') ADVANCE(86);
+      if (lookahead == 'e') ADVANCE(87);
       END_STATE();
     case 77:
       ACCEPT_TOKEN(sym_kw_test);
@@ -6725,7 +6725,7 @@ static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
       ACCEPT_TOKEN(sym_kw_type);
       END_STATE();
     case 80:
-      if (lookahead == 'e') ADVANCE(87);
+      if (lookahead == 'e') ADVANCE(88);
       END_STATE();
     case 81:
       ACCEPT_TOKEN(sym_kw_with);
@@ -6734,25 +6734,34 @@ static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
       ACCEPT_TOKEN(sym_kw_build);
       END_STATE();
     case 83:
-      if (lookahead == 't') ADVANCE(88);
+      if (lookahead == 't') ADVANCE(89);
       END_STATE();
     case 84:
-      ACCEPT_TOKEN(sym_kw_match);
+      if (lookahead == 'n') ADVANCE(90);
       END_STATE();
     case 85:
-      if (lookahead == 'e') ADVANCE(89);
+      ACCEPT_TOKEN(sym_kw_match);
       END_STATE();
     case 86:
-      ACCEPT_TOKEN(sym_kw_shape);
+      if (lookahead == 'e') ADVANCE(91);
       END_STATE();
     case 87:
-      ACCEPT_TOKEN(sym_kw_where);
+      ACCEPT_TOKEN(sym_kw_shape);
       END_STATE();
     case 88:
-      ACCEPT_TOKEN(sym_kw_expect);
+      ACCEPT_TOKEN(sym_kw_where);
       END_STATE();
     case 89:
+      ACCEPT_TOKEN(sym_kw_expect);
+      END_STATE();
+    case 90:
+      if (lookahead == 'g') ADVANCE(92);
+      END_STATE();
+    case 91:
       ACCEPT_TOKEN(sym_kw_module);
+      END_STATE();
+    case 92:
+      ACCEPT_TOKEN(sym_kw_fitting);
       END_STATE();
     default:
       return false;
@@ -8399,7 +8408,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_build,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_fn,
     sym_kw_test,
@@ -8420,7 +8429,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_use,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_test,
     sym_kw_as,
@@ -8436,7 +8445,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_use,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_test,
     sym_kw_as,
@@ -8455,7 +8464,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_use,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_test,
     sym_kw_or,
@@ -8495,7 +8504,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_then,
     sym_kw_where,
     sym_kw_with,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_or,
     sym_kw_and,
     sym_kw_as,
@@ -8518,7 +8527,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_build,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_fn,
     sym_kw_test,
@@ -8546,7 +8555,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_build,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_fn,
     sym_kw_test,
@@ -8575,7 +8584,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_build,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_test,
     sym_kw_or,
@@ -8601,7 +8610,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_build,
     sym_kw_type,
     sym_kw_fit,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_sig,
     sym_kw_fn,
     sym_kw_test,
@@ -8627,7 +8636,7 @@ static const TSSymbol ts_reserved_words[13][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_module,
     sym_kw_use,
     sym_kw_build,
-    sym_kw_fits,
+    sym_kw_fitting,
     sym_kw_fn,
     sym_kw_or,
     sym_kw_and,
@@ -8673,7 +8682,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_kw_build] = ACTIONS(1),
     [sym_kw_type] = ACTIONS(1),
     [sym_kw_fit] = ACTIONS(1),
-    [sym_kw_fits] = ACTIONS(1),
+    [sym_kw_fitting] = ACTIONS(1),
     [sym_kw_sig] = ACTIONS(1),
     [sym_kw_fn] = ACTIONS(1),
     [sym_kw_test] = ACTIONS(1),
@@ -13621,7 +13630,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_shape,
       sym_kw_type,
       sym_kw_fit,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_kw_sig,
       sym_kw_test,
       sym_kw_or,
@@ -17961,7 +17970,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_shape,
       sym_kw_type,
       sym_kw_fit,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_kw_sig,
       sym_kw_test,
       sym_kw_or,
@@ -18114,7 +18123,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_shape,
       sym_kw_type,
       sym_kw_fit,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_kw_sig,
       sym_kw_test,
       sym_kw_or,
@@ -20659,7 +20668,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_shape,
       sym_kw_type,
       sym_kw_fit,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_kw_sig,
       sym_kw_test,
       sym_kw_or,
@@ -55633,7 +55642,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
   [61008] = 8,
     ACTIONS(2055), 1,
-      sym_kw_fits,
+      sym_kw_fitting,
     ACTIONS(2057), 1,
       sym_lparen,
     ACTIONS(2059), 1,
@@ -55643,7 +55652,7 @@ static const uint16_t ts_small_parse_table[] = {
     STATE(1178), 1,
       sym_type_parameter_list,
     STATE(1406), 1,
-      sym_fits_clause,
+      sym_fitting_clause,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -55652,7 +55661,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
   [61035] = 8,
     ACTIONS(2055), 1,
-      sym_kw_fits,
+      sym_kw_fitting,
     ACTIONS(2057), 1,
       sym_lparen,
     ACTIONS(2063), 1,
@@ -55662,7 +55671,7 @@ static const uint16_t ts_small_parse_table[] = {
     STATE(1270), 1,
       sym_type_parameter_list,
     STATE(1478), 1,
-      sym_fits_clause,
+      sym_fitting_clause,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -55913,7 +55922,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
   [61403] = 8,
     ACTIONS(2055), 1,
-      sym_kw_fits,
+      sym_kw_fitting,
     ACTIONS(2057), 1,
       sym_lparen,
     ACTIONS(2093), 1,
@@ -55923,7 +55932,7 @@ static const uint16_t ts_small_parse_table[] = {
     STATE(1271), 1,
       sym_type_parameter_list,
     STATE(1525), 1,
-      sym_fits_clause,
+      sym_fitting_clause,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -58870,7 +58879,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
     ACTIONS(2776), 4,
       sym_newline,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_colon,
       sym_equals,
   [65564] = 6,
@@ -58922,7 +58931,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(2782), 1,
       sym_comma,
     STATE(1253), 1,
-      aux_sym_fits_clause_repeat1,
+      aux_sym_fitting_clause_repeat1,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -58979,13 +58988,13 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
   [65709] = 6,
     ACTIONS(2055), 1,
-      sym_kw_fits,
+      sym_kw_fitting,
     ACTIONS(2792), 1,
       sym_colon,
     ACTIONS(2794), 1,
       sym_equals,
     STATE(1411), 1,
-      sym_fits_clause,
+      sym_fitting_clause,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -59001,7 +59010,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
     ACTIONS(2796), 4,
       sym_newline,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_colon,
       sym_equals,
   [65745] = 6,
@@ -59072,7 +59081,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
     ACTIONS(2815), 4,
       sym_newline,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_colon,
       sym_equals,
   [65842] = 6,
@@ -59294,7 +59303,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
     ACTIONS(2842), 4,
       sym_newline,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_colon,
       sym_equals,
   [66151] = 6,
@@ -59639,7 +59648,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(2892), 1,
       sym_comma,
     STATE(1223), 1,
-      aux_sym_fits_clause_repeat1,
+      aux_sym_fitting_clause_repeat1,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -59881,7 +59890,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
     ACTIONS(2943), 4,
       sym_newline,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_colon,
       sym_equals,
   [66965] = 2,
@@ -59990,7 +59999,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
     ACTIONS(2966), 4,
       sym_newline,
-      sym_kw_fits,
+      sym_kw_fitting,
       sym_colon,
       sym_equals,
   [67111] = 6,
@@ -60072,7 +60081,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(2782), 1,
       sym_comma,
     STATE(1223), 1,
-      aux_sym_fits_clause_repeat1,
+      aux_sym_fitting_clause_repeat1,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -60321,13 +60330,13 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
   [67565] = 6,
     ACTIONS(2055), 1,
-      sym_kw_fits,
+      sym_kw_fitting,
     ACTIONS(3035), 1,
       sym_colon,
     ACTIONS(3037), 1,
       sym_equals,
     STATE(1418), 1,
-      sym_fits_clause,
+      sym_fitting_clause,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -60336,13 +60345,13 @@ static const uint16_t ts_small_parse_table[] = {
       sym_block_comment,
   [67586] = 6,
     ACTIONS(2055), 1,
-      sym_kw_fits,
+      sym_kw_fitting,
     ACTIONS(3039), 1,
       sym_colon,
     ACTIONS(3041), 1,
       sym_equals,
     STATE(1447), 1,
-      sym_fits_clause,
+      sym_fitting_clause,
     ACTIONS(3), 2,
       sym_doc_comment,
       sym_doc_block_comment,
@@ -66961,7 +66970,7 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [2778] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1601),
   [2780] = {.entry = {.count = 1, .reusable = true}}, SHIFT(941),
   [2782] = {.entry = {.count = 1, .reusable = true}}, SHIFT(657),
-  [2784] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_fits_clause, 2, 0, 19),
+  [2784] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_fitting_clause, 2, 0, 19),
   [2786] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1606),
   [2788] = {.entry = {.count = 1, .reusable = true}}, SHIFT(410),
   [2790] = {.entry = {.count = 1, .reusable = true}}, SHIFT(388),
@@ -67013,8 +67022,8 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [2886] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1152),
   [2888] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1504),
   [2890] = {.entry = {.count = 1, .reusable = true}}, SHIFT(952),
-  [2892] = {.entry = {.count = 2, .reusable = true}}, REDUCE(aux_sym_fits_clause_repeat1, 2, 0, 60), SHIFT_REPEAT(657),
-  [2895] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_fits_clause_repeat1, 2, 0, 60),
+  [2892] = {.entry = {.count = 2, .reusable = true}}, REDUCE(aux_sym_fitting_clause_repeat1, 2, 0, 60), SHIFT_REPEAT(657),
+  [2895] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_fitting_clause_repeat1, 2, 0, 60),
   [2897] = {.entry = {.count = 1, .reusable = true}}, SHIFT(926),
   [2899] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1530),
   [2901] = {.entry = {.count = 1, .reusable = true}}, SHIFT(667),
@@ -67056,7 +67065,7 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [2976] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1520),
   [2978] = {.entry = {.count = 1, .reusable = true}}, SHIFT(913),
   [2980] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1444),
-  [2982] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_fits_clause, 3, 0, 38),
+  [2982] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_fitting_clause, 3, 0, 38),
   [2984] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1106),
   [2986] = {.entry = {.count = 1, .reusable = true}}, SHIFT(1405),
   [2988] = {.entry = {.count = 1, .reusable = true}}, SHIFT(863),
@@ -67098,7 +67107,7 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [3061] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_attribute_argument, 3, 0, 8),
   [3063] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_implementation_shapes_repeat1, 3, 0, 118),
   [3065] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_type_tuple_repeat1, 2, 0, 78),
-  [3067] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_fits_clause_repeat1, 2, 0, 19),
+  [3067] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_fitting_clause_repeat1, 2, 0, 19),
   [3069] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_builder_field, 3, 0, 8),
   [3071] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_record_pattern_repeat1, 2, 0, 0),
   [3073] = {.entry = {.count = 2, .reusable = true}}, REDUCE(aux_sym_record_pattern_repeat1, 2, 0, 0), SHIFT_REPEAT(1311),
