@@ -384,7 +384,21 @@ module.exports = grammar({
 		defined_type_value: ($) =>
 			choice(
 				$.type_body,
-				ndBlock($, $.type_variant),
+				$.variant_type_value,
+			),
+
+		variant_type_value: ($) =>
+			choice(
+				seq(
+					$.type_variant,
+					many($.type_variant),
+				),
+				seq(
+					many1($.newline),
+					lineSeparated1($, $.type_variant),
+					many($.newline),
+					opt($.kw_nd),
+				),
 			),
 
 		fits_clause: ($) =>
