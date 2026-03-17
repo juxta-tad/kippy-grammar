@@ -282,7 +282,6 @@ module.exports = grammar({
 			$.kw_use,
 			$.kw_build,
 			$.kw_type,
-			$.kw_distinct,
 			$.kw_fit,
 			$.kw_fits,
 			$.kw_sig,
@@ -374,26 +373,24 @@ module.exports = grammar({
 				field("name", $.path),
 				opt($.type_parameter_list),
 				opt(field("conformances", $.fits_clause)),
-				$.equals,
-				field("value", $.type_declaration_rhs),
+				choice(
+					seq($.equals, field("value", $.alias_type_value)),
+					seq($.colon, field("value", $.defined_type_value)),
+				),
 			),
 
-		type_declaration_rhs: ($) =>
+		alias_type_value: ($) => $.type_body,
+
+		defined_type_value: ($) =>
 			choice(
-				$.alias_type_value,
-				seq(many1($.newline), $.variant_type_value),
+				$.type_body,
+				ndBlock($, $.type_variant),
 			),
+
 		fits_clause: ($) =>
 			seq(
 				$.kw_fits,
 				sep1(field("shape", $.type_term), $.comma),
-			),
-
-		variant_type_value: ($) => lineSeparated1($, $.type_variant),
-		alias_type_value: ($) =>
-			seq(
-				opt($.kw_distinct),
-				$.type_body,
 			),
 
 		type_parameter_list: ($) =>
@@ -403,11 +400,8 @@ module.exports = grammar({
 			seq(
 				$.pipe_bar,
 				field("name", $.identifier),
-				opt(field("payload", $.type_variant_payload)),
+				opt(seq($.colon, field("payload", $.type_expression))),
 			),
-
-		type_variant_payload: ($) =>
-			collection($, $.lparen, $.rparen, $.type_expression, $.comma),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
@@ -926,11 +920,7 @@ module.exports = grammar({
 					field("constraint", $.constraint_entry),
 					seq(
 						$.lparen,
-						many($.newline),
-						separated1($, field("constraint", $.constraint_entry), $.comma, {
-							allow_newline_separator: false,
-						}),
-						many($.newline),
+						separated1($, field("constraint", $.constraint_entry), $.comma),
 						$.rparen,
 					),
 				),
@@ -1159,7 +1149,6 @@ module.exports = grammar({
 		kw_use: () => "use",
 		kw_build: () => "build",
 		kw_type: () => "type",
-		kw_distinct: () => "distinct",
 		kw_fit: () => "fit",
 		kw_fits: () => "fits",
 		kw_sig: () => "sig",
