@@ -389,11 +389,7 @@ module.exports = grammar({
 				sep1(field("shape", $.type_term), $.comma),
 			),
 
-		variant_type_value: ($) =>
-			seq(
-				many1($.newline),
-				lineSeparated1($, $.type_variant),
-			),
+		variant_type_value: ($) => lineSeparated1($, $.type_variant),
 		alias_type_value: ($) =>
 			seq(
 				opt($.kw_distinct),
