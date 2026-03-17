@@ -318,7 +318,7 @@ module.exports = grammar({
 		$.if_then_value,
 		$.if_else_value,
 	],
-	*
+
 	rules: {
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
