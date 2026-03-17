@@ -383,11 +383,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -627,11 +631,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -1084,21 +1092,29 @@
         ]
       },
       "else_value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
             "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
           }
         ]
       },
       "then_value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -1118,6 +1134,10 @@
         },
         {
           "type": "kw_then",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -1198,11 +1218,15 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -1363,11 +1387,15 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -1427,11 +1455,15 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -1587,11 +1619,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -1654,11 +1690,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -2344,11 +2384,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -2808,11 +2852,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]
@@ -3450,11 +3498,15 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
             "named": true
           }
         ]

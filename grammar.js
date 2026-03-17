@@ -10,16 +10,17 @@ const PREC = {
 };
 
 // --- Lexical Regex Constants ---
-const DEC_DIGITS = '[0-9][0-9_]*';
-const HEX_DIGITS = '[0-9a-fA-F][0-9a-fA-F_]*';
-const OCT_DIGITS = '[0-7][0-7_]*';
-const BIN_DIGITS = '[01][01_]*';
+const DEC_DIGITS = "[0-9][0-9_]*";
+const HEX_DIGITS = "[0-9a-fA-F][0-9a-fA-F_]*";
+const OCT_DIGITS = "[0-7][0-7_]*";
+const BIN_DIGITS = "[01][01_]*";
 
-const INT_SUFFIX = '(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?';
-const FLOAT_SUFFIX = '(?:f32|f64)?%?';
-const EXPONENT = '(?:[eE][+-]?[0-9_]+)';
+const INT_SUFFIX = "(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?";
+const FLOAT_SUFFIX = "(?:f32|f64)?%?";
+const EXPONENT = "(?:[eE][+-]?[0-9_]+)";
 
-const CHAR_ESCAPE = `(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
+const CHAR_ESCAPE =
+	`(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
 const STRING_ESCAPE = `(?:u\\([0-9A-Fa-f]{1,8}\\)|[\\\\'"ntrbfv])`;
 
 const opt = optional;
@@ -31,6 +32,9 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
+function layoutExpr($, name = "value") {
+	return field(name, seq(many($.newline), $.expression));
+}
 // --- Block & Layout Helpers ---
 
 function fileBody($, header, item) {
@@ -155,13 +159,14 @@ function visibility_modifier($) {
 function bracedSeparated1($, rule, separator) {
 	const next = choice(
 		seq(separator, many($.newline), rule),
+		seq(many1($.newline), separator, many($.newline), rule),
 		seq(many1($.newline), rule),
 	);
 
 	return seq(
 		rule,
 		many(next),
-		opt(separator),
+		opt(seq(many($.newline), separator)),
 	);
 }
 
@@ -291,12 +296,8 @@ module.exports = grammar({
 		],
 	},
 
-	externals: ($) => [
-		$.newline,
-	],
-
 	extras: ($) => [
-		new RustRegex('[ \\t\\r\\f]+'),
+		new RustRegex("[ \\t\\r\\f]+"),
 		$.line_comment,
 		$.block_comment,
 		$.doc_comment,
@@ -306,6 +307,7 @@ module.exports = grammar({
 	supertypes: ($) => [
 		$.expression,
 	],
+
 	inline: ($) => [
 		$.value_slot,
 		$.match_arm_value,
@@ -315,6 +317,7 @@ module.exports = grammar({
 		$.if_then_value,
 		$.if_else_value,
 	],
+
 	rules: {
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.1: TOP-LEVEL & SOURCE FILE
@@ -563,13 +566,13 @@ module.exports = grammar({
 		call_argument: ($) => $.pipe_expression,
 
 		// Semantic wrapper rules for layout fields
-		value_slot: ($) => field("value", $.expression),
-		match_arm_value: ($) => field("value", $.expression),
-		method_body: ($) => field("body", $.expression),
-		lambda_body: ($) => field("body", $.expression),
-		let_body: ($) => field("body", $.expression),
-		if_then_value: ($) => field("then_value", $.expression),
-		if_else_value: ($) => field("else_value", $.expression),
+		value_slot: ($) => layoutExpr($, "value"),
+		if_then_value: ($) => layoutExpr($, "then_value"),
+		if_else_value: ($) => layoutExpr($, "else_value"),
+		let_body: ($) => layoutExpr($, "body"),
+		lambda_body: ($) => layoutExpr($, "body"),
+		method_body: ($) => layoutExpr($, "body"),
+		match_arm_value: ($) => layoutExpr($, "value"),
 
 		...buildExpressionLadder("", "postfix_expression"),
 
@@ -781,6 +784,7 @@ module.exports = grammar({
 				field("condition", $.pipe_expression),
 				$.kw_then,
 				$.if_then_value,
+				many($.newline),
 				$.kw_else,
 				$.if_else_value,
 			)),
@@ -993,7 +997,9 @@ module.exports = grammar({
 
 		float_literal: ($) =>
 			token(choice(
-				new RustRegex(`${DEC_DIGITS}\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`),
+				new RustRegex(
+					`${DEC_DIGITS}\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`,
+				),
 				new RustRegex(`${DEC_DIGITS}\\.${EXPONENT}?${FLOAT_SUFFIX}`),
 				new RustRegex(`\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`),
 				new RustRegex(`${DEC_DIGITS}${EXPONENT}${FLOAT_SUFFIX}`),
@@ -1036,7 +1042,7 @@ module.exports = grammar({
 			),
 
 		interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
-		interpolation_start: ($) => token(new RustRegex('\\\\\\(')),
+		interpolation_start: ($) => token(new RustRegex("\\\\\\(")),
 
 		string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
 		multiline_text: ($) => token(new RustRegex('[^\\\\"]+')),
@@ -1057,17 +1063,35 @@ module.exports = grammar({
 		// 3.15: COMMENTS
 		// ─────────────────────────────────────────────────────────────────────────
 		doc_comment: (_) =>
-			token(prec(2, seq("///", new RustRegex('[^\\n]*'), many(seq("\n", "///", new RustRegex('[^\\n]*')))))),
-		line_comment: (_) => token(prec(1, new RustRegex('//[^\\n]*'))),
+			token(
+				prec(
+					2,
+					seq(
+						"///",
+						new RustRegex("[^\\n]*"),
+						many(seq("\n", "///", new RustRegex("[^\\n]*"))),
+					),
+				),
+			),
+		line_comment: (_) => token(prec(1, new RustRegex("//[^\\n]*"))),
 		block_comment: (_) =>
-			token(prec(-3, seq("</", many(choice(new RustRegex('[^/]'), new RustRegex('/[^>]'))), "/>"))),
+			token(
+				prec(
+					-3,
+					seq(
+						"</",
+						many(choice(new RustRegex("[^/]"), new RustRegex("/[^>]"))),
+						"/>",
+					),
+				),
+			),
 		doc_block_comment: (_) =>
 			token(
 				prec(
 					2,
 					seq(
 						"<///",
-						new RustRegex('[\\s\\S]*?'),
+						new RustRegex("[\\s\\S]*?"),
 						"///>",
 					),
 				),
@@ -1076,7 +1100,8 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.16: IDENTIFIERS & OPERATORS
 		// ─────────────────────────────────────────────────────────────────────────
-		identifier: ($) => token(new RustRegex('[_\\p{ID_Start}][\\p{ID_Continue}]*!?')),
+		identifier: ($) =>
+			token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*!?")),
 		import_name: ($) => $.identifier,
 		value_name: ($) => choice($.identifier, $.kw_self),
 
@@ -1098,9 +1123,9 @@ module.exports = grammar({
 				),
 			),
 
+		newline: () => token(new RustRegex("\\r?\\n")),
 		placeholder: ($) => token("__"),
 		wildcard: ($) => "_",
-
 		// Keywords
 		kw_pub: () => "pub",
 		kw_let: () => "let",
