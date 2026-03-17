@@ -308,6 +308,7 @@ module.exports = grammar({
 		$.expression,
 	],
 
+	/*
 	inline: ($) => [
 		$.value_slot,
 		$.match_arm_value,
@@ -317,6 +318,8 @@ module.exports = grammar({
 		$.if_then_value,
 		$.if_else_value,
 	],
+	*/
+
 
 	rules: {
 		// ─────────────────────────────────────────────────────────────────────────
