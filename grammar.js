@@ -1017,7 +1017,7 @@ module.exports = grammar({
 				$.float_literal,
 				$.char_literal,
 				$.string,
-				$.multiline_string,
+				$.quoted_string,
 			),
 
 		float_literal: ($) =>
@@ -1038,26 +1038,17 @@ module.exports = grammar({
 				new RustRegex(`${DEC_DIGITS}${INT_SUFFIX}`),
 			)),
 
+		// Standard string: "..." with escapes, interpolation, and line continuations
 		string: ($) =>
 			seq(
 				$.quote,
-				many(choice($.string_text, $.escape_sequence, $.interpolation)),
+				many(choice($.string_content, $.escape_sequence, $.interpolation)),
 				$.quote,
 			),
-		multiline_string: ($) =>
-			seq(
-				$.triple_quote,
-				many(
-					choice(
-						$.multiline_text,
-						$.escape_sequence,
-						$.interpolation,
-						$.multiline_quote,
-						$.multiline_double_quote,
-					),
-				),
-				$.triple_quote,
-			),
+
+		string_content: ($) => token(new RustRegex('[^"\\\\\\n]+')),
+
+		// Character literal: single-quoted, single character
 		char_literal: ($) =>
 			token(
 				choice(
@@ -1066,15 +1057,26 @@ module.exports = grammar({
 				),
 			),
 
+		// String interpolation: \(expression)
 		interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
 		interpolation_start: ($) => token(new RustRegex("\\\\\\(")),
 
-		string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
-		multiline_text: ($) => token(new RustRegex('(?:[^"\\\\]|"(?!""))++')),
-		multiline_quote: ($) => token(new RustRegex('"(?!")')),
-		multiline_double_quote: ($) => token(new RustRegex('""(?!")')),
-
+		// Escape sequences: \n, \u{...}, \x##, etc.
 		escape_sequence: ($) => token(new RustRegex(`\\\\${STRING_ESCAPE}`)),
+
+		// Quoted string: {id|...|id} with no escaping (OCaml-style)
+		quoted_string: ($) =>
+			seq(
+				$.quoted_string_id,
+				$.quoted_string_pipe,
+				many($.quoted_string_content),
+				$.quoted_string_pipe,
+				$.quoted_string_id,
+			),
+
+		quoted_string_id: ($) => token(new RustRegex("[a-z_]*")),
+		quoted_string_pipe: ($) => token("|"),
+		quoted_string_content: ($) => token(new RustRegex("[^|]+")),
 
 		static_string: ($) =>
 			seq(
