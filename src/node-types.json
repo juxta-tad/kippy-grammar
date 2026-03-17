@@ -1580,10 +1580,6 @@
           "named": true
         },
         {
-          "type": "quoted_string",
-          "named": true
-        },
-        {
           "type": "string",
           "named": true
         }
@@ -2115,11 +2111,6 @@
     }
   },
   {
-    "type": "pipe_bar",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "pipe_expression",
     "named": true,
     "fields": {},
@@ -2248,34 +2239,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "quoted_string",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "quoted_string_content",
-          "named": true
-        },
-        {
-          "type": "quoted_string_id",
-          "named": true
-        },
-        {
-          "type": "quoted_string_pipe",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "quoted_string_pipe",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "record_body",
@@ -3874,6 +3837,10 @@
     "named": true
   },
   {
+    "type": "pipe_bar",
+    "named": true
+  },
+  {
     "type": "placeholder",
     "named": true
   },
@@ -3883,14 +3850,6 @@
   },
   {
     "type": "quote",
-    "named": true
-  },
-  {
-    "type": "quoted_string_content",
-    "named": true
-  },
-  {
-    "type": "quoted_string_id",
     "named": true
   },
   {
@@ -3932,9 +3891,5 @@
   {
     "type": "wildcard",
     "named": true
-  },
-  {
-    "type": "|",
-    "named": false
   }
 ]

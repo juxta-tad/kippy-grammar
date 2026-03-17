@@ -5908,10 +5908,6 @@
         {
           "type": "SYMBOL",
           "name": "string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "quoted_string"
         }
       ]
     },
@@ -6048,55 +6044,6 @@
       "content": {
         "type": "PATTERN",
         "value": "\\\\(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[\\\\'\"ntrbfv])"
-      }
-    },
-    "quoted_string": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "quoted_string_id"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "quoted_string_pipe"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "quoted_string_content"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "quoted_string_pipe"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "quoted_string_id"
-        }
-      ]
-    },
-    "quoted_string_id": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "[a-z_]*"
-      }
-    },
-    "quoted_string_pipe": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "|"
-      }
-    },
-    "quoted_string_content": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "[^|]+"
       }
     },
     "static_string": {
@@ -6517,13 +6464,6 @@
     "quote": {
       "type": "STRING",
       "value": "\""
-    },
-    "triple_quote": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "\"\"\""
-      }
     },
     "comma": {
       "type": "STRING",

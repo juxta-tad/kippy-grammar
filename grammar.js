@@ -1017,7 +1017,6 @@ module.exports = grammar({
 				$.float_literal,
 				$.char_literal,
 				$.string,
-				$.quoted_string,
 			),
 
 		float_literal: ($) =>
@@ -1038,7 +1037,7 @@ module.exports = grammar({
 				new RustRegex(`${DEC_DIGITS}${INT_SUFFIX}`),
 			)),
 
-		// Standard string: "..." with escapes, interpolation, and line continuations
+		// Standard string: "..." with escapes and interpolation
 		string: ($) =>
 			seq(
 				$.quote,
@@ -1063,20 +1062,6 @@ module.exports = grammar({
 
 		// Escape sequences: \n, \u{...}, \x##, etc.
 		escape_sequence: ($) => token(new RustRegex(`\\\\${STRING_ESCAPE}`)),
-
-		// Quoted string: {id|...|id} with no escaping (OCaml-style)
-		quoted_string: ($) =>
-			seq(
-				$.quoted_string_id,
-				$.quoted_string_pipe,
-				many($.quoted_string_content),
-				$.quoted_string_pipe,
-				$.quoted_string_id,
-			),
-
-		quoted_string_id: ($) => token(new RustRegex("[a-z_]*")),
-		quoted_string_pipe: ($) => token("|"),
-		quoted_string_content: ($) => token(new RustRegex("[^|]+")),
 
 		static_string: ($) =>
 			seq(
@@ -1201,7 +1186,6 @@ module.exports = grammar({
 		lbracket_hash: () => token("#map["),
 
 		quote: () => '"',
-		triple_quote: () => token('"""'),
 
 		comma: () => ",",
 		colon: () => ":",
