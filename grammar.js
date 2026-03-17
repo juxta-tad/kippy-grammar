@@ -391,8 +391,8 @@ module.exports = grammar({
 
 		variant_type_value: ($) =>
 			seq(
-				$.type_variant,
-				repeat(seq(many1($.newline), $.type_variant)),
+				many1($.newline),
+				lineSeparated1($, $.type_variant),
 			),
 		alias_type_value: ($) =>
 			seq(
