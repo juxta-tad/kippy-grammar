@@ -6768,7 +6768,15 @@
   "conflicts": [],
   "precedences": [],
   "externals": [],
-  "inline": [],
+  "inline": [
+    "value_slot",
+    "match_arm_value",
+    "method_body",
+    "lambda_body",
+    "let_body",
+    "if_then_value",
+    "if_else_value"
+  ],
   "supertypes": [
     "expression"
   ],

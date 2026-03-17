@@ -308,7 +308,6 @@ module.exports = grammar({
 		$.expression,
 	],
 
-	/*
 	inline: ($) => [
 		$.value_slot,
 		$.match_arm_value,
