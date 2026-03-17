@@ -410,8 +410,20 @@
           "name": "alias_type_value"
         },
         {
-          "type": "SYMBOL",
-          "name": "variant_type_value"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SYMBOL",
+                "name": "newline"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "variant_type_value"
+            }
+          ]
         }
       ]
     },
@@ -460,13 +472,6 @@
     "variant_type_value": {
       "type": "SEQ",
       "members": [
-        {
-          "type": "REPEAT1",
-          "content": {
-            "type": "SYMBOL",
-            "name": "newline"
-          }
-        },
         {
           "type": "SYMBOL",
           "name": "type_variant"

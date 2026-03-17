@@ -381,7 +381,7 @@ module.exports = grammar({
 		type_declaration_rhs: ($) =>
 			choice(
 				$.alias_type_value,
-				$.variant_type_value,
+				seq(many1($.newline), $.variant_type_value),
 			),
 		fits_clause: ($) =>
 			seq(
@@ -391,11 +391,9 @@ module.exports = grammar({
 
 		variant_type_value: ($) =>
 			seq(
-				many1($.newline),
 				$.type_variant,
 				repeat(seq(many1($.newline), $.type_variant)),
 			),
-
 		alias_type_value: ($) =>
 			seq(
 				opt($.kw_distinct),
