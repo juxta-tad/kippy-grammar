@@ -458,43 +458,39 @@
       ]
     },
     "variant_type_value": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SYMBOL",
-              "name": "newline"
-            }
-          },
-          {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
             "type": "SYMBOL",
-            "name": "type_variant"
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "REPEAT1",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "newline"
-                  }
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "type_variant"
-                }
-              ]
-            }
+            "name": "newline"
           }
-        ]
-      }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_variant"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "newline"
+                }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_variant"
+              }
+            ]
+          }
+        }
+      ]
     },
     "alias_type_value": {
       "type": "SEQ",

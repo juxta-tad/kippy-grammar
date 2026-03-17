@@ -390,11 +390,11 @@ module.exports = grammar({
 			),
 
 		variant_type_value: ($) =>
-			prec.right(seq(
+			seq(
 				many1($.newline),
 				$.type_variant,
 				repeat(seq(many1($.newline), $.type_variant)),
-			)),
+			),
 
 		alias_type_value: ($) =>
 			seq(
