@@ -10,18 +10,18 @@ const PREC = {
 };
 
 // --- Lexical Regex Constants ---
-const DEC_DIGITS = "[0-9][0-9_]*";
-const HEX_DIGITS = "[0-9a-fA-F][0-9a-fA-F_]*";
-const OCT_DIGITS = "[0-7][0-7_]*";
-const BIN_DIGITS = "[01][01_]*";
+const DEC_DIGITS = "(?:[0-9]|[0-9][0-9_]*[0-9])";
+const HEX_DIGITS = "(?:[0-9a-fA-F]|[0-9a-fA-F][0-9a-fA-F_]*[0-9a-fA-F])";
+const OCT_DIGITS = "(?:[0-7]|[0-7][0-7_]*[0-7])";
+const BIN_DIGITS = "(?:[01]|[01][01_]*[01])";
 
 const INT_SUFFIX = "(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?";
 const FLOAT_SUFFIX = "(?:f32|f64)?%?";
-const EXPONENT = "(?:[eE][+-]?[0-9_]+)";
+const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
 
 const CHAR_ESCAPE =
-	`(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]+|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
-const STRING_ESCAPE = `(?:u\\([0-9A-Fa-f]{1,8}\\)|[\\\\'"ntrbfv])`;
+	`(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
+const STRING_ESCAPE = `(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[\\\\'"ntrbfv])`;
 
 const opt = optional;
 const many = repeat;
@@ -570,6 +570,11 @@ module.exports = grammar({
 
 		binding_name: ($) => reserved("global", $.identifier),
 
+		// NOTE: binding_name and field_name use reserved() to prevent keywords as names.
+		// Other identifier positions allow any identifier (including keywords used as values).
+		// This creates intentional asymmetry: keywords are illegal in binding/field contexts
+		// but legal elsewhere (e.g., as module names, type arguments). This is by design.
+
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.8: EXPRESSION HIERARCHY
 		// ─────────────────────────────────────────────────────────────────────────
@@ -1065,9 +1070,9 @@ module.exports = grammar({
 		interpolation_start: ($) => token(new RustRegex("\\\\\\(")),
 
 		string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
-		multiline_text: ($) => token(new RustRegex('[^\\\\"]+')),
-		multiline_quote: ($) => token(new RustRegex('"[^"]')),
-		multiline_double_quote: ($) => token(new RustRegex('""[^"]')),
+		multiline_text: ($) => token(new RustRegex('(?:[^"\\\\]|"(?!""))++')),
+		multiline_quote: ($) => token(new RustRegex('"(?!")')),
+		multiline_double_quote: ($) => token(new RustRegex('""(?!")')),
 
 		escape_sequence: ($) => token(new RustRegex(`\\\\${STRING_ESCAPE}`)),
 
@@ -1099,9 +1104,9 @@ module.exports = grammar({
 				prec(
 					-3,
 					seq(
-						"</",
-						many(choice(new RustRegex("[^/]"), new RustRegex("/[^>]"))),
 						"/>",
+						new RustRegex("[\\s\\S]*?"),
+						"</",
 					),
 				),
 			),
@@ -1142,6 +1147,12 @@ module.exports = grammar({
 					many(seq($.module_sep, $.identifier)),
 				),
 			),
+
+		// NOTE: tag_pattern requires qualified_path (module-qualified constructors).
+		// Unqualified constructors like 'None' or 'Some' parse as plain identifiers in patterns,
+		// not as tag_pattern nodes. This affects CST shape for nullary/unary constructors.
+		// If you need to distinguish constructors from regular identifiers in patterns,
+		// check for nullary_tag_pattern or paren_tag_pattern explicitly.
 
 		newline: () => token(new RustRegex("\\r?\\n")),
 		placeholder: ($) => token("__"),
