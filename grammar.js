@@ -40,8 +40,12 @@ function layoutExpr($, name = "value") {
 function fileBody($, header, item) {
 	return seq(
 		many($.newline),
-		opt(seq(header, many($.newline))),
-		many(seq(item, many($.newline))),
+		opt(seq(header, many1($.newline))),
+		opt(seq(
+			item,
+			many(seq(many1($.newline), item)),
+			many($.newline),
+		)),
 	);
 }
 
@@ -270,19 +274,17 @@ module.exports = grammar({
 			$.kw_then,
 			$.kw_else,
 			$.kw_match,
-			$.kw_to,
 			$.kw_in,
 			$.kw_where,
 			$.kw_with,
-			$.kw_extend,
-			$.kw_ability,
+			$.kw_shape,
 			$.kw_module,
 			$.kw_use,
-			$.kw_using,
 			$.kw_build,
 			$.kw_type,
 			$.kw_distinct,
-			$.kw_derives,
+			$.kw_fit,
+			$.kw_fits,
 			$.kw_sig,
 			$.kw_fn,
 			$.kw_test,
@@ -335,7 +337,7 @@ module.exports = grammar({
 				$.type_declaration,
 				$.signature,
 				$.value_declaration,
-				$.ability_declaration,
+				$.shape_declaration,
 				$.test_declaration,
 				$.expect_statement,
 				$.implementation,
@@ -349,12 +351,10 @@ module.exports = grammar({
 				$.kw_use,
 				field("module", $.path),
 				opt(seq($.kw_as, field("alias", $.identifier))),
-				opt(
-					seq(
-						$.kw_using,
-						collection($, $.lparen, $.rparen, $.import_name, $.comma),
-					),
-				),
+				opt(field(
+					"imports",
+					collection($, $.lparen, $.rparen, $.import_name, $.comma),
+				)),
 			),
 
 		module_declaration: ($) =>
@@ -373,34 +373,37 @@ module.exports = grammar({
 				$.kw_type,
 				field("name", $.path),
 				opt($.type_parameter_list),
+				opt(field("conformances", $.fits_clause)),
 				$.equals,
-				field("value", choice($.variant_type_value, $.alias_type_value)),
-				opt($.derives_clause),
+				field("value", $.type_declaration_rhs),
 			),
 
-		derives_clause: ($) =>
-			seq(
-				$.kw_derives,
-				choice(
-					sep1(field("ability", $.type_term), $.comma),
-					ndBlock($, field("ability", $.type_term)),
-				),
+		type_declaration_rhs: ($) =>
+			choice(
+				$.alias_type_value,
+				$.variant_type_value,
 			),
-		variant_type_value: ($) => prec(2, $.type_variant_block),
+		fits_clause: ($) =>
+			seq(
+				$.kw_fits,
+				sep1(field("shape", $.type_term), $.comma),
+			),
+
+		variant_type_value: ($) =>
+			prec.right(seq(
+				many1($.newline),
+				$.type_variant,
+				repeat(seq(many1($.newline), $.type_variant)),
+			)),
 
 		alias_type_value: ($) =>
-			prec(
-				1,
-				seq(
-					opt($.kw_distinct),
-					$.type_body,
-				),
+			seq(
+				opt($.kw_distinct),
+				$.type_body,
 			),
 
 		type_parameter_list: ($) =>
 			collection($, $.lparen, $.rparen, $.identifier, $.comma),
-
-		type_variant_block: ($) => ndBlock($, $.type_variant),
 
 		type_variant: ($) =>
 			seq(
@@ -472,17 +475,27 @@ module.exports = grammar({
 			),
 
 		// ─────────────────────────────────────────────────────────────────────────
-		// 3.7: IMPLEMENTATIONS & ABILITIES
+		// 3.7: IMPLEMENTATIONS & ABILITIES (SHAPES)
 		// ─────────────────────────────────────────────────────────────────────────
 		implementation: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
-				$.kw_extend,
+				$.kw_fit,
 				field("type", $.type_term),
-				$.kw_with,
-				field("ability", $.path),
+				$.colon,
+				$.implementation_shapes,
 				field("methods", ndBlock($, $.implementation_method)),
+			),
+
+		implementation_shapes: ($) =>
+			choice(
+				field("shape", $.path),
+				seq(
+					$.lparen,
+					separated1($, field("shape", $.path), $.comma),
+					$.rparen,
+				),
 			),
 
 		implementation_method: ($) =>
@@ -503,11 +516,11 @@ module.exports = grammar({
 				),
 			),
 
-		ability_declaration: ($) =>
+		shape_declaration: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
-				$.kw_ability,
+				$.kw_shape,
 				field("name", $.path),
 				opt($.type_parameter_list),
 				field("methods", ndBlock($, $.annotation)),
@@ -612,7 +625,7 @@ module.exports = grammar({
 		method_qualification: ($) =>
 			seq(
 				$.hash_sign,
-				field("ability", $.path),
+				field("shape", $.path),
 			),
 
 		call_suffix: ($) =>
@@ -747,7 +760,7 @@ module.exports = grammar({
 			prec.right(seq(
 				$.kw_match,
 				field("subject", $.pipe_expression),
-				$.kw_to,
+				$.colon,
 				ndBlock($, $.match_arm),
 			)),
 
@@ -915,7 +928,18 @@ module.exports = grammar({
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
-				bracedCollection($, $.constraint_entry, $.comma),
+				choice(
+					field("constraint", $.constraint_entry),
+					seq(
+						$.lparen,
+						many($.newline),
+						separated1($, field("constraint", $.constraint_entry), $.comma, {
+							allow_newline_separator: false,
+						}),
+						many($.newline),
+						$.rparen,
+					),
+				),
 			),
 
 		constraint_entry: ($) =>
@@ -928,8 +952,8 @@ module.exports = grammar({
 		constraint_sum: ($) =>
 			prec.left(
 				seq(
-					field("ability", $.path),
-					many(seq($.plus, field("ability", $.path))),
+					field("shape", $.path),
+					many(seq($.plus, field("shape", $.path))),
 				),
 			),
 
@@ -1133,19 +1157,17 @@ module.exports = grammar({
 		kw_then: () => "then",
 		kw_else: () => "else",
 		kw_match: () => "match",
-		kw_to: () => "to",
 		kw_in: () => "in",
 		kw_where: () => "where",
 		kw_with: () => "with",
-		kw_extend: () => "extend",
-		kw_ability: () => "ability",
+		kw_shape: () => "shape",
 		kw_module: () => "module",
 		kw_use: () => "use",
-		kw_using: () => "using",
 		kw_build: () => "build",
 		kw_type: () => "type",
 		kw_distinct: () => "distinct",
-		kw_derives: () => "derives",
+		kw_fit: () => "fit",
+		kw_fits: () => "fits",
 		kw_sig: () => "sig",
 		kw_fn: () => "fn",
 		kw_test: () => "test",
