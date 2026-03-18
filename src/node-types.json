@@ -33,72 +33,6 @@
     }
   },
   {
-    "type": "alias_type_declaration",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_body",
-            "named": true
-          }
-        ]
-      },
-      "deriving": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "deriving_clause",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "equals",
-          "named": true
-        },
-        {
-          "type": "kw_pub",
-          "named": true
-        },
-        {
-          "type": "kw_type",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_parameter_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "and_expression",
     "named": true,
     "fields": {},
@@ -1118,6 +1052,16 @@
     }
   },
   {
+    "type": "gt",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "gt_op",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "if_expression",
     "named": true,
     "fields": {
@@ -1650,9 +1594,23 @@
         {
           "type": "string",
           "named": true
+        },
+        {
+          "type": "unit_literal",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "lt",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "lt_op",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "map_entry",
@@ -1990,6 +1948,102 @@
         },
         {
           "type": "unary_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nominal_record_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_nd",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "record_type_field",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nominal_sum_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_choice",
+          "named": true
+        },
+        {
+          "type": "kw_nd",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_variant",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nominal_type_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "nominal_record_block",
+          "named": true
+        },
+        {
+          "type": "nominal_sum_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nominal_type_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "nominal_type_block",
+          "named": true
+        },
+        {
+          "type": "type_expression",
           "named": true
         }
       ]
@@ -2343,29 +2397,6 @@
     }
   },
   {
-    "type": "record_block_type_value",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_nd",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "record_type_field",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "record_body",
     "named": true,
     "fields": {},
@@ -2550,72 +2581,6 @@
         },
         {
           "type": "pattern",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "record_type_declaration",
-    "named": true,
-    "fields": {
-      "deriving": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "deriving_clause",
-            "named": true
-          }
-        ]
-      },
-      "fields": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "record_block_type_value",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "kw_pub",
-          "named": true
-        },
-        {
-          "type": "kw_type",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_parameter_list",
           "named": true
         }
       ]
@@ -3062,72 +3027,6 @@
     "fields": {}
   },
   {
-    "type": "sum_type_declaration",
-    "named": true,
-    "fields": {
-      "deriving": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "deriving_clause",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      },
-      "variants": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "variant_type_value",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "kw_pub",
-          "named": true
-        },
-        {
-          "type": "kw_type",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_parameter_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "tag_pattern",
     "named": true,
     "fields": {},
@@ -3400,15 +3299,15 @@
           "named": true
         },
         {
-          "type": "lbracket",
+          "type": "gt",
+          "named": true
+        },
+        {
+          "type": "lt",
           "named": true
         },
         {
           "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rbracket",
           "named": true
         },
         {
@@ -3441,25 +3340,72 @@
   {
     "type": "type_declaration",
     "named": true,
-    "fields": {},
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "nominal_type_body",
+            "named": true
+          },
+          {
+            "type": "type_body",
+            "named": true
+          }
+        ]
+      },
+      "deriving": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "deriving_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "alias_type_declaration",
+          "type": "attribute",
           "named": true
         },
         {
-          "type": "record_type_declaration",
+          "type": "colon",
           "named": true
         },
         {
-          "type": "sum_type_declaration",
+          "type": "equals",
           "named": true
         },
         {
-          "type": "wrapped_type_declaration",
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_parameter_list",
           "named": true
         }
       ]
@@ -3512,19 +3458,19 @@
           "named": true
         },
         {
+          "type": "gt",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
         {
-          "type": "lparen",
+          "type": "lt",
           "named": true
         },
         {
           "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rparen",
           "named": true
         }
       ]
@@ -3759,6 +3705,21 @@
     }
   },
   {
+    "type": "unit_literal",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_unit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "use_statement",
     "named": true,
     "fields": {
@@ -3911,33 +3872,6 @@
     }
   },
   {
-    "type": "variant_type_value",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_choice",
-          "named": true
-        },
-        {
-          "type": "kw_nd",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_variant",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "wildcard_pattern",
     "named": true,
     "fields": {},
@@ -3953,70 +3887,12 @@
     }
   },
   {
-    "type": "wrapped_type_declaration",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_expression",
-            "named": true
-          }
-        ]
-      },
-      "deriving": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "deriving_clause",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "kw_pub",
-          "named": true
-        },
-        {
-          "type": "kw_type",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_parameter_list",
-          "named": true
-        }
-      ]
-    }
+    "type": "<",
+    "named": false
+  },
+  {
+    "type": ">",
+    "named": false
   },
   {
     "type": "arrow",
@@ -4083,10 +3959,6 @@
   },
   {
     "type": "ge_op",
-    "named": true
-  },
-  {
-    "type": "gt_op",
     "named": true
   },
   {
@@ -4214,6 +4086,10 @@
     "named": true
   },
   {
+    "type": "kw_unit",
+    "named": true
+  },
+  {
     "type": "kw_use",
     "named": true
   },
@@ -4256,10 +4132,6 @@
   },
   {
     "type": "lparen_hash",
-    "named": true
-  },
-  {
-    "type": "lt_op",
     "named": true
   },
   {

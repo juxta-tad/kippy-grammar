@@ -324,6 +324,7 @@ module.exports = grammar({
 			$.kw_as,
 			$.kw_self,
 			$.kw_Self,
+			$.kw_unit,
 			$.kw_nd,
 		],
 	},
@@ -396,99 +397,79 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.3: TYPE DECLARATIONS & VARIANTS
 		// ─────────────────────────────────────────────────────────────────────────
-		// Four distinct type declaration forms
+
+		// Unified type declaration: alias (=) or nominal (:)
 		type_declaration: ($) =>
+			seq(
+				attributePrefix($),
+				visibility_modifier($),
+				$.kw_type,
+				field("name", $.path),
+				opt($.type_parameter_list),
+				opt(field("deriving", $.deriving_clause)),
+				choice(
+					// Alias: type X = T
+					seq($.equals, field("body", $.type_body)),
+					// Nominal: type X: body (wrapper, record, or sum)
+					seq($.colon, field("body", $.nominal_type_body)),
+				),
+			),
+
+		// Nominal type body: inline wrapper or block form (record/sum)
+		nominal_type_body: ($) =>
 			choice(
-				$.alias_type_declaration,
-				$.wrapped_type_declaration,
-				$.record_type_declaration,
-				$.sum_type_declaration,
+				// Inline wrapper: type X: T
+				seq(many($.newline), $.type_expression),
+				// Block forms: record or sum
+				$.nominal_type_block,
 			),
 
-		// type X = T (transparent alias)
-		alias_type_declaration: ($) =>
+		// Nominal type block: must start with newline(s), then record or sum
+		nominal_type_block: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
-				$.kw_type,
-				field("name", $.path),
-				opt($.type_parameter_list),
-				opt(field("deriving", $.deriving_clause)),
-				$.equals,
-				field("body", $.type_body),
+				many1($.newline),
+				choice(
+					$.nominal_sum_block,
+					$.nominal_record_block,
+				),
 			),
 
-		// type X: T (nominal wrapper over type expression)
-		wrapped_type_declaration: ($) =>
+		// Sum type block: choice variants nd
+		nominal_sum_block: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
-				$.kw_type,
-				field("name", $.path),
-				opt($.type_parameter_list),
-				opt(field("deriving", $.deriving_clause)),
-				$.colon,
-				field("body", $.type_expression),
+				$.kw_choice,
+				choice(
+					// Inline: choice | A | B
+					seq(
+						$.type_variant,
+						many($.type_variant),
+					),
+					// Block: choice \n | A \n | B \n nd
+					seq(
+						many1($.newline),
+						$.type_variant,
+						many(seq(many1($.newline), $.type_variant)),
+						many1($.newline),
+						$.kw_nd,
+					),
+				),
 			),
 
-		// type X: fields... nd (nominal record declaration)
-		record_type_declaration: ($) =>
+		// Record type block: fields nd
+		nominal_record_block: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
-				$.kw_type,
-				field("name", $.path),
-				opt($.type_parameter_list),
-				opt(field("deriving", $.deriving_clause)),
-				$.colon,
-				field("fields", $.record_block_type_value),
+				lineSeparated1($, $.record_type_field),
+				many($.newline),
+				$.kw_nd,
 			),
 
-		// type X: choice variants (nominal sum type declaration)
-		// Supports: choice | A | B (inline, no nd)
-		//           choice\n | A\n | B\n nd (multiline block)
-		//           choice | A\n | B\n nd (mixed continuation)
-		sum_type_declaration: ($) =>
-			seq(
-				attributePrefix($),
-				visibility_modifier($),
-				$.kw_type,
-				field("name", $.path),
-				opt($.type_parameter_list),
-				opt(field("deriving", $.deriving_clause)),
-				$.colon,
-				field("variants", $.variant_type_value),
-			),
-
-		// Nominal record declaration (block form)
+		// Nominal record declaration (block form) - kept for compatibility if needed elsewhere
 		record_block_type_value: ($) =>
 			seq(
 				many1($.newline),
 				lineSeparated1($, $.record_type_field),
 				many($.newline),
 				$.kw_nd,
-			),
-
-		// Nominal sum type: choice with variants
-		// Inline: choice | A | B (all same-line, no nd)
-		// Block: choice \n | A \n | B \n nd (newline after choice, variants on separate lines)
-		variant_type_value: ($) =>
-			choice(
-				// Inline: choice | A | B
-				seq(
-					$.kw_choice,
-					$.type_variant,
-					many($.type_variant),
-				),
-				// Block: choice \n | A \n | B \n nd
-				seq(
-					$.kw_choice,
-					many1($.newline),
-					$.type_variant,
-					many(seq(many1($.newline), $.type_variant)),
-					many1($.newline),
-					$.kw_nd,
-				),
 			),
 
 		deriving_clause: ($) =>
@@ -498,7 +479,7 @@ module.exports = grammar({
 			),
 
 		type_parameter_list: ($) =>
-			collection($, $.lparen, $.rparen, $.identifier, $.comma),
+			collection($, $.lt, $.gt, $.identifier, $.comma),
 
 		type_variant: ($) =>
 			seq(
@@ -1149,7 +1130,7 @@ module.exports = grammar({
 			),
 
 		type_argument_list: ($) =>
-			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
+			collection($, $.lt, $.gt, $.type_expression, $.comma),
 
 		record_type_field: ($) =>
 			seq(
@@ -1178,11 +1159,14 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		literal: ($) =>
 			choice(
+				$.unit_literal,
 				$.int_literal,
 				$.float_literal,
 				$.char_literal,
 				$.string,
 			),
+
+		unit_literal: ($) => $.kw_unit,
 
 		float_literal: ($) =>
 			token(choice(
@@ -1339,6 +1323,7 @@ module.exports = grammar({
 		kw_as: () => "as",
 		kw_self: () => "self",
 		kw_Self: () => "Self",
+		kw_unit: () => "unit",
 		kw_nd: () => "nd",
 
 		// Punctuation
@@ -1348,6 +1333,8 @@ module.exports = grammar({
 		rbracket: () => "]",
 		lbrace: () => "{",
 		rbrace: () => "}",
+		lt: () => "<",
+		gt: () => ">",
 		lparen_hash: () => token("#("),
 		lbracket_hash: () => token("#map["),
 
