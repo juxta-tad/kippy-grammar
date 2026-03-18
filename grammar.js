@@ -479,7 +479,7 @@ module.exports = grammar({
 			),
 
 		type_parameter_list: ($) =>
-			collection($, $.lt, $.gt, $.identifier, $.comma),
+			collection($, $.lt_op, $.gt_op, $.identifier, $.comma),
 
 		type_variant: ($) =>
 			seq(
@@ -1130,7 +1130,7 @@ module.exports = grammar({
 			),
 
 		type_argument_list: ($) =>
-			collection($, $.lt, $.gt, $.type_expression, $.comma),
+			collection($, $.lt_op, $.gt_op, $.type_expression, $.comma),
 
 		record_type_field: ($) =>
 			seq(
@@ -1333,8 +1333,6 @@ module.exports = grammar({
 		rbracket: () => "]",
 		lbrace: () => "{",
 		rbrace: () => "}",
-		lt: () => "<",
-		gt: () => ">",
 		lparen_hash: () => token("#("),
 		lbracket_hash: () => token("#map["),
 

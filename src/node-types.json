@@ -1052,16 +1052,6 @@
     }
   },
   {
-    "type": "gt",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "gt_op",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "if_expression",
     "named": true,
     "fields": {
@@ -1601,16 +1591,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "lt",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "lt_op",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "map_entry",
@@ -3299,11 +3279,11 @@
           "named": true
         },
         {
-          "type": "gt",
+          "type": "gt_op",
           "named": true
         },
         {
-          "type": "lt",
+          "type": "lt_op",
           "named": true
         },
         {
@@ -3458,7 +3438,7 @@
           "named": true
         },
         {
-          "type": "gt",
+          "type": "gt_op",
           "named": true
         },
         {
@@ -3466,7 +3446,7 @@
           "named": true
         },
         {
-          "type": "lt",
+          "type": "lt_op",
           "named": true
         },
         {
@@ -3887,14 +3867,6 @@
     }
   },
   {
-    "type": "<",
-    "named": false
-  },
-  {
-    "type": ">",
-    "named": false
-  },
-  {
     "type": "arrow",
     "named": true
   },
@@ -3959,6 +3931,10 @@
   },
   {
     "type": "ge_op",
+    "named": true
+  },
+  {
+    "type": "gt_op",
     "named": true
   },
   {
@@ -4132,6 +4108,10 @@
   },
   {
     "type": "lparen_hash",
+    "named": true
+  },
+  {
+    "type": "lt_op",
     "named": true
   },
   {
