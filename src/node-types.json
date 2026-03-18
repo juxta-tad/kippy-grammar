@@ -33,15 +33,66 @@
     }
   },
   {
-    "type": "alias_type_value",
+    "type": "alias_type_declaration",
     "named": true,
-    "fields": {},
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_body",
+            "named": true
+          }
+        ]
+      },
+      "deriving": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "deriving_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "type_body",
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "equals",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_parameter_list",
           "named": true
         }
       ]
@@ -76,54 +127,6 @@
       "types": [
         {
           "type": "kw_and",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "annotation",
-    "named": true,
-    "fields": {
-      "constraints": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "constraint_clause",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "binding_name",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "attribute",
-          "named": true
-        },
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_body",
           "named": true
         }
       ]
@@ -683,24 +686,17 @@
   {
     "type": "constraint_clause",
     "named": true,
-    "fields": {
-      "constraint": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "constraint_entry",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
           "type": "comma",
+          "named": true
+        },
+        {
+          "type": "constraint_entry",
           "named": true
         },
         {
@@ -850,19 +846,30 @@
     }
   },
   {
-    "type": "defined_type_value",
+    "type": "deriving_clause",
     "named": true,
-    "fields": {},
+    "fields": {
+      "shape": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "type_body",
+          "type": "comma",
           "named": true
         },
         {
-          "type": "variant_type_value",
+          "type": "kw_deriving",
           "named": true
         }
       ]
@@ -936,15 +943,94 @@
     }
   },
   {
-    "type": "fitting_clause",
+    "type": "fit_member",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "fit_method",
+          "named": true
+        },
+        {
+          "type": "fit_type_def",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fit_method",
     "named": true,
     "fields": {
-      "shape": {
+      "body": {
         "multiple": true,
         "required": true,
         "types": [
           {
-            "type": "type_term",
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "parameters": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "method_parameter_list",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "fat_arrow",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fit_type_def",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_member_name",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_body",
             "named": true
           }
         ]
@@ -955,11 +1041,11 @@
       "required": true,
       "types": [
         {
-          "type": "comma",
+          "type": "equals",
           "named": true
         },
         {
-          "type": "kw_fitting",
+          "type": "kw_type",
           "named": true
         }
       ]
@@ -1098,15 +1184,60 @@
     }
   },
   {
+    "type": "impl_type_head",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "parenthesized_type",
+          "named": true
+        },
+        {
+          "type": "path",
+          "named": true
+        },
+        {
+          "type": "self_type",
+          "named": true
+        },
+        {
+          "type": "type_application",
+          "named": true
+        },
+        {
+          "type": "type_record",
+          "named": true
+        },
+        {
+          "type": "type_tuple",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "implementation",
     "named": true,
     "fields": {
-      "methods": {
+      "constraints": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constraint_clause",
+            "named": true
+          }
+        ]
+      },
+      "members": {
         "multiple": true,
         "required": true,
         "types": [
           {
-            "type": "implementation_method",
+            "type": "fit_member",
             "named": true
           },
           {
@@ -1119,12 +1250,22 @@
           }
         ]
       },
+      "shape": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "implementation_shapes",
+            "named": true
+          }
+        ]
+      },
       "type": {
         "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "type_term",
+            "type": "impl_type_head",
             "named": true
           }
         ]
@@ -1143,10 +1284,6 @@
           "named": true
         },
         {
-          "type": "implementation_shapes",
-          "named": true
-        },
-        {
           "type": "kw_fit",
           "named": true
         },
@@ -1157,55 +1294,9 @@
         {
           "type": "newline",
           "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "implementation_method",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          },
-          {
-            "type": "newline",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "parameters": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "method_parameter_list",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
+        },
         {
-          "type": "fat_arrow",
+          "type": "type_parameter_list",
           "named": true
         }
       ]
@@ -1214,36 +1305,13 @@
   {
     "type": "implementation_shapes",
     "named": true,
-    "fields": {
-      "shape": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
-      "multiple": true,
-      "required": false,
+      "multiple": false,
+      "required": true,
       "types": [
         {
-          "type": "comma",
-          "named": true
-        },
-        {
-          "type": "lparen",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rparen",
+          "type": "path",
           "named": true
         }
       ]
@@ -1740,6 +1808,36 @@
     }
   },
   {
+    "type": "method_default",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "equals",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "method_parameter_list",
     "named": true,
     "fields": {
@@ -2047,6 +2145,10 @@
           "named": true
         },
         {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "rparen",
           "named": true
         },
@@ -2235,6 +2337,29 @@
         },
         {
           "type": "module_sep",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_block_type_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_nd",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "record_type_field",
           "named": true
         }
       ]
@@ -2431,6 +2556,72 @@
     }
   },
   {
+    "type": "record_type_declaration",
+    "named": true,
+    "fields": {
+      "deriving": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "deriving_clause",
+            "named": true
+          }
+        ]
+      },
+      "fields": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "record_block_type_value",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_parameter_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "record_type_field",
     "named": true,
     "fields": {
@@ -2505,20 +2696,20 @@
     "type": "shape_declaration",
     "named": true,
     "fields": {
-      "methods": {
+      "members": {
         "multiple": true,
         "required": true,
         "types": [
-          {
-            "type": "annotation",
-            "named": true
-          },
           {
             "type": "kw_nd",
             "named": true
           },
           {
             "type": "newline",
+            "named": true
+          },
+          {
+            "type": "shape_member",
             "named": true
           }
         ]
@@ -2529,6 +2720,16 @@
         "types": [
           {
             "type": "path",
+            "named": true
+          }
+        ]
+      },
+      "parents": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "shape_parents",
             "named": true
           }
         ]
@@ -2556,6 +2757,139 @@
         },
         {
           "type": "type_parameter_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shape_member",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "shape_method",
+          "named": true
+        },
+        {
+          "type": "shape_type_decl",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shape_method",
+    "named": true,
+    "fields": {
+      "constraints": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constraint_clause",
+            "named": true
+          }
+        ]
+      },
+      "default": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "method_default",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shape_parents",
+    "named": true,
+    "fields": {
+      "parent": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "comma",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "shape_type_decl",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_member_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_type",
           "named": true
         }
       ]
@@ -2726,6 +3060,72 @@
     "type": "string_content",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "sum_type_declaration",
+    "named": true,
+    "fields": {
+      "deriving": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "deriving_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      },
+      "variants": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "variant_type_value",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_parameter_list",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "tag_pattern",
@@ -3023,9 +3423,13 @@
     "named": true,
     "fields": {
       "type": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "newline",
+            "named": true
+          },
           {
             "type": "type_expression",
             "named": true
@@ -3037,72 +3441,25 @@
   {
     "type": "type_declaration",
     "named": true,
-    "fields": {
-      "fitting": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "fitting_clause",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "alias_type_value",
-            "named": true
-          },
-          {
-            "type": "defined_type_value",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "attribute",
+          "type": "alias_type_declaration",
           "named": true
         },
         {
-          "type": "colon",
+          "type": "record_type_declaration",
           "named": true
         },
         {
-          "type": "equals",
+          "type": "sum_type_declaration",
           "named": true
         },
         {
-          "type": "kw_pub",
-          "named": true
-        },
-        {
-          "type": "kw_type",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "type_parameter_list",
+          "type": "wrapped_type_declaration",
           "named": true
         }
       ]
@@ -3122,6 +3479,21 @@
         },
         {
           "type": "variadic_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_member_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
           "named": true
         }
       ]
@@ -3547,6 +3919,10 @@
       "required": true,
       "types": [
         {
+          "type": "kw_choice",
+          "named": true
+        },
+        {
           "type": "kw_nd",
           "named": true
         },
@@ -3571,6 +3947,72 @@
       "types": [
         {
           "type": "wildcard",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "wrapped_type_declaration",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
+      "deriving": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "deriving_clause",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
+          "type": "kw_type",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "type_parameter_list",
           "named": true
         }
       ]
@@ -3684,6 +4126,14 @@
     "named": true
   },
   {
+    "type": "kw_choice",
+    "named": true
+  },
+  {
+    "type": "kw_deriving",
+    "named": true
+  },
+  {
     "type": "kw_else",
     "named": true
   },
@@ -3693,10 +4143,6 @@
   },
   {
     "type": "kw_fit",
-    "named": true
-  },
-  {
-    "type": "kw_fitting",
     "named": true
   },
   {

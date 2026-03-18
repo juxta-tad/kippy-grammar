@@ -35,6 +35,11 @@ function sep1(rule, separator) {
 function layoutExpr($, name = "value") {
 	return field(name, seq(many($.newline), $.expression));
 }
+
+function layoutType($, name = "type") {
+	return field(name, seq(many($.newline), $.type_expression));
+}
+
 // --- Block & Layout Helpers ---
 
 function fileBody($, header, item) {
@@ -75,6 +80,17 @@ function lineSeparated1($, rule) {
 	return seq(
 		rule,
 		many(seq(many1($.newline), rule)),
+	);
+}
+
+// Continuation-sensitive argument list (same-line or newline-separated)
+function argumentList($) {
+	return seq(
+		field("arg", $.call_argument),
+		many(choice(
+			seq($.comma, many($.newline), field("arg", $.call_argument)),
+			seq(many1($.newline), field("arg", $.call_argument)),
+		)),
 	);
 }
 
@@ -187,77 +203,91 @@ function bracedCollection($, rule, separator) {
 }
 
 // --- Expression Ladder Generator ---
-function buildExpressionLadder(prefix, baseRule) {
+function buildExpressionLadder(EXPR, baseRule) {
 	return {
-		[`${prefix}pipe_expression`]: ($) =>
+		[EXPR.pipe]: ($) =>
 			prec.left(
 				PREC.PIPE,
 				seq(
-					$[`${prefix}or_expression`],
-					many(seq($.pipe, $[`${prefix}or_expression`])),
+					$[EXPR.or],
+					many(seq($.pipe, $[EXPR.or])),
 				),
 			),
-		[`${prefix}or_expression`]: ($) =>
+		[EXPR.or]: ($) =>
 			prec.left(
 				PREC.OR,
 				seq(
-					$[`${prefix}and_expression`],
-					many(seq($.or_op, $[`${prefix}and_expression`])),
+					$[EXPR.and],
+					many(seq($.or_op, $[EXPR.and])),
 				),
 			),
-		[`${prefix}and_expression`]: ($) =>
+		[EXPR.and]: ($) =>
 			prec.left(
 				PREC.AND,
 				seq(
-					$[`${prefix}compare_expression`],
-					many(seq($.and_op, $[`${prefix}compare_expression`])),
+					$[EXPR.compare],
+					many(seq($.and_op, $[EXPR.compare])),
 				),
 			),
-		[`${prefix}compare_expression`]: ($) =>
+		[EXPR.compare]: ($) =>
 			prec.left(
 				PREC.COMPARE,
 				seq(
-					$[`${prefix}add_expression`],
+					$[EXPR.add],
 					opt(seq(
 						choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-						$[`${prefix}add_expression`],
+						$[EXPR.add],
 					)),
 				),
 			),
-		[`${prefix}add_expression`]: ($) =>
+		[EXPR.add]: ($) =>
 			prec.left(
 				PREC.ADD,
 				seq(
-					$[`${prefix}mul_expression`],
-					many(seq(choice($.plus, $.minus), $[`${prefix}mul_expression`])),
+					$[EXPR.mul],
+					many(seq(choice($.plus, $.minus), $[EXPR.mul])),
 				),
 			),
-		[`${prefix}mul_expression`]: ($) =>
+		[EXPR.mul]: ($) =>
 			prec.left(
 				PREC.MUL,
 				seq(
-					$[`${prefix}unary_expression`],
+					$[EXPR.unary],
 					many(
 						seq(
 							choice($.star, $.slash, $.kw_mod),
-							$[`${prefix}unary_expression`],
+							$[EXPR.unary],
 						),
 					),
 				),
 			),
-		[`${prefix}unary_expression`]: ($) =>
+		[EXPR.unary]: ($) =>
 			choice(
 				prec.right(
 					PREC.UNARY,
 					seq(
 						choice($.minus, $.kw_not, $.kw_cert),
-						$[`${prefix}unary_expression`],
+						$[EXPR.unary],
 					),
 				),
 				$[baseRule],
 			),
 	};
 }
+
+// Expression precedence level names
+const EXPR = Object.freeze({
+	pipe: "pipe_expression",
+	or: "or_expression",
+	and: "and_expression",
+	compare: "compare_expression",
+	add: "add_expression",
+	mul: "mul_expression",
+	unary: "unary_expression",
+});
+
+// Generate expression precedence ladder
+const expressionRules = buildExpressionLadder(EXPR, "postfix_expression");
 
 module.exports = grammar({
 	name: "kippy",
@@ -282,8 +312,9 @@ module.exports = grammar({
 			$.kw_use,
 			$.kw_build,
 			$.kw_type,
+			$.kw_choice,
 			$.kw_fit,
-			$.kw_fitting,
+			$.kw_deriving,
 			$.kw_sig,
 			$.kw_fn,
 			$.kw_test,
@@ -365,46 +396,105 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.3: TYPE DECLARATIONS & VARIANTS
 		// ─────────────────────────────────────────────────────────────────────────
+		// Four distinct type declaration forms
 		type_declaration: ($) =>
+			choice(
+				$.alias_type_declaration,
+				$.wrapped_type_declaration,
+				$.record_type_declaration,
+				$.sum_type_declaration,
+			),
+
+		// type X = T (transparent alias)
+		alias_type_declaration: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_type,
 				field("name", $.path),
 				opt($.type_parameter_list),
-				opt(field("fitting", $.fitting_clause)),
-				choice(
-					seq($.equals, field("value", $.alias_type_value)),
-					seq($.colon, field("value", $.defined_type_value)),
-				),
+				opt(field("deriving", $.deriving_clause)),
+				$.equals,
+				field("body", $.type_body),
 			),
 
-		alias_type_value: ($) => $.type_body,
-
-		defined_type_value: ($) =>
-			choice(
-				$.type_body,
-				$.variant_type_value,
+		// type X: T (nominal wrapper over type expression)
+		wrapped_type_declaration: ($) =>
+			seq(
+				attributePrefix($),
+				visibility_modifier($),
+				$.kw_type,
+				field("name", $.path),
+				opt($.type_parameter_list),
+				opt(field("deriving", $.deriving_clause)),
+				$.colon,
+				field("body", $.type_expression),
 			),
 
+		// type X: fields... nd (nominal record declaration)
+		record_type_declaration: ($) =>
+			seq(
+				attributePrefix($),
+				visibility_modifier($),
+				$.kw_type,
+				field("name", $.path),
+				opt($.type_parameter_list),
+				opt(field("deriving", $.deriving_clause)),
+				$.colon,
+				field("fields", $.record_block_type_value),
+			),
+
+		// type X: choice variants (nominal sum type declaration)
+		// Supports: choice | A | B (inline, no nd)
+		//           choice\n | A\n | B\n nd (multiline block)
+		//           choice | A\n | B\n nd (mixed continuation)
+		sum_type_declaration: ($) =>
+			seq(
+				attributePrefix($),
+				visibility_modifier($),
+				$.kw_type,
+				field("name", $.path),
+				opt($.type_parameter_list),
+				opt(field("deriving", $.deriving_clause)),
+				$.colon,
+				field("variants", $.variant_type_value),
+			),
+
+		// Nominal record declaration (block form)
+		record_block_type_value: ($) =>
+			seq(
+				many1($.newline),
+				lineSeparated1($, $.record_type_field),
+				many($.newline),
+				$.kw_nd,
+			),
+
+		// Nominal sum type: choice with variants
+		// Inline: choice | A | B (all same-line, no nd)
+		// Block: choice \n | A \n | B \n nd (newline after choice, variants on separate lines)
 		variant_type_value: ($) =>
 			choice(
+				// Inline: choice | A | B
 				seq(
+					$.kw_choice,
 					$.type_variant,
 					many($.type_variant),
 				),
+				// Block: choice \n | A \n | B \n nd
 				seq(
+					$.kw_choice,
 					many1($.newline),
-					lineSeparated1($, $.type_variant),
-					many($.newline),
+					$.type_variant,
+					many(seq(many1($.newline), $.type_variant)),
+					many1($.newline),
 					$.kw_nd,
 				),
 			),
 
-		fitting_clause: ($) =>
+		deriving_clause: ($) =>
 			seq(
-				$.kw_fitting,
-				sep1(field("shape", $.type_term), $.comma),
+				$.kw_deriving,
+				sep1(field("shape", $.path), $.comma),
 			),
 
 		type_parameter_list: ($) =>
@@ -420,15 +510,24 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.4: ANNOTATIONS & SIGNATURES
 		// ─────────────────────────────────────────────────────────────────────────
-		annotation: ($) =>
+		// Shape method: method signature with optional default body
+		shape_method: ($) =>
 			seq(
 				attributePrefix($),
 				field("name", $.binding_name),
 				$.colon,
 				$.type_body,
+				opt(field("default", $.method_default)),
 				opt(field("constraints", $.constraint_clause)),
 			),
 
+		method_default: ($) =>
+			seq(
+				$.equals,
+				$.value_slot,
+			),
+
+		// Top-level signature: no defaults allowed
 		signature: ($) =>
 			seq(
 				attributePrefix($),
@@ -484,23 +583,43 @@ module.exports = grammar({
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_fit,
-				field("type", $.type_term),
+				opt($.type_parameter_list),
+				field("type", $.impl_type_head),
 				$.colon,
-				$.implementation_shapes,
-				field("methods", ndBlock($, $.implementation_method)),
+				field("shape", $.implementation_shapes),
+				opt(field("constraints", $.constraint_clause)),
+				field("members", ndBlock($, $.fit_member)),
 			),
 
-		implementation_shapes: ($) =>
+		// Implementation type head: targets for fit blocks
+		// Excludes function types (no "fit fn(...) -> ... : Shape")
+		impl_type_head: ($) =>
 			choice(
-				field("shape", $.path),
-				seq(
-					$.lparen,
-					separated1($, field("shape", $.path), $.comma),
-					$.rparen,
-				),
+				$.type_application,
+				$.path,
+				$.self_type,
+				$.type_tuple,
+				$.type_record,
+				$.parenthesized_type,
 			),
 
-		implementation_method: ($) =>
+		implementation_shapes: ($) => $.path,
+
+		fit_member: ($) =>
+			choice(
+				$.fit_type_def,
+				$.fit_method,
+			),
+
+		fit_type_def: ($) =>
+			seq(
+				$.kw_type,
+				field("name", $.type_member_name),
+				$.equals,
+				field("value", $.type_body),
+			),
+
+		fit_method: ($) =>
 			seq(
 				field("name", $.identifier),
 				opt(field("parameters", $.method_parameter_list)),
@@ -525,7 +644,26 @@ module.exports = grammar({
 				$.kw_shape,
 				field("name", $.path),
 				opt($.type_parameter_list),
-				field("methods", ndBlock($, $.annotation)),
+				opt(field("parents", $.shape_parents)),
+				field("members", ndBlock($, $.shape_member)),
+			),
+
+		shape_member: ($) =>
+			choice(
+				$.shape_type_decl,
+				$.shape_method,
+			),
+
+		shape_type_decl: ($) =>
+			seq(
+				$.kw_type,
+				field("name", $.type_member_name),
+			),
+
+		shape_parents: ($) =>
+			seq(
+				$.colon,
+				sep1(field("parent", $.path), $.comma),
 			),
 
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
@@ -570,9 +708,11 @@ module.exports = grammar({
 
 		binding_name: ($) => reserved("global", $.identifier),
 
-		// NOTE: binding_name and field_name use reserved() to prevent keywords as names.
+		type_member_name: ($) => reserved("global", $.identifier),
+
+		// NOTE: binding_name, field_name, and type_member_name use reserved() to prevent keywords as names.
 		// Other identifier positions allow any identifier (including keywords used as values).
-		// This creates intentional asymmetry: keywords are illegal in binding/field contexts
+		// This creates intentional asymmetry: keywords are illegal in binding/field/type-member contexts
 		// but legal elsewhere (e.g., as module names, type arguments). This is by design.
 
 		// ─────────────────────────────────────────────────────────────────────────
@@ -592,7 +732,7 @@ module.exports = grammar({
 		method_body: ($) => layoutExpr($, "body"),
 		match_arm_value: ($) => layoutExpr($, "value"),
 
-		...buildExpressionLadder("", "postfix_expression"),
+		...expressionRules,
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.9: POSTFIX EXPRESSIONS
@@ -640,12 +780,15 @@ module.exports = grammar({
 				seq(
 					$.kw_with,
 					choice(
-						sep1(field("arg", $.call_argument), $.comma),
+						// Single-line only: with a, b, c
+						seq(
+							field("arg", $.call_argument),
+							many(seq($.comma, many($.newline), field("arg", $.call_argument))),
+						),
+						// Multiline: with\n a,\n b,\n c (continuation-sensitive)
 						seq(
 							many1($.newline),
-							separated1($, field("arg", $.call_argument), $.comma, {
-								allow_newline_separator: false,
-							}),
+							argumentList($),
 						),
 					),
 				),
@@ -920,7 +1063,7 @@ module.exports = grammar({
 		// ─────────────────────────────────────────────────────────────────────────
 		type_expression: ($) => choice($.type_term, $.variadic_type),
 
-		type_body: ($) => field("type", $.type_expression),
+		type_body: ($) => layoutType($),
 		function_result: ($) => field("result", $.type_expression),
 		record_field_type: ($) => field("type", $.type_expression),
 
@@ -936,14 +1079,29 @@ module.exports = grammar({
 			seq(
 				$.kw_where,
 				choice(
-					field("constraint", $.constraint_entry),
+					// Single-line: where A: Eq
+					$.constraint_entry,
+					// Parenthesized (single or multiline): where ( A: Eq, B: Ord )
 					seq(
 						$.lparen,
-						separated1($, field("constraint", $.constraint_entry), $.comma),
+						many($.newline),
+						$.constraint_entry,
+						many(choice(
+							seq($.comma, many($.newline), $.constraint_entry),
+							seq(many1($.newline), $.constraint_entry),
+						)),
+						many($.newline),
 						$.rparen,
 					),
 				),
 			),
+
+		// NOTE: constraint_clause (where T: ...) is attached to:
+		// - signature: sig sort: fn(List[T]) -> List[T] where T: Ord
+		// - annotation: eq: fn(Self, Self) -> Bool where Self: Comparable
+		// - implementation (fit): fit (T) Box[T]: Show where T: Show
+		// This provides logical constraints wherever they make semantic sense.
+		// deriving is separate (type-level feature) and does not use where.
 
 		constraint_entry: ($) =>
 			seq(
@@ -1006,7 +1164,14 @@ module.exports = grammar({
 		type_tuple: ($) =>
 			tuple($, $.lparen_hash, $.rparen, $.type_term, $.semicolon),
 		type_wildcard: ($) => $.wildcard,
-		parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
+		parenthesized_type: ($) =>
+			seq(
+				$.lparen,
+				many($.newline),
+				$.type_expression,
+				many($.newline),
+				$.rparen,
+			),
 
 		// ─────────────────────────────────────────────────────────────────────────
 		// 3.14: LITERALS & STRINGS
@@ -1161,8 +1326,9 @@ module.exports = grammar({
 		kw_use: () => "use",
 		kw_build: () => "build",
 		kw_type: () => "type",
+		kw_choice: () => "choice",
 		kw_fit: () => "fit",
-		kw_fitting: () => "fitting",
+		kw_deriving: () => "deriving",
 		kw_sig: () => "sig",
 		kw_fn: () => "fn",
 		kw_test: () => "test",
