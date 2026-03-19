@@ -621,44 +621,39 @@
               "name": "kw_with"
             },
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "FIELD",
-                  "name": "payload",
-                  "content": {
+              "type": "FIELD",
+              "name": "payload",
+              "content": {
+                "type": "SYMBOL",
+                "name": "type_expression"
+              }
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
                     "type": "SYMBOL",
-                    "name": "type_expression"
+                    "name": "comma"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "payload",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "type_expression"
+                    }
                   }
-                },
-                {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "comma"
-                      },
-                      {
-                        "type": "REPEAT",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "newline"
-                        }
-                      },
-                      {
-                        "type": "FIELD",
-                        "name": "payload",
-                        "content": {
-                          "type": "SYMBOL",
-                          "name": "type_expression"
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
+                ]
+              }
             }
           ]
         },
@@ -2812,7 +2807,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "statement_expression"
+            "name": "expression"
           }
         ]
       }
@@ -2832,7 +2827,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "statement_expression"
+            "name": "expression"
           }
         ]
       }
@@ -2852,7 +2847,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "statement_expression"
+            "name": "expression"
           }
         ]
       }
@@ -2872,7 +2867,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "statement_expression"
+            "name": "expression"
           }
         ]
       }
@@ -2892,7 +2887,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "statement_expression"
+            "name": "expression"
           }
         ]
       }
@@ -2912,7 +2907,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "statement_expression"
+            "name": "expression"
           }
         ]
       }
@@ -3381,44 +3376,39 @@
           "name": "kw_with"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "payload",
-              "content": {
+          "type": "FIELD",
+          "name": "payload",
+          "content": {
+            "type": "SYMBOL",
+            "name": "tag_payload_expression"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
                 "type": "SYMBOL",
-                "name": "tag_payload_expression"
+                "name": "comma"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "newline"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "payload",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "tag_payload_expression"
+                }
               }
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "comma"
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "payload",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "tag_payload_expression"
-                    }
-                  }
-                ]
-              }
-            }
-          ]
+            ]
+          }
         }
       ]
     },
@@ -5316,44 +5306,39 @@
           "name": "kw_with"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "payload",
-              "content": {
+          "type": "FIELD",
+          "name": "payload",
+          "content": {
+            "type": "SYMBOL",
+            "name": "tag_payload_pattern"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
                 "type": "SYMBOL",
-                "name": "tag_payload_pattern"
+                "name": "comma"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "newline"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "payload",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "tag_payload_pattern"
+                }
               }
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "comma"
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "payload",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "tag_payload_pattern"
-                    }
-                  }
-                ]
-              }
-            }
-          ]
+            ]
+          }
         }
       ]
     },

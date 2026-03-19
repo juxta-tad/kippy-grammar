@@ -39,7 +39,7 @@ function sep1(rule, separator) {
 }
 
 function layoutExpr($, name = "value") {
-	return field(name, seq(many($.newline), $.statement_expression));
+	return field(name, seq(many($.newline), $.expression));
 }
 
 function layoutType($, name = "type") {
@@ -466,7 +466,8 @@ module.exports = grammar({
 				seq(
 					field("name", $.identifier),
 					$.kw_with,
-					commaSeparated1NoTrailing($, field("payload", $.type_expression)),
+					field("payload", $.type_expression),
+					many(seq($.comma, many($.newline), field("payload", $.type_expression))),
 				),
 				seq(
 					field("name", $.identifier),
@@ -599,7 +600,7 @@ module.exports = grammar({
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		primary_expression: ($) => choice($.inline_expression, $.match_expression, $.if_expression, $.lambda_expression, $.let_expression),
-		value_slot: ($) => layoutExpr($, "value"),
+		value_slot: ($) => field("value", seq(many($.newline), $.statement_expression)),
 		if_then_value: ($) => layoutExpr($, "then_value"),
 		if_else_value: ($) => layoutExpr($, "else_value"),
 		let_body: ($) => layoutExpr($, "body"),
@@ -651,7 +652,8 @@ module.exports = grammar({
 			seq(
 				field("constructor", $.path),
 				$.kw_with,
-				commaSeparated1NoTrailing($, field("payload", $.tag_payload_expression)),
+				field("payload", $.tag_payload_expression),
+				many(seq($.comma, many($.newline), field("payload", $.tag_payload_expression))),
 			),
 
 		inline_expression: ($) => choice($.constructed_record_expression, $.record_builder, $.literal, $.path, $.placeholder, $.list_expression, $.map_expression, $.record_expression, $.tuple_expression, $.parenthesized_expression),
@@ -712,7 +714,8 @@ module.exports = grammar({
 			seq(
 				field("constructor", $.path),
 				$.kw_with,
-				commaSeparated1NoTrailing($, field("payload", $.tag_payload_pattern)),
+				field("payload", $.tag_payload_pattern),
+				many(seq($.comma, many($.newline), field("payload", $.tag_payload_pattern))),
 			),
 		nullary_tag_pattern: ($) => prec(2, alias(
 			seq($.path_head, many1(seq($.module_sep, $.identifier))),
