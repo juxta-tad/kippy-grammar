@@ -2598,8 +2598,21 @@
       "context_name": "global"
     },
     "expression": {
-      "type": "SYMBOL",
-      "name": "pipe_expression"
+      "type": "PREC_RIGHT",
+      "value": -1,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "tag_value_expression"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "pipe_expression"
+          }
+        ]
+      }
     },
     "arm_inline_expression": {
       "type": "SYMBOL",
@@ -3324,43 +3337,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "constructed_record_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "record_builder"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "path"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "placeholder"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "list_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "map_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "record_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "tuple_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "parenthesized_expression"
+          "name": "inline_expression"
         },
         {
           "type": "SYMBOL",
@@ -3381,65 +3358,8 @@
       ]
     },
     "tag_payload_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "constructed_record_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "record_builder"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "path"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "placeholder"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "list_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "map_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "record_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "tuple_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "parenthesized_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "match_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "if_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "lambda_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "let_expression"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "comma_safe_expression"
     },
     "tag_value_expression": {
       "type": "SEQ",
@@ -5848,7 +5768,7 @@
         }
       ]
     },
-    "type_expression": {
+    "base_type": {
       "type": "CHOICE",
       "members": [
         {
@@ -5882,6 +5802,15 @@
         {
           "type": "SYMBOL",
           "name": "parenthesized_type"
+        }
+      ]
+    },
+    "type_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "base_type"
         },
         {
           "type": "SEQ",
@@ -5894,41 +5823,8 @@
               "type": "FIELD",
               "name": "item",
               "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "function_type"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "type_application"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "path"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "self_type"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "type_wildcard"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "type_tuple"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "type_record"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "parenthesized_type"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "base_type"
               }
             }
           ]
