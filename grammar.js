@@ -560,37 +560,13 @@ module.exports = grammar({
 		index_suffix: ($) => seq($.lbracket, field("index", $.expression), $.rbracket),
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
 
-		// Method suffix: x@method or x@method:Shape with optional call
-		// All @-prefixed suffixes go through here — single entry point for @
-		// opt($.application_arguments) no longer conflicts with apply_expression
-		// because apply_expression is now at expression level, not postfix level
+		// Method access only: @method or @method:Shape (no with here - all with application is at expression level)
+		// This is pure postfix suffix that never consumes with, eliminating the ambiguity
 		method_suffix: ($) =>
 			seq(
 				$.at_sign,
 				field("method", $.identifier),
 				opt(seq($.colon, field("shape", $.path))),
-				opt($.application_arguments),
-			),
-
-		// Shared argument list — just the `with ...` part
-		application_arguments: ($) =>
-			prec.right(
-				seq(
-					$.kw_with,
-					choice(
-						// Comma-separated arguments (same-line): use comma_safe_expression
-						seq(
-							field("arg", $.call_argument_inline),
-							many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
-						),
-						// Newline-separated arguments (block form): full pipe_expression, newlines only (no commas)
-						seq(
-							many1($.newline),
-							field("arg", $.call_argument_block),
-							many(seq(many1($.newline), field("arg", $.call_argument_block))),
-						),
-					),
-				),
 			),
 
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
