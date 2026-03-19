@@ -568,16 +568,11 @@ module.exports = grammar({
 							field("arg", $.call_argument_inline),
 							many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
 						),
-						// Newline-separated arguments (block form): use full pipe_expression
+						// Newline-separated arguments (block form): full pipe_expression, newlines only (no commas)
 						seq(
 							many1($.newline),
 							field("arg", $.call_argument_block),
-							many(
-								choice(
-									seq($.comma, many($.newline), field("arg", $.call_argument_block)),
-									seq(many1($.newline), field("arg", $.call_argument_block)),
-								),
-							),
+							many(seq(many1($.newline), field("arg", $.call_argument_block))),
 						),
 					),
 				),

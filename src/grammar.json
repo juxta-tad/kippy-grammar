@@ -2691,51 +2691,22 @@
                   {
                     "type": "REPEAT",
                     "content": {
-                      "type": "CHOICE",
+                      "type": "SEQ",
                       "members": [
                         {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "comma"
-                            },
-                            {
-                              "type": "REPEAT",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "newline"
-                              }
-                            },
-                            {
-                              "type": "FIELD",
-                              "name": "arg",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "call_argument_block"
-                              }
-                            }
-                          ]
+                          "type": "REPEAT1",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          }
                         },
                         {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "REPEAT1",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "newline"
-                              }
-                            },
-                            {
-                              "type": "FIELD",
-                              "name": "arg",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "call_argument_block"
-                              }
-                            }
-                          ]
+                          "type": "FIELD",
+                          "name": "arg",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "call_argument_block"
+                          }
                         }
                       ]
                     }
