@@ -1360,11 +1360,15 @@
             "named": true
           },
           {
-            "type": "kw_nd",
+            "type": "lbrace",
             "named": true
           },
           {
             "type": "newline",
+            "named": true
+          },
+          {
+            "type": "rbrace",
             "named": true
           }
         ]
@@ -1952,6 +1956,28 @@
     "type": "match_expression",
     "named": true,
     "fields": {
+      "body": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "lbrace",
+            "named": true
+          },
+          {
+            "type": "match_arm",
+            "named": true
+          },
+          {
+            "type": "newline",
+            "named": true
+          },
+          {
+            "type": "rbrace",
+            "named": true
+          }
+        ]
+      },
       "subject": {
         "multiple": false,
         "required": true,
@@ -1964,23 +1990,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "kw_match",
-          "named": true
-        },
-        {
-          "type": "kw_nd",
-          "named": true
-        },
-        {
-          "type": "match_arm",
-          "named": true
-        },
-        {
-          "type": "newline",
           "named": true
         }
       ]
@@ -2793,11 +2807,15 @@
         "required": true,
         "types": [
           {
-            "type": "kw_nd",
+            "type": "lbrace",
             "named": true
           },
           {
             "type": "newline",
+            "named": true
+          },
+          {
+            "type": "rbrace",
             "named": true
           },
           {
@@ -3261,11 +3279,15 @@
         "required": true,
         "types": [
           {
-            "type": "kw_nd",
+            "type": "lbrace",
             "named": true
           },
           {
             "type": "newline",
+            "named": true
+          },
+          {
+            "type": "rbrace",
             "named": true
           },
           {
@@ -4113,10 +4135,6 @@
   },
   {
     "type": "kw_module",
-    "named": true
-  },
-  {
-    "type": "kw_nd",
     "named": true
   },
   {
