@@ -5359,6 +5359,56 @@
         }
       ]
     },
+    "tag_payload_pattern": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "wildcard_pattern"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "nullary_tag_pattern"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "list_pattern"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tuple_pattern"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "record_pattern"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "lparen"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "pattern"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "rparen"
+            }
+          ]
+        }
+      ]
+    },
     "with_tag_pattern": {
       "type": "SEQ",
       "members": [
@@ -5382,7 +5432,7 @@
               "name": "payload",
               "content": {
                 "type": "SYMBOL",
-                "name": "unguarded_pattern"
+                "name": "tag_payload_pattern"
               }
             },
             {
@@ -5406,7 +5456,7 @@
                     "name": "payload",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "unguarded_pattern"
+                      "name": "tag_payload_pattern"
                     }
                   }
                 ]

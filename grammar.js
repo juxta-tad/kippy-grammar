@@ -705,11 +705,25 @@ module.exports = grammar({
 		binding_record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.binding_pattern),
 		tag_pattern: ($) => choice($.nullary_tag_pattern, $.with_tag_pattern),
 
+		// Payload patterns in tag constructors: excludes with_tag_pattern to prevent bare chaining
+		// Nested tag patterns must be parenthesized: X with (Y with z)
+		tag_payload_pattern: ($) =>
+			choice(
+				$.literal,
+				$.wildcard_pattern,
+				$.identifier,
+				$.nullary_tag_pattern,
+				$.list_pattern,
+				$.tuple_pattern,
+				$.record_pattern,
+				seq($.lparen, $.pattern, $.rparen),
+			),
+
 		with_tag_pattern: ($) =>
 			seq(
 				field("constructor", $.path),
 				$.kw_with,
-				commaSeparated1NoTrailing($, field("payload", $.unguarded_pattern)),
+				commaSeparated1NoTrailing($, field("payload", $.tag_payload_pattern)),
 			),
 		nullary_tag_pattern: ($) => prec(2, alias(
 			seq($.path_head, many1(seq($.module_sep, $.identifier))),
