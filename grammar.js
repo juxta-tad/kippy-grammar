@@ -459,7 +459,7 @@ module.exports = grammar({
 				seq(
 					field("name", $.identifier),
 					$.kw_with,
-					separated1($, field("payload", $.type_expression), $.comma),
+					commaSeparated1NoTrailing($, field("payload", $.type_expression)),
 				),
 				seq(
 					field("name", $.identifier),
