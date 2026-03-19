@@ -525,8 +525,8 @@ module.exports = grammar({
 						$.index_suffix,
 						$.field_suffix,
 						$.try_op,
-						$.method_access,
-						$.apply_suffix,
+						$.method_suffix,
+						$.apply_expression,
 					)),
 				),
 			),
@@ -536,37 +536,34 @@ module.exports = grammar({
 
 		// Method suffix: x@method or x@method:Shape with optional call
 		// Method access: @method without with (never ambiguous, apply_suffix handles all with)
-		method_access: ($) =>
+		// All @-prefixed suffixes go through here — single entry point for @
+		method_suffix: ($) =>
 			seq(
 				$.at_sign,
 				field("method", $.identifier),
 				opt(seq($.colon, field("shape", $.path))),
+				opt($.application_arguments),
 			),
 
-		// Apply suffix: all with applications, optionally preceded by @method
-		// Unambiguous because method_access and apply_suffix don't compete
-		apply_suffix: ($) =>
-			seq(
-				opt(seq(
-					$.at_sign,
-					field("method", $.identifier),
-					opt(seq($.colon, field("shape", $.path))),
-				)),
-				prec.right(
-					seq(
-						$.kw_with,
-						choice(
-							// Comma-separated arguments (same-line): use comma_safe_expression
-							seq(
-								field("arg", $.call_argument_inline),
-								many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
-							),
-							// Newline-separated arguments (block form): full pipe_expression, newlines only (no commas)
-							seq(
-								many1($.newline),
-								field("arg", $.call_argument_block),
-								many(seq(many1($.newline), field("arg", $.call_argument_block))),
-							),
+		// Bare `with` application (no @)
+		apply_expression: ($) => $.application_arguments,
+
+		// Shared argument list — just the `with ...` part
+		application_arguments: ($) =>
+			prec.right(
+				seq(
+					$.kw_with,
+					choice(
+						// Comma-separated arguments (same-line): use comma_safe_expression
+						seq(
+							field("arg", $.call_argument_inline),
+							many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
+						),
+						// Newline-separated arguments (block form): full pipe_expression, newlines only (no commas)
+						seq(
+							many1($.newline),
+							field("arg", $.call_argument_block),
+							many(seq(many1($.newline), field("arg", $.call_argument_block))),
 						),
 					),
 				),
