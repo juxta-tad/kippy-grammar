@@ -248,7 +248,7 @@ const EXPR = Object.freeze({
 });
 
 // Generate expression precedence ladder
-const expressionRules = buildExpressionLadder(EXPR, "postfix_expression");
+const expressionRules = buildExpressionLadder(EXPR, "application_expression");
 
 module.exports = grammar({
 	name: "kippy",
@@ -526,8 +526,34 @@ module.exports = grammar({
 						$.field_suffix,
 						$.try_op,
 						$.method_suffix,
-						$.apply_expression,
 					)),
+				),
+			),
+
+		// Application expression: with syntax at expression level, not postfix level
+		// Eliminates ambiguity: method_suffix's opt(application_arguments) no longer competes
+		// with bare apply_expression in the postfix chain
+		application_expression: ($) =>
+			prec.right(
+				PREC.POSTFIX,
+				choice(
+					// Comma-separated arguments
+					seq(
+						$.postfix_expression,
+						$.kw_with,
+						field("arg", $.call_argument_inline),
+						many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
+					),
+					// Newline-separated arguments
+					seq(
+						$.postfix_expression,
+						$.kw_with,
+						many1($.newline),
+						field("arg", $.call_argument_block),
+						many(seq(many1($.newline), field("arg", $.call_argument_block))),
+					),
+					// No application
+					$.postfix_expression,
 				),
 			),
 
@@ -535,8 +561,9 @@ module.exports = grammar({
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
 
 		// Method suffix: x@method or x@method:Shape with optional call
-		// Method access: @method without with (never ambiguous, apply_suffix handles all with)
 		// All @-prefixed suffixes go through here — single entry point for @
+		// opt($.application_arguments) no longer conflicts with apply_expression
+		// because apply_expression is now at expression level, not postfix level
 		method_suffix: ($) =>
 			seq(
 				$.at_sign,
@@ -544,9 +571,6 @@ module.exports = grammar({
 				opt(seq($.colon, field("shape", $.path))),
 				opt($.application_arguments),
 			),
-
-		// Bare `with` application (no @)
-		apply_expression: ($) => $.application_arguments,
 
 		// Shared argument list — just the `with ...` part
 		application_arguments: ($) =>
