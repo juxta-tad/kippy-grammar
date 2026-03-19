@@ -493,7 +493,7 @@ module.exports = grammar({
 		type_member_name: ($) => reserved("global", $.identifier),
 		expression: ($) => $.pipe_expression,
 
-		// Regular expressions (application is unified in postfix via application_expression)
+		// Regular expressions (application is unified in postfix via apply_suffix)
 		// Safe only in non-comma-delimited contexts (expect, value slots, match arms, etc.)
 		statement_expression: ($) => $.pipe_expression,
 
@@ -505,26 +505,6 @@ module.exports = grammar({
 
 		// Arguments in newline-delimited call lists: allow full expressions
 		call_argument_block: ($) => $.pipe_expression,
-
-		application_expression: ($) =>
-			prec.right(
-				seq(
-					$.kw_with,
-					choice(
-						// Comma-separated arguments (same-line): use comma_safe_expression
-						seq(
-							field("arg", $.call_argument_inline),
-							many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
-						),
-						// Newline-separated arguments (block form): full pipe_expression, newlines only (no commas)
-						seq(
-							many1($.newline),
-							field("arg", $.call_argument_block),
-							many(seq(many1($.newline), field("arg", $.call_argument_block))),
-						),
-					),
-				),
-			),
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		primary_expression: ($) => choice($.inline_expression, $.match_expression, $.if_expression, $.lambda_expression, $.let_expression),
@@ -545,9 +525,8 @@ module.exports = grammar({
 						$.index_suffix,
 						$.field_suffix,
 						$.try_op,
-						$.method_call,
 						$.method_access,
-						$.application_expression,
+						$.apply_suffix,
 					)),
 				),
 			),
@@ -556,19 +535,41 @@ module.exports = grammar({
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
 
 		// Method suffix: x@method or x@method:Shape with optional call
-		method_call: ($) =>
-			seq(
-				$.at_sign,
-				field("method", $.identifier),
-				opt(seq($.colon, field("shape", $.path))),
-				$.application_expression,
-			),
-
+		// Method access: @method without with (never ambiguous, apply_suffix handles all with)
 		method_access: ($) =>
 			seq(
 				$.at_sign,
 				field("method", $.identifier),
 				opt(seq($.colon, field("shape", $.path))),
+			),
+
+		// Apply suffix: all with applications, optionally preceded by @method
+		// Unambiguous because method_access and apply_suffix don't compete
+		apply_suffix: ($) =>
+			seq(
+				opt(seq(
+					$.at_sign,
+					field("method", $.identifier),
+					opt(seq($.colon, field("shape", $.path))),
+				)),
+				prec.right(
+					seq(
+						$.kw_with,
+						choice(
+							// Comma-separated arguments (same-line): use comma_safe_expression
+							seq(
+								field("arg", $.call_argument_inline),
+								many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
+							),
+							// Newline-separated arguments (block form): full pipe_expression, newlines only (no commas)
+							seq(
+								many1($.newline),
+								field("arg", $.call_argument_block),
+								many(seq(many1($.newline), field("arg", $.call_argument_block))),
+							),
+						),
+					),
+				),
 			),
 
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
