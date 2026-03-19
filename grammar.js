@@ -660,7 +660,7 @@ module.exports = grammar({
 				commaSeparated1NoTrailing($, field("payload", $.tag_payload_expression)),
 			),
 
-		inline_expression: ($) => choice($.constructed_record_expression, $.record_builder, $.tag_value_expression, $.literal, $.path, $.placeholder, $.list_expression, $.map_expression, $.record_expression, $.tuple_expression, $.parenthesized_expression),
+		inline_expression: ($) => choice($.constructed_record_expression, $.record_builder, $.literal, $.path, $.placeholder, $.list_expression, $.map_expression, $.record_expression, $.tuple_expression, $.parenthesized_expression),
 		list_expression: ($) => collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
 		list_item: ($) => choice($.expression, $.spread_element),
 		map_expression: ($) => collection($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
