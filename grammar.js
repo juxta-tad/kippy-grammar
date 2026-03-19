@@ -594,7 +594,6 @@ module.exports = grammar({
 		record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
 		type_expression: ($) =>
 			choice(
-				$.variadic_type,
 				$.function_type,
 				$.type_application,
 				$.path,
@@ -603,6 +602,16 @@ module.exports = grammar({
 				$.type_tuple,
 				$.type_record,
 				$.parenthesized_type,
+				seq($.ellipsis, field("item", choice(
+					$.function_type,
+					$.type_application,
+					$.path,
+					$.self_type,
+					$.type_wildcard,
+					$.type_tuple,
+					$.type_record,
+					$.parenthesized_type,
+				))),
 			),
 		type_body: ($) => layoutType($),
 		ellipsis: ($) => token(prec(1, "...")),
