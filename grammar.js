@@ -106,6 +106,15 @@ function bracedBlock($, rule) {
 	);
 }
 
+// Comma-separated list with optional newlines after commas (no bare newlines)
+function commaSeparated1($, rule) {
+	return seq(
+		rule,
+		many(seq($.comma, many($.newline), rule)),
+		opt($.comma),
+	);
+}
+
 // --- Specific Construct Helpers ---
 function separatedWithOptionalRest(item, separator, rest) {
 	return opt(choice(
@@ -555,7 +564,7 @@ module.exports = grammar({
 			seq(
 				field("constructor", $.path),
 				$.kw_with,
-				separated1($, field("payload", $.expression), $.comma),
+				commaSeparated1($, field("payload", $.expression)),
 			),
 
 		inline_expression: ($) => choice($.constructed_record_expression, $.record_builder, $.tag_value_expression, $.literal, $.path, $.placeholder, $.list_expression, $.map_expression, $.record_expression, $.tuple_expression, $.parenthesized_expression),
@@ -595,7 +604,7 @@ module.exports = grammar({
 			seq(
 				field("constructor", $.path),
 				$.kw_with,
-				separated1($, field("payload", $.unguarded_pattern), $.comma),
+				commaSeparated1($, field("payload", $.unguarded_pattern)),
 			),
 		nullary_tag_pattern: ($) => prec(2, alias(
 			seq($.path_head, many1(seq($.module_sep, $.identifier))),
