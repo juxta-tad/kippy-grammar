@@ -531,6 +531,40 @@ module.exports = grammar({
 		expression: ($) => $.pipe_expression,
 		arm_inline_expression: ($) => $.pipe_expression,
 		call_argument: ($) => $.pipe_expression,
+
+		// Arguments in comma-delimited call lists (same-line): exclude tag_value_expression to prevent ambiguity
+		call_argument_inline: ($) => $.comma_safe_expression,
+
+		// Arguments in newline-delimited call lists: allow full expressions
+		call_argument_block: ($) => $.pipe_expression,
+
+		call_suffix: ($) =>
+			prec.right(
+				seq(
+					$.kw_with,
+					choice(
+						// Comma-separated arguments (same-line): use comma_safe_expression
+						seq(
+							field("arg", $.call_argument_inline),
+							many(seq($.comma, many($.newline), field("arg", $.call_argument_inline))),
+						),
+						// Newline-separated arguments (block form): use full pipe_expression
+						seq(
+							many1($.newline),
+							field("arg", $.call_argument_block),
+							many(
+								choice(
+									seq($.comma, many($.newline), field("arg", $.call_argument_block)),
+									seq(many1($.newline), field("arg", $.call_argument_block)),
+								),
+							),
+						),
+					),
+				),
+			),
+
+		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
+		primary_expression: ($) => choice($.inline_expression, $.match_expression, $.if_expression, $.lambda_expression, $.let_expression),
 		value_slot: ($) => layoutExpr($, "value"),
 		if_then_value: ($) => layoutExpr($, "then_value"),
 		if_else_value: ($) => layoutExpr($, "else_value"),
@@ -563,9 +597,6 @@ module.exports = grammar({
 			opt(seq($.colon, field("shape", $.path))),
 			opt($.call_suffix),
 		),
-		call_suffix: ($) => prec.right(seq($.kw_with, choice(seq(field("arg", $.call_argument), many(seq($.comma, many($.newline), field("arg", $.call_argument)))), seq(many1($.newline), argumentList($))))),
-		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
-		primary_expression: ($) => choice($.inline_expression, $.match_expression, $.if_expression, $.lambda_expression, $.let_expression),
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
 
 		// Expressions safe in comma-delimited parent lists (excludes undelimited comma-separated tag_value_expression)
