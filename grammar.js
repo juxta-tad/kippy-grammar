@@ -484,7 +484,27 @@ module.exports = grammar({
 			),
 		attribute: ($) => seq($.hash_sign, $.path, opt($.attribute_arguments_inline)),
 		attribute_arguments_inline: ($) => collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
-		attribute_argument: ($) => choice($.comma_safe_expression, seq(field("name", $.identifier), $.equals, field("value", $.expression))),
+
+		// Attribute values: restricted grammar for metadata (paths, literals, structured data, not control flow)
+		attribute_value: ($) =>
+			choice(
+				$.literal,
+				$.path,
+				$.attribute_list_value,
+				$.attribute_record_value,
+				seq($.lparen, $.attribute_value, $.rparen),
+			),
+
+		attribute_list_value: ($) => collection($, $.lbracket, $.rbracket, $.attribute_value, $.semicolon),
+		attribute_record_value: ($) => bracedCollection($, $.attribute_record_field, $.semicolon),
+		attribute_record_field: ($) => seq(field("name", $.field_name), $.equals, field("value", $.attribute_value)),
+
+		attribute_argument: ($) =>
+			choice(
+				$.attribute_value,
+				seq(field("name", $.identifier), $.equals, field("value", $.attribute_value)),
+			),
+
 		implementation: ($) =>
 			seq(
 				attributePrefix($),
