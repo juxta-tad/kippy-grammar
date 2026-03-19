@@ -484,7 +484,7 @@ module.exports = grammar({
 			),
 		attribute: ($) => seq($.hash_sign, $.path, opt($.attribute_arguments_inline)),
 		attribute_arguments_inline: ($) => collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
-		attribute_argument: ($) => choice($.expression, seq(field("name", $.identifier), $.equals, field("value", $.expression))),
+		attribute_argument: ($) => choice($.comma_safe_expression, seq(field("name", $.identifier), $.equals, field("value", $.expression))),
 		implementation: ($) =>
 			seq(
 				attributePrefix($),
@@ -567,6 +567,26 @@ module.exports = grammar({
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		primary_expression: ($) => choice($.inline_expression, $.match_expression, $.if_expression, $.lambda_expression, $.let_expression),
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
+
+		// Expressions safe in comma-delimited parent lists (excludes undelimited comma-separated tag_value_expression)
+		// Used for: attribute arguments, function arguments, etc. Nested tag values must be parenthesized.
+		comma_safe_expression: ($) =>
+			choice(
+				$.constructed_record_expression,
+				$.record_builder,
+				$.literal,
+				$.path,
+				$.placeholder,
+				$.list_expression,
+				$.map_expression,
+				$.record_expression,
+				$.tuple_expression,
+				$.parenthesized_expression,
+				$.match_expression,
+				$.if_expression,
+				$.lambda_expression,
+				$.let_expression,
+			),
 
 		// Payload expressions in tag constructors: excludes bare tag_value_expression to require parentheses for nesting
 		tag_payload_expression: ($) =>
