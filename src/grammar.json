@@ -3193,7 +3193,11 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "method_suffix"
+                  "name": "method_call"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "method_access"
                 },
                 {
                   "type": "SYMBOL",
@@ -3243,7 +3247,7 @@
         }
       ]
     },
-    "method_suffix": {
+    "method_call": {
       "type": "SEQ",
       "members": [
         {
@@ -3284,11 +3288,45 @@
           ]
         },
         {
+          "type": "SYMBOL",
+          "name": "application_expression"
+        }
+      ]
+    },
+    "method_access": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "at_sign"
+        },
+        {
+          "type": "FIELD",
+          "name": "method",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "application_expression"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "colon"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "shape",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "path"
+                  }
+                }
+              ]
             },
             {
               "type": "BLANK"

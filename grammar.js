@@ -545,7 +545,8 @@ module.exports = grammar({
 						$.index_suffix,
 						$.field_suffix,
 						$.try_op,
-						$.method_suffix,
+						$.method_call,
+						$.method_access,
 						$.application_expression,
 					)),
 				),
@@ -555,12 +556,21 @@ module.exports = grammar({
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
 
 		// Method suffix: x@method or x@method:Shape with optional call
-		method_suffix: ($) => seq(
-			$.at_sign,
-			field("method", $.identifier),
-			opt(seq($.colon, field("shape", $.path))),
-			opt($.application_expression),
-		),
+		method_call: ($) =>
+			seq(
+				$.at_sign,
+				field("method", $.identifier),
+				opt(seq($.colon, field("shape", $.path))),
+				$.application_expression,
+			),
+
+		method_access: ($) =>
+			seq(
+				$.at_sign,
+				field("method", $.identifier),
+				opt(seq($.colon, field("shape", $.path))),
+			),
+
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
 
 		// Expressions safe in comma-delimited parent lists (excludes undelimited comma-separated tag_value_expression)
