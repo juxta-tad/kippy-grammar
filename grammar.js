@@ -638,7 +638,14 @@ module.exports = grammar({
 		unguarded_pattern: ($) => $.or_pattern,
 		binding_pattern: ($) => choice($.wildcard_pattern, $.identifier, $.binding_list_pattern, $.binding_tuple_pattern, $.binding_record_pattern),
 		or_pattern: ($) => prec.left(sep1($.as_pattern, $.pipe_bar)),
-		as_pattern: ($) => choice(seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)), $.atomic_pattern),
+		as_pattern: ($) =>
+			prec.right(
+				1,
+				choice(
+					seq($.atomic_pattern, $.kw_as, field("binding", $.identifier)),
+					$.atomic_pattern,
+				),
+			),
 		atomic_pattern: ($) => choice($.literal, $.wildcard_pattern, $.identifier, $.tag_pattern, $.list_pattern, $.tuple_pattern, $.record_pattern, seq($.lparen, $.pattern, $.rparen)),
 		wildcard_pattern: ($) => $.wildcard,
 		binding_list_pattern: ($) => seq($.lbracket, separatedWithOptionalRest($.binding_pattern, $.semicolon, $.rest_pattern), $.rbracket),

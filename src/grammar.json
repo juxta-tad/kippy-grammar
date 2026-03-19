@@ -4575,34 +4575,38 @@
       }
     },
     "as_pattern": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "atomic_pattern"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "kw_as"
-            },
-            {
-              "type": "FIELD",
-              "name": "binding",
-              "content": {
+      "type": "PREC_RIGHT",
+      "value": 1,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SEQ",
+            "members": [
+              {
                 "type": "SYMBOL",
-                "name": "identifier"
+                "name": "atomic_pattern"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "kw_as"
+              },
+              {
+                "type": "FIELD",
+                "name": "binding",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                }
               }
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "atomic_pattern"
-        }
-      ]
+            ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "atomic_pattern"
+          }
+        ]
+      }
     },
     "atomic_pattern": {
       "type": "CHOICE",
