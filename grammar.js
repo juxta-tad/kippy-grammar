@@ -33,11 +33,36 @@ const opt = optional;
 const many = repeat;
 const many1 = repeat1;
 
-// --- Basic Inline Separators ---
+// --- Core List Helpers ---
 function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
+function separated1($, rule, separator, { allow_newline_separator = true } = {}) {
+	const next = allow_newline_separator
+		? choice(
+			seq(separator, rule),
+			seq(opt(separator), many1($.newline), rule),
+		)
+		: seq(separator, many($.newline), rule);
+	return seq(rule, many(next), opt(separator));
+}
+
+function lineSeparated1($, rule) {
+	return seq(rule, many(seq(many1($.newline), rule)));
+}
+
+// Delimited collection with flexible interior
+function delimited($, open, close, interior) {
+	return seq(open, opt(seq(many($.newline), interior, many($.newline))), close);
+}
+
+// Braced newline-separated block
+function bracedBlock($, rule) {
+	return delimited($, $.lbrace, $.rbrace, lineSeparated1($, rule));
+}
+
+// --- Layout & Expression Helpers ---
 function layoutExpr($, name = "value") {
 	return field(name, seq(many($.newline), $.expression));
 }
@@ -46,50 +71,14 @@ function layoutType($, name = "type") {
 	return field(name, seq(many($.newline), $.type_expression));
 }
 
-// --- Block & Layout Helpers ---
-
 function fileBody($, header, item) {
 	return seq(
 		many($.newline),
 		opt(seq(header, many1($.newline))),
-		opt(seq(
-			item,
-			many(seq(many1($.newline), item)),
-			many($.newline),
-		)),
+		opt(seq(item, many(seq(many1($.newline), item)), many($.newline))),
 	);
 }
 
-// --- Loose List Forms ---
-function separated1(
-	$,
-	rule,
-	separator,
-	{ allow_newline_separator = true } = {},
-) {
-	const next = allow_newline_separator
-		? choice(
-			seq(separator, rule),
-			seq(opt(separator), many1($.newline), rule),
-		)
-		: seq(separator, many($.newline), rule);
-
-	return seq(
-		rule,
-		many(next),
-		opt(separator),
-	);
-}
-
-// Pure list helper (newline separated)
-function lineSeparated1($, rule) {
-	return seq(
-		rule,
-		many(seq(many1($.newline), rule)),
-	);
-}
-
-// Continuation-sensitive argument list (same-line or newline-separated)
 function argumentList($) {
 	return seq(
 		field("arg", $.call_argument),
@@ -100,34 +89,14 @@ function argumentList($) {
 	);
 }
 
-// Explicitly terminated scope block helper
-function bracedBlock($, rule) {
-	return seq(
-		$.lbrace,
-		opt(seq(
-			many($.newline),
-			lineSeparated1($, rule),
-			many($.newline),
-		)),
-		$.rbrace,
-	);
-}
-
-// Comma-separated list with optional newlines after commas (no trailing comma, no bare newlines)
+// Comma-separated with no trailing comma
 function commaSeparated1NoTrailing($, rule) {
-	return seq(
-		rule,
-		many(seq($.comma, many($.newline), rule)),
-	);
+	return seq(rule, many(seq($.comma, many($.newline), rule)));
 }
 
-// Comma-separated list with optional newlines after commas (no bare newlines)
+// Comma-separated with optional trailing comma
 function commaSeparated1($, rule) {
-	return seq(
-		rule,
-		many(seq($.comma, many($.newline), rule)),
-		opt($.comma),
-	);
+	return seq(rule, many(seq($.comma, many($.newline), rule)), opt($.comma));
 }
 
 // --- Specific Construct Helpers ---
@@ -148,47 +117,40 @@ function fieldPattern(fieldName, colon, valueRule) {
 	);
 }
 
-function delimitedLoose($, open, close, body) {
-	return seq(
-		open,
-		opt(seq(
-			many($.newline),
-			body,
-			many($.newline),
-		)),
-		close,
-	);
-}
-
+// Tuple form (2+ elements required)
 function looseSeparated2Plus($, rule, separator) {
 	const next = choice(
 		seq(separator, rule),
 		seq(opt(separator), many1($.newline), rule),
 	);
-
-	return seq(
-		rule,
-		next,
-		many(next),
-		opt(separator),
-	);
+	return seq(rule, next, many(next), opt(separator));
 }
 
+// Collection: delimited with interior separated items
 function collection($, open, close, item, separator) {
-	return delimitedLoose(
-		$,
-		open,
-		close,
-		separated1($, item, separator),
-	);
+	return delimited($, open, close, separated1($, item, separator));
 }
 
+// Tuple: delimited with 2+ elements required
 function tuple($, open, close, item, separator) {
-	return delimitedLoose(
+	return delimited($, open, close, looseSeparated2Plus($, field("element", item), separator));
+}
+
+// Braced collection with flexible separators
+function bracedCollection($, rule, separator) {
+	return delimited(
 		$,
-		open,
-		close,
-		looseSeparated2Plus($, field("element", item), separator),
+		$.lbrace,
+		$.rbrace,
+		seq(
+			rule,
+			many(choice(
+				seq(separator, many($.newline), rule),
+				seq(many1($.newline), separator, many($.newline), rule),
+				seq(many1($.newline), rule),
+			)),
+			opt(seq(many($.newline), separator)),
+		),
 	);
 }
 
@@ -199,33 +161,6 @@ function attributePrefix($) {
 
 function visibility_modifier($) {
 	return opt($.kw_pub);
-}
-
-// Explicit braced separator form
-function bracedSeparated1($, rule, separator) {
-	const next = choice(
-		seq(separator, many($.newline), rule),
-		seq(many1($.newline), separator, many($.newline), rule),
-		seq(many1($.newline), rule),
-	);
-
-	return seq(
-		rule,
-		many(next),
-		opt(seq(many($.newline), separator)),
-	);
-}
-
-function bracedCollection($, rule, separator) {
-	return seq(
-		$.lbrace,
-		opt(seq(
-			many($.newline),
-			bracedSeparated1($, rule, separator),
-			many($.newline),
-		)),
-		$.rbrace,
-	);
 }
 
 // --- Expression Ladder Generator ---
