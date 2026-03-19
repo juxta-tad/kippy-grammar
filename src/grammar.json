@@ -2296,7 +2296,7 @@
           "name": "value",
           "content": {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         }
       ]
@@ -2598,6 +2598,10 @@
       "context_name": "global"
     },
     "expression": {
+      "type": "SYMBOL",
+      "name": "pipe_expression"
+    },
+    "statement_expression": {
       "type": "PREC_RIGHT",
       "value": -1,
       "content": {
@@ -2788,7 +2792,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }
@@ -2808,7 +2812,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }
@@ -2828,7 +2832,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }
@@ -2848,7 +2852,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }
@@ -2868,7 +2872,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }
@@ -2888,7 +2892,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }
@@ -2908,7 +2912,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "expression"
+            "name": "statement_expression"
           }
         ]
       }

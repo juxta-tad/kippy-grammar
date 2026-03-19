@@ -39,7 +39,7 @@ function sep1(rule, separator) {
 }
 
 function layoutExpr($, name = "value") {
-	return field(name, seq(many($.newline), $.expression));
+	return field(name, seq(many($.newline), $.statement_expression));
 }
 
 function layoutType($, name = "type") {
@@ -547,7 +547,7 @@ module.exports = grammar({
 		shape_member: ($) => choice($.shape_type_decl, $.shape_method),
 		shape_type_decl: ($) => seq($.kw_type, field("name", $.type_member_name)),
 		shape_parents: ($) => seq($.colon, sep1(field("parent", $.path), $.comma)),
-		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
+		expect_statement: ($) => seq($.kw_expect, field("value", $.statement_expression)),
 		test_declaration: ($) => seq(attributePrefix($), $.kw_test, field("name", $.static_string), field("body", bracedBlock($, $.test_statement))),
 		test_statement: ($) => choice($.test_binding, $.test_value_declaration, $.expect_statement),
 		test_binding: ($) => seq($.kw_let, opt($.kw_rec), $.binding_pattern, opt(seq($.colon, $.type_body)), $.equals, $.value_slot),
@@ -555,7 +555,11 @@ module.exports = grammar({
 		binding_core: ($) => seq(opt($.kw_rec), field("pattern", $.binding_pattern), opt(seq($.colon, $.type_body)), $.equals, $.value_slot),
 		binding_name: ($) => reserved("global", $.identifier),
 		type_member_name: ($) => reserved("global", $.identifier),
-		expression: ($) =>
+		expression: ($) => $.pipe_expression,
+
+		// Statement-level expressions: includes tag_value_expression which has undelimited commas
+		// Safe only in non-comma-delimited contexts (expect, value slots, match arms, etc.)
+		statement_expression: ($) =>
 			prec.right(
 				-1,
 				choice(
@@ -563,6 +567,7 @@ module.exports = grammar({
 					$.pipe_expression,
 				),
 			),
+
 		arm_inline_expression: ($) => $.pipe_expression,
 		call_argument: ($) => $.pipe_expression,
 
