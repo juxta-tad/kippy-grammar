@@ -568,11 +568,30 @@ module.exports = grammar({
 		primary_expression: ($) => choice($.inline_expression, $.match_expression, $.if_expression, $.lambda_expression, $.let_expression),
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
 
+		// Payload expressions in tag constructors: excludes bare tag_value_expression to require parentheses for nesting
+		tag_payload_expression: ($) =>
+			choice(
+				$.constructed_record_expression,
+				$.record_builder,
+				$.literal,
+				$.path,
+				$.placeholder,
+				$.list_expression,
+				$.map_expression,
+				$.record_expression,
+				$.tuple_expression,
+				$.parenthesized_expression,
+				$.match_expression,
+				$.if_expression,
+				$.lambda_expression,
+				$.let_expression,
+			),
+
 		tag_value_expression: ($) =>
 			seq(
 				field("constructor", $.path),
 				$.kw_with,
-				commaSeparated1NoTrailing($, field("payload", $.expression)),
+				commaSeparated1NoTrailing($, field("payload", $.tag_payload_expression)),
 			),
 
 		inline_expression: ($) => choice($.constructed_record_expression, $.record_builder, $.tag_value_expression, $.literal, $.path, $.placeholder, $.list_expression, $.map_expression, $.record_expression, $.tuple_expression, $.parenthesized_expression),

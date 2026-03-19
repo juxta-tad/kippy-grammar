@@ -3028,6 +3028,67 @@
         ]
       }
     },
+    "tag_payload_expression": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "constructed_record_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "record_builder"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "path"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "placeholder"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "list_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "map_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "record_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tuple_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "parenthesized_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "match_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "if_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "lambda_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "let_expression"
+        }
+      ]
+    },
     "tag_value_expression": {
       "type": "SEQ",
       "members": [
@@ -3051,7 +3112,7 @@
               "name": "payload",
               "content": {
                 "type": "SYMBOL",
-                "name": "expression"
+                "name": "tag_payload_expression"
               }
             },
             {
@@ -3075,7 +3136,7 @@
                     "name": "payload",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "expression"
+                      "name": "tag_payload_expression"
                     }
                   }
                 ]
