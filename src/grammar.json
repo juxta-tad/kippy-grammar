@@ -3207,6 +3207,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "method_suffix"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "call_suffix"
                 }
               ]
             }
