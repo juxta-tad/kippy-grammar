@@ -366,6 +366,7 @@ module.exports = grammar({
 			$.tag_declaration,
 			$.record_declaration,
 			$.choice_declaration,
+			$.derive_declaration,
 			$.signature,
 			$.value_declaration,
 			$.shape_declaration,
@@ -434,16 +435,7 @@ module.exports = grammar({
 				field("body", $.choice_body),
 			),
 
-		choice_body: ($) =>
-			seq(
-				$.lbrace,
-				opt(seq(
-					many($.newline),
-					separated1($, $.choice_variant, $.semicolon),
-					many($.newline),
-				)),
-				$.rbrace,
-			),
+		choice_body: ($) => bracedBlock($, $.choice_variant),
 
 		choice_variant: ($) =>
 			choice(
@@ -480,17 +472,26 @@ module.exports = grammar({
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
-				opt($.kw_derive),
 				$.kw_fit,
 				opt($.type_parameter_list),
 				field("type", $.impl_type_head),
 				$.colon,
 				field("shape", $.implementation_shapes),
 				opt(field("constraints", $.constraint_clause)),
-				choice(
-					field("members", bracedBlock($, $.fit_member)),
-					$.semicolon,
-				),
+				field("members", bracedBlock($, $.fit_member)),
+			),
+
+		derive_declaration: ($) =>
+			seq(
+				attributePrefix($),
+				visibility_modifier($),
+				$.kw_derive,
+				opt($.type_parameter_list),
+				field("type", $.impl_type_head),
+				$.colon,
+				field("shape", $.implementation_shapes),
+				opt(field("constraints", $.constraint_clause)),
+				$.semicolon,
 			),
 		impl_type_head: ($) => choice($.type_application, $.path, $.self_type, $.type_tuple, $.type_record, $.parenthesized_type),
 		implementation_shapes: ($) => $.path,
@@ -503,7 +504,7 @@ module.exports = grammar({
 		shape_type_decl: ($) => seq($.kw_type, field("name", $.type_member_name)),
 		shape_parents: ($) => seq($.colon, sep1(field("parent", $.path), $.comma)),
 		expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
-		test_declaration: ($) => seq(attributePrefix($), $.kw_test, field("name", $.static_string), $.colon, field("body", bracedBlock($, $.test_statement))),
+		test_declaration: ($) => seq(attributePrefix($), $.kw_test, field("name", $.static_string), field("body", bracedBlock($, $.test_statement))),
 		test_statement: ($) => choice($.test_binding, $.test_value_declaration, $.expect_statement),
 		test_binding: ($) => seq($.kw_let, opt($.kw_rec), $.binding_pattern, opt(seq($.colon, $.type_body)), $.equals, $.value_slot),
 		test_value_declaration: ($) => seq(field("name", $.binding_name), opt(seq($.colon, $.type_body)), $.equals, $.value_slot),
@@ -538,7 +539,7 @@ module.exports = grammar({
 		index_suffix: ($) => seq($.lbracket, field("index", $.expression), $.rbracket),
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
 
-		// Qualified method reference: x@(Shape)method
+		// Method suffix: x@method or x@method:Shape with optional call
 		method_suffix: ($) => seq(
 			$.at_sign,
 			field("method", $.identifier),
@@ -591,22 +592,27 @@ module.exports = grammar({
 		tuple_pattern: ($) => tuple($, $.lparen_hash, $.rparen, $.pattern, $.semicolon),
 		record_pattern: ($) => seq($.lbrace, separatedWithOptionalRest($.record_pattern_field, $.semicolon, $.rest_op), $.rbrace),
 		record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
-		type_expression: ($) => choice($.type_term, $.variadic_type),
+		type_expression: ($) =>
+			choice(
+				$.variadic_type,
+				$.function_type,
+				$.type_application,
+				$.path,
+				$.self_type,
+				$.type_wildcard,
+				$.type_tuple,
+				$.type_record,
+				$.parenthesized_type,
+			),
 		type_body: ($) => layoutType($),
-		function_result: ($) => field("result", $.type_expression),
-		record_field_type: ($) => field("type", $.type_expression),
-		function_type_parameters: ($) => separated1($, field("param", $.type_expression), $.comma),
-		variadic_type: ($) => seq($.ellipsis, field("item", $.type_term)),
 		ellipsis: ($) => token(prec(1, "...")),
 		rest_op: ($) => "..",
 		constraint_clause: ($) => seq($.kw_where, choice($.constraint_entry, seq($.lparen, many($.newline), $.constraint_entry, many(choice(seq($.comma, many($.newline), $.constraint_entry), seq(many1($.newline), $.constraint_entry))), many($.newline), $.rparen))),
 		constraint_entry: ($) => seq(field("type_var", $.identifier), $.colon, field("constraint", $.constraint_sum)),
 		constraint_sum: ($) => prec.left(seq(field("shape", $.path), many(seq($.plus, field("shape", $.path))))),
-		type_term: ($) => choice($.function_type, $.type_primary, $.type_tuple, $.type_record),
-		function_type: ($) => seq($.kw_fn, collection($, $.lparen, $.rparen, field("param", $.type_expression), $.comma), $.arrow, $.function_result),
+		function_type: ($) => seq($.kw_fn, collection($, $.lparen, $.rparen, field("param", $.type_expression), $.comma), $.arrow, field("result", $.type_expression)),
 		type_application: ($) => prec(1, seq($.path, $.type_argument_list)),
 		self_type: ($) => $.kw_Self,
-		type_primary: ($) => choice($.type_application, $.path, $.self_type, $.type_wildcard, $.parenthesized_type),
 		type_argument_list: ($) => collection($, $.lt_op, $.gt_op, $.type_expression, $.comma),
 		record_type_field: ($) => seq(field("name", $.field_name), $.colon, $.record_field_type),
 		type_record: ($) => bracedCollection($, $.record_type_field, $.semicolon),
