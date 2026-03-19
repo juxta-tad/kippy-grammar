@@ -298,6 +298,11 @@ module.exports = grammar({
 			$.kw_pub,
 			$.kw_let,
 			$.kw_rec,
+			$.kw_alias,
+			$.kw_distinct,
+			$.kw_tag,
+			$.kw_record,
+			$.kw_choice,
 			$.kw_cert,
 			$.kw_expect,
 			$.kw_if,
@@ -353,7 +358,19 @@ module.exports = grammar({
 	rules: {
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 		module_item: ($) => choice($.use_statement, $.declaration),
-		declaration: ($) => choice($.type_declaration, $.signature, $.value_declaration, $.shape_declaration, $.test_declaration, $.expect_statement, $.implementation),
+		declaration: ($) => choice(
+			$.alias_declaration,
+			$.distinct_declaration,
+			$.tag_declaration,
+			$.record_declaration,
+			$.choice_declaration,
+			$.signature,
+			$.value_declaration,
+			$.shape_declaration,
+			$.test_declaration,
+			$.expect_statement,
+			$.implementation,
+		),
 		use_statement: ($) =>
 			seq(
 				$.kw_use,
@@ -375,18 +392,86 @@ module.exports = grammar({
 				opt(seq($.kw_as, field("alias", $.identifier))),
 			),
 		module_declaration: ($) => seq($.kw_module, field("name", $.path)),
-		type_declaration: ($) => seq(attributePrefix($), visibility_modifier($), $.kw_type, field("name", $.binding_name), opt($.type_parameter_list), opt(field("deriving", $.deriving_clause)), choice(seq($.equals, field("body", $.type_body)), seq($.colon, field("body", $.nominal_type_body)))),
-		nominal_type_body: ($) => choice(seq(opt(many($.newline)), $.type_expression), $.nominal_type_block),
-		nominal_type_block: ($) => seq(many1($.newline), choice($.nominal_sum_block, $.nominal_record_block)),
-		nominal_sum_block: ($) => seq($.type_variant, many(seq(many1($.newline), $.type_variant))),
-		nominal_record_block: ($) => lineSeparated1($, $.record_type_field),
+		alias_declaration: ($) =>
+			seq(
+				$.kw_alias,
+				field("name", $.binding_name),
+				$.equals,
+				field("body", $.type_expression),
+			),
+
+		distinct_declaration: ($) =>
+			seq(
+				$.kw_distinct,
+				field("name", $.binding_name),
+				opt($.type_parameter_list),
+				$.equals,
+				field("body", $.type_expression),
+			),
+
+		tag_declaration: ($) =>
+			seq(
+				$.kw_tag,
+				field("name", $.binding_name),
+				opt($.type_parameter_list),
+			),
+
+		record_declaration: ($) =>
+			seq(
+				$.kw_record,
+				field("name", $.binding_name),
+				opt($.type_parameter_list),
+				field("body", $.type_record),
+			),
+
+		choice_declaration: ($) =>
+			seq(
+				$.kw_choice,
+				field("name", $.binding_name),
+				opt($.type_parameter_list),
+				field("body", $.choice_body),
+			),
+
+		choice_body: ($) =>
+			seq(
+				$.lbrace,
+				opt(seq(
+					many($.newline),
+					separated1($, $.choice_variant, $.semicolon),
+					many($.newline),
+				)),
+				$.rbrace,
+			),
+
+		choice_variant: ($) =>
+			choice(
+				seq(
+					field("name", $.identifier),
+					$.kw_with,
+					field("payload", $.type_expression),
+				),
+				seq(
+					field("name", $.identifier),
+					field("payload", $.type_record),
+				),
+				field("name", $.identifier),
+			),
+
 		deriving_clause: ($) => seq($.kw_deriving, sep1(field("shape", $.path), $.comma)),
 		type_parameter_list: ($) => collection($, $.lt_op, $.gt_op, $.identifier, $.comma),
-		type_variant: ($) => seq($.pipe_bar, field("name", $.identifier), opt(seq($.colon, field("payload", $.type_expression)))),
 		shape_method: ($) => seq(attributePrefix($), field("name", $.binding_name), $.colon, $.type_body, opt(field("default", $.method_default)), opt(field("constraints", $.constraint_clause))),
 		method_default: ($) => seq($.equals, $.value_slot),
 		signature: ($) => seq(attributePrefix($), visibility_modifier($), $.kw_sig, field("name", $.identifier), $.colon, $.type_body, opt(field("constraints", $.constraint_clause))),
-		value_declaration: ($) => seq(attributePrefix($), visibility_modifier($), field("name", $.binding_name), opt(seq($.colon, $.type_body)), $.equals, $.value_slot),
+		value_declaration: ($) =>
+			seq(
+				attributePrefix($),
+				visibility_modifier($),
+				field("name", $.binding_name),
+				opt(seq($.colon, $.type_body)),
+				$.equals,
+				$.value_slot,
+				opt($.semicolon),
+			),
 		attribute: ($) => seq($.hash_sign, $.path, opt($.attribute_arguments_inline)),
 		attribute_arguments_inline: ($) => collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
 		attribute_argument: ($) => choice($.expression, seq(field("name", $.identifier), $.equals, field("value", $.expression))),
@@ -537,6 +622,11 @@ module.exports = grammar({
 		kw_pub: () => "pub",
 		kw_let: () => "let",
 		kw_rec: () => "rec",
+		kw_alias: () => "alias",
+		kw_distinct: () => "distinct",
+		kw_tag: () => "tag",
+		kw_record: () => "record",
+		kw_choice: () => "choice",
 		kw_cert: () => "cert",
 		kw_expect: () => "expect",
 		kw_if: () => "if",
