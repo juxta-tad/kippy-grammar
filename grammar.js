@@ -493,16 +493,9 @@ module.exports = grammar({
 		type_member_name: ($) => reserved("global", $.identifier),
 		expression: ($) => $.pipe_expression,
 
-		// Statement-level expressions: includes tag_value_expression which has undelimited commas
+		// Regular expressions (application is unified in postfix via application_expression)
 		// Safe only in non-comma-delimited contexts (expect, value slots, match arms, etc.)
-		statement_expression: ($) =>
-			prec.right(
-				-1,
-				choice(
-					$.tag_value_expression,
-					$.pipe_expression,
-				),
-			),
+		statement_expression: ($) => $.pipe_expression,
 
 		arm_inline_expression: ($) => $.pipe_expression,
 		call_argument: ($) => $.pipe_expression,
@@ -513,7 +506,7 @@ module.exports = grammar({
 		// Arguments in newline-delimited call lists: allow full expressions
 		call_argument_block: ($) => $.pipe_expression,
 
-		call_suffix: ($) =>
+		application_expression: ($) =>
 			prec.right(
 				seq(
 					$.kw_with,
@@ -553,7 +546,7 @@ module.exports = grammar({
 						$.field_suffix,
 						$.try_op,
 						$.method_suffix,
-						$.call_suffix,
+						$.application_expression,
 					)),
 				),
 			),
@@ -566,7 +559,7 @@ module.exports = grammar({
 			$.at_sign,
 			field("method", $.identifier),
 			opt(seq($.colon, field("shape", $.path))),
-			opt($.call_suffix),
+			opt($.application_expression),
 		),
 		constructed_record_expression: ($) => prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
 
@@ -582,16 +575,6 @@ module.exports = grammar({
 			),
 
 		// Payload expressions in tag constructors: excludes bare tag_value_expression to require parentheses for nesting
-		tag_payload_expression: ($) => $.comma_safe_expression,
-
-		tag_value_expression: ($) =>
-			seq(
-				field("constructor", $.path),
-				$.kw_with,
-				field("payload", $.tag_payload_expression),
-				many(seq($.comma, many($.newline), field("payload", $.tag_payload_expression))),
-			),
-
 		inline_expression: ($) => choice($.constructed_record_expression, $.record_builder, $.literal, $.path, $.placeholder, $.list_expression, $.map_expression, $.record_expression, $.tuple_expression, $.parenthesized_expression),
 		list_expression: ($) => collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
 		list_item: ($) => choice($.expression, $.spread_element),

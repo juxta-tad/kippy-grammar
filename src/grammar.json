@@ -2597,21 +2597,8 @@
       "name": "pipe_expression"
     },
     "statement_expression": {
-      "type": "PREC_RIGHT",
-      "value": -1,
-      "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "tag_value_expression"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "pipe_expression"
-          }
-        ]
-      }
+      "type": "SYMBOL",
+      "name": "pipe_expression"
     },
     "arm_inline_expression": {
       "type": "SYMBOL",
@@ -2629,7 +2616,7 @@
       "type": "SYMBOL",
       "name": "pipe_expression"
     },
-    "call_suffix": {
+    "application_expression": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
@@ -3210,7 +3197,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "call_suffix"
+                  "name": "application_expression"
                 }
               ]
             }
@@ -3301,7 +3288,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "call_suffix"
+              "name": "application_expression"
             },
             {
               "type": "BLANK"
@@ -3357,62 +3344,6 @@
         {
           "type": "SYMBOL",
           "name": "let_expression"
-        }
-      ]
-    },
-    "tag_payload_expression": {
-      "type": "SYMBOL",
-      "name": "comma_safe_expression"
-    },
-    "tag_value_expression": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "constructor",
-          "content": {
-            "type": "SYMBOL",
-            "name": "path"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "kw_with"
-        },
-        {
-          "type": "FIELD",
-          "name": "payload",
-          "content": {
-            "type": "SYMBOL",
-            "name": "tag_payload_expression"
-          }
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "comma"
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "newline"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "payload",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "tag_payload_expression"
-                }
-              }
-            ]
-          }
         }
       ]
     },
