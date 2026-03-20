@@ -117,26 +117,6 @@ function fileBody($, header, item) {
 	);
 }
 
-function argumentList($) {
-	return seq(
-		field("arg", $.call_argument),
-		many(choice(
-			seq($.comma, many($.newline), field("arg", $.call_argument)),
-			seq(many1($.newline), field("arg", $.call_argument)),
-		)),
-	);
-}
-
-// Comma-separated with no trailing comma
-function commaSeparated1NoTrailing($, rule) {
-	return seq(rule, many(seq($.comma, many($.newline), rule)));
-}
-
-// Comma-separated with optional trailing comma
-function commaSeparated1($, rule) {
-	return seq(rule, many(seq($.comma, many($.newline), rule)), opt($.comma));
-}
-
 // --- Specific Construct Helpers ---
 function separatedWithOptionalRest(item, separator, rest) {
 	return opt(choice(
@@ -207,71 +187,75 @@ function visibility_modifier($) {
 }
 
 // --- Expression Ladder Generator ---
-function buildExpressionLadder(EXPR, baseRule) {
+// Generates a full precedence ladder (pipe > or > and > compare > add > mul > unary).
+// `suffix` allows generating parallel ladders (e.g. "_no_brace") that diverge only
+// at the base rule, sharing all operator semantics.
+function buildExpressionLadder(suffix, baseRule) {
+	const name = (level) => `${level}${suffix}`;
 	return {
-		[EXPR.pipe]: ($) =>
+		[name("pipe_expression")]: ($) =>
 			prec.left(
 				PREC.PIPE,
 				seq(
-					$[EXPR.or],
-					many(seq($.pipe, $[EXPR.or])),
+					$[name("or_expression")],
+					many(seq($.pipe, $[name("or_expression")])),
 				),
 			),
-		[EXPR.or]: ($) =>
+		[name("or_expression")]: ($) =>
 			prec.left(
 				PREC.OR,
 				seq(
-					$[EXPR.and],
-					many(seq($.or_op, $[EXPR.and])),
+					$[name("and_expression")],
+					many(seq($.or_op, $[name("and_expression")])),
 				),
 			),
-		[EXPR.and]: ($) =>
+		[name("and_expression")]: ($) =>
 			prec.left(
 				PREC.AND,
 				seq(
-					$[EXPR.compare],
-					many(seq($.and_op, $[EXPR.compare])),
+					$[name("compare_expression")],
+					many(seq($.and_op, $[name("compare_expression")])),
 				),
 			),
-		[EXPR.compare]: ($) =>
+		[name("compare_expression")]: ($) =>
 			prec.left(
 				PREC.COMPARE,
 				seq(
-					$[EXPR.add],
+					$[name("add_expression")],
 					opt(seq(
 						choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-						$[EXPR.add],
+						$[name("add_expression")],
 					)),
 				),
 			),
-		[EXPR.add]: ($) =>
+		[name("add_expression")]: ($) =>
 			prec.left(
 				PREC.ADD,
 				seq(
-					$[EXPR.mul],
-					many(seq(choice($.plus, $.minus), $[EXPR.mul])),
+					$[name("mul_expression")],
+					many(seq(choice($.plus_op, $.minus_op), $[name("mul_expression")])),
 				),
 			),
-		[EXPR.mul]: ($) =>
+		[name("mul_expression")]: ($) =>
 			prec.left(
 				PREC.MUL,
 				seq(
-					$[EXPR.unary],
+					$[name("unary_expression")],
 					many(
 						seq(
-							choice($.star, $.slash, $.kw_mod),
-							$[EXPR.unary],
+							choice($.star_op, $.slash_op, $.kw_mod),
+							$[name("unary_expression")],
 						),
 					),
 				),
 			),
-		[EXPR.unary]: ($) =>
+		[name("unary_expression")]: ($) =>
 			choice(
 				prec.right(
 					PREC.UNARY,
 					seq(
-						choice($.minus, $.kw_not, $.kw_cert),
-						$[EXPR.unary],
+						choice($.minus_op, $.kw_not, $.kw_cert),
+						$[name("unary_expression")],
 					),
 				),
 				$[baseRule],
@@ -279,19 +263,99 @@ function buildExpressionLadder(EXPR, baseRule) {
 	};
 }
 
-// Expression precedence level names
-const EXPR = Object.freeze({
-	pipe: "pipe_expression",
-	or: "or_expression",
-	and: "and_expression",
-	compare: "compare_expression",
-	add: "add_expression",
-	mul: "mul_expression",
-	unary: "unary_expression",
-});
+// Generate expression precedence ladders
+const expressionRules = buildExpressionLadder("", "application_expression");
+const noBraceExpressionRules = buildExpressionLadder("_no_brace", "application_expression_no_brace");
 
-// Generate expression precedence ladder
-const expressionRules = buildExpressionLadder(EXPR, "application_expression");
+// --- Expression Bottom Generator ---
+// Generates the four bottom rules (application, postfix, primary, inline)
+// that sit below the operator ladder. The `suffix` parameter creates parallel
+// variants, and `inlineChoices` controls which inline expression forms are
+// included — this is where the no-brace chain diverges.
+function buildExpressionBottom(suffix, inlineChoices) {
+	const s = (name) => `${name}${suffix}`;
+	return {
+		[s("application_expression")]: ($) =>
+			prec.right(
+				PREC.POSTFIX,
+				choice(
+					seq(
+						$[s("postfix_expression")],
+						$.kw_with,
+						field("arg", $.call_argument_inline),
+						many(
+							seq(
+								$.comma,
+								many($.newline),
+								field("arg", $.call_argument_inline),
+							),
+						),
+					),
+					seq(
+						$[s("postfix_expression")],
+						$.kw_with,
+						many1($.newline),
+						field("arg", $.call_argument_block),
+						many(seq(many1($.newline), field("arg", $.call_argument_block))),
+					),
+					$[s("postfix_expression")],
+				),
+			),
+
+		[s("postfix_expression")]: ($) =>
+			prec.left(
+				PREC.POSTFIX,
+				seq(
+					$[s("primary_expression")],
+					many(choice(
+						$.index_suffix,
+						$.field_suffix,
+						$.try_op,
+						$.method_suffix,
+					)),
+				),
+			),
+
+		[s("primary_expression")]: ($) =>
+			choice(
+				$[s("inline_expression")],
+				$.match_expression,
+				$.if_expression,
+				$.lambda_expression,
+				$.let_expression,
+			),
+
+		[s("inline_expression")]: ($) => choice(...inlineChoices($)),
+	};
+}
+
+// All inline expression forms
+const INLINE_ALL = ($) => [
+	$.constructed_record_expression,
+	$.record_builder,
+	$.literal,
+	$.path,
+	$.placeholder,
+	$.list_expression,
+	$.map_expression,
+	$.record_expression,
+	$.tuple_expression,
+	$.parenthesized_expression,
+];
+
+// Inline forms excluding brace-starting constructs (for match/if subjects)
+const INLINE_NO_BRACE = ($) => [
+	$.literal,
+	$.path,
+	$.placeholder,
+	$.list_expression,
+	$.map_expression,
+	$.tuple_expression,
+	$.parenthesized_expression,
+];
+
+const expressionBottom = buildExpressionBottom("", INLINE_ALL);
+const noBraceExpressionBottom = buildExpressionBottom("_no_brace", INLINE_NO_BRACE);
 
 module.exports = grammar({
 	name: "kippy",
@@ -427,7 +491,8 @@ module.exports = grammar({
 				$.kw_record,
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
-				field("body", $.type_record),
+				many($.newline),
+				field("body", $.record_type),
 			),
 
 		choice_declaration: ($) =>
@@ -435,6 +500,7 @@ module.exports = grammar({
 				$.kw_choice,
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
+				many($.newline),
 				field("body", $.choice_body),
 			),
 
@@ -452,7 +518,7 @@ module.exports = grammar({
 				),
 				seq(
 					field("name", $.identifier),
-					field("payload", $.type_record),
+					field("payload", $.record_type),
 				),
 				field("name", $.identifier),
 			),
@@ -535,6 +601,7 @@ module.exports = grammar({
 				$.colon,
 				field("shape", $.implementation_shapes),
 				opt(field("constraints", $.constraint_clause)),
+				many($.newline),
 				field("members", bracedBlock($, $.fit_member)),
 			),
 
@@ -552,11 +619,11 @@ module.exports = grammar({
 			),
 		impl_type_head: ($) =>
 			choice(
-				$.type_application,
+				$.applied_type,
 				$.path,
 				$.self_type,
-				$.type_tuple,
-				$.type_record,
+				$.tuple_type,
+				$.record_type,
 				$.parenthesized_type,
 			),
 		implementation_shapes: ($) => $.path,
@@ -592,6 +659,7 @@ module.exports = grammar({
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
 				opt(field("parents", $.shape_parents)),
+				many($.newline),
 				field("members", bracedBlock($, $.shape_member)),
 			),
 		shape_member: ($) => choice($.shape_type_decl, $.shape_method),
@@ -604,6 +672,7 @@ module.exports = grammar({
 				attributePrefix($),
 				$.kw_test,
 				field("name", $.static_string),
+				many($.newline),
 				field("body", bracedBlock($, $.test_statement)),
 			),
 		test_statement: ($) =>
@@ -636,12 +705,7 @@ module.exports = grammar({
 		type_member_name: ($) => reserved("global", $.identifier),
 		expression: ($) => $.pipe_expression,
 
-		// Regular expressions (application is unified in postfix via apply_suffix)
-		// Safe only in non-comma-delimited contexts (expect, value slots, match arms, etc.)
 		statement_expression: ($) => $.pipe_expression,
-
-		arm_inline_expression: ($) => $.pipe_expression,
-		call_argument: ($) => $.pipe_expression,
 
 		// Arguments in comma-delimited call lists (same-line): exclude tag_value_expression to prevent ambiguity
 		call_argument_inline: ($) => $.comma_safe_expression,
@@ -650,14 +714,6 @@ module.exports = grammar({
 		call_argument_block: ($) => $.pipe_expression,
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
-		primary_expression: ($) =>
-			choice(
-				$.inline_expression,
-				$.match_expression,
-				$.if_expression,
-				$.lambda_expression,
-				$.let_expression,
-			),
 		value_slot: ($) =>
 			field("value", seq(many($.newline), $.statement_expression)),
 		if_then_value: ($) => layoutExpr($, "then_value"),
@@ -667,59 +723,14 @@ module.exports = grammar({
 		method_body: ($) => layoutExpr($, "body"),
 		match_arm_value: ($) => layoutExpr($, "value"),
 		...expressionRules,
-		postfix_expression: ($) =>
-			prec.left(
-				PREC.POSTFIX,
-				seq(
-					$.primary_expression,
-					many(choice(
-						$.index_suffix,
-						$.field_suffix,
-						$.try_op,
-						$.method_suffix,
-					)),
-				),
-			),
-
-		// Application expression: with syntax at expression level, not postfix level
-		// Eliminates ambiguity: method_suffix's opt(application_arguments) no longer competes
-		// with bare apply_expression in the postfix chain
-		application_expression: ($) =>
-			prec.right(
-				PREC.POSTFIX,
-				choice(
-					// Comma-separated arguments
-					seq(
-						$.postfix_expression,
-						$.kw_with,
-						field("arg", $.call_argument_inline),
-						many(
-							seq(
-								$.comma,
-								many($.newline),
-								field("arg", $.call_argument_inline),
-							),
-						),
-					),
-					// Newline-separated arguments
-					seq(
-						$.postfix_expression,
-						$.kw_with,
-						many1($.newline),
-						field("arg", $.call_argument_block),
-						many(seq(many1($.newline), field("arg", $.call_argument_block))),
-					),
-					// No application
-					$.postfix_expression,
-				),
-			),
+		...noBraceExpressionRules,
+		...expressionBottom,
+		...noBraceExpressionBottom,
 
 		index_suffix: ($) =>
 			seq($.lbracket, field("index", $.expression), $.rbracket),
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
 
-		// Method access only: @method or @method:Shape (no with here - all with application is at expression level)
-		// This is pure postfix suffix that never consumes with, eliminating the ambiguity
 		method_suffix: ($) =>
 			seq(
 				$.at_sign,
@@ -730,8 +741,7 @@ module.exports = grammar({
 		constructed_record_expression: ($) =>
 			prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
 
-		// Expressions safe in comma-delimited parent lists (excludes undelimited comma-separated tag_value_expression)
-		// Used for: attribute arguments, function arguments, etc. Nested tag values must be parenthesized.
+		// Expressions safe in comma-delimited parent lists
 		comma_safe_expression: ($) =>
 			choice(
 				$.inline_expression,
@@ -741,25 +751,11 @@ module.exports = grammar({
 				$.let_expression,
 			),
 
-		// Payload expressions in tag constructors: excludes bare tag_value_expression to require parentheses for nesting
-		inline_expression: ($) =>
-			choice(
-				$.constructed_record_expression,
-				$.record_builder,
-				$.literal,
-				$.path,
-				$.placeholder,
-				$.list_expression,
-				$.map_expression,
-				$.record_expression,
-				$.tuple_expression,
-				$.parenthesized_expression,
-			),
 		list_expression: ($) =>
 			collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
 		list_item: ($) => choice($.expression, $.spread_element),
 		map_expression: ($) =>
-			collection($, $.lbracket_hash, $.rbracket, $.map_entry, $.semicolon),
+			collection($, $.lbracket_map, $.rbracket, $.map_entry, $.semicolon),
 		map_entry: ($) =>
 			seq(field("key", $.expression), $.fat_arrow, $.value_slot),
 		record_expression: ($) => $.record_body,
@@ -805,7 +801,8 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_match,
-					field("subject", $.pipe_expression),
+					field("subject", $.pipe_expression_no_brace),
+					many($.newline),
 					field("body", bracedBlock($, $.match_arm)),
 				),
 			),
@@ -826,7 +823,8 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_if,
-					field("condition", $.pipe_expression),
+					field("condition", $.pipe_expression_no_brace),
+					many($.newline),
 					$.kw_then,
 					$.if_then_value,
 					many($.newline),
@@ -845,7 +843,7 @@ module.exports = grammar({
 				$.binding_tuple_pattern,
 				$.binding_record_pattern,
 			),
-		or_pattern: ($) => prec.left(sep1($.as_pattern, $.pipe_bar)),
+		or_pattern: ($) => prec.left(sep1($.as_pattern, $.bar)),
 		as_pattern: ($) =>
 			prec.right(
 				1,
@@ -854,12 +852,16 @@ module.exports = grammar({
 					$.atomic_pattern,
 				),
 			),
+
+		// Patterns: bare identifiers and qualified paths are both parsed as $.path.
+		// Name resolution (not the parser) decides whether a path is a binding or
+		// a nullary constructor — same approach as Rust, OCaml, etc.
 		atomic_pattern: ($) =>
 			choice(
 				$.literal,
 				$.wildcard_pattern,
-				$.identifier,
-				$.tag_pattern,
+				$.with_tag_pattern,
+				$.path,
 				$.list_pattern,
 				$.tuple_pattern,
 				$.record_pattern,
@@ -890,24 +892,13 @@ module.exports = grammar({
 			),
 		binding_record_pattern_field: ($) =>
 			fieldPattern($.field_name, $.colon, $.binding_pattern),
-		tag_pattern: ($) => choice($.nullary_tag_pattern, $.with_tag_pattern),
 
-		// Payload patterns in tag constructors: excludes with_tag_pattern to prevent bare chaining
-		// Nested tag patterns must be parenthesized: X with (Y with z)
-		tag_payload_pattern: ($) =>
-			choice(
-				$.literal,
-				$.wildcard_pattern,
-				$.identifier,
-				$.nullary_tag_pattern,
-				$.list_pattern,
-				$.tuple_pattern,
-				$.record_pattern,
-				seq($.lparen, $.pattern, $.rparen),
-			),
-
+		// Tag pattern with payload: `Foo with x` or `Mod::Foo with x, y`
+		// Nested tag patterns must be parenthesized: `X with (Y with z)`
+		// prec(2) ensures `Foo with x` is parsed as a tag pattern, not a bare
+		// path followed by a `with` at expression level.
 		with_tag_pattern: ($) =>
-			seq(
+			prec(2, seq(
 				field("constructor", $.path),
 				$.kw_with,
 				field("payload", $.tag_payload_pattern),
@@ -918,15 +909,20 @@ module.exports = grammar({
 						field("payload", $.tag_payload_pattern),
 					),
 				),
+			)),
+
+		// Payload patterns in tag constructors: excludes with_tag_pattern to prevent bare chaining
+		tag_payload_pattern: ($) =>
+			choice(
+				$.literal,
+				$.wildcard_pattern,
+				$.path,
+				$.list_pattern,
+				$.tuple_pattern,
+				$.record_pattern,
+				seq($.lparen, $.pattern, $.rparen),
 			),
-		nullary_tag_pattern: ($) =>
-			prec(
-				2,
-				alias(
-					seq($.path_head, many1(seq($.module_sep, $.identifier))),
-					$.path,
-				),
-			),
+
 		list_pattern: ($) =>
 			seq(
 				$.lbracket,
@@ -950,12 +946,12 @@ module.exports = grammar({
 		base_type: ($) =>
 			choice(
 				$.function_type,
-				$.type_application,
+				$.applied_type,
 				$.path,
 				$.self_type,
-				$.type_wildcard,
-				$.type_tuple,
-				$.type_record,
+				$.wildcard_type,
+				$.tuple_type,
+				$.record_type,
 				$.parenthesized_type,
 			),
 
@@ -965,7 +961,6 @@ module.exports = grammar({
 				seq($.ellipsis, field("item", $.base_type)),
 			),
 		type_body: ($) => layoutType($),
-		record_field_type: ($) => $.type_body,
 		ellipsis: ($) => token(prec(1, "...")),
 		rest_op: ($) => "..",
 		constraint_clause: ($) =>
@@ -996,7 +991,7 @@ module.exports = grammar({
 			),
 		constraint_sum: ($) =>
 			prec.left(
-				seq(field("shape", $.path), many(seq($.plus, field("shape", $.path)))),
+				seq(field("shape", $.path), many(seq($.plus_op, field("shape", $.path)))),
 			),
 		function_type: ($) =>
 			seq(
@@ -1011,16 +1006,16 @@ module.exports = grammar({
 				$.arrow,
 				field("result", $.type_expression),
 			),
-		type_application: ($) => prec(1, seq($.path, $.type_argument_list)),
+		applied_type: ($) => prec(1, seq($.path, $.type_argument_list)),
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
 			collection($, $.lt_op, $.gt_op, $.type_expression, $.comma),
 		record_type_field: ($) =>
-			seq(field("name", $.field_name), $.colon, $.record_field_type),
-		type_record: ($) => bracedCollection($, $.record_type_field, $.semicolon),
-		type_tuple: ($) =>
+			seq(field("name", $.field_name), $.colon, $.type_body),
+		record_type: ($) => bracedCollection($, $.record_type_field, $.semicolon),
+		tuple_type: ($) =>
 			tuple($, $.lparen_hash, $.rparen, $.type_expression, $.semicolon),
-		type_wildcard: ($) => $.wildcard,
+		wildcard_type: ($) => $.wildcard,
 		parenthesized_type: ($) =>
 			seq(
 				$.lparen,
@@ -1100,8 +1095,6 @@ module.exports = grammar({
 			token(prec(2, seq("<///", new RustRegex("[\\s\\S]*?"), "///"))),
 		identifier: ($) =>
 			token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*!?")),
-		capitalized_identifier: ($) =>
-			token(new RustRegex("[A-Z][\\p{ID_Continue}]*!?")),
 		path_head: ($) => choice($.identifier, $.kw_self),
 		path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
 		newline: () => token(new RustRegex("\\r?\\n")),
@@ -1116,7 +1109,7 @@ module.exports = grammar({
 		lbrace: () => "{",
 		rbrace: () => "}",
 		lparen_hash: () => token("#("),
-		lbracket_hash: () => token("#map["),
+		lbracket_map: () => token("#map["),
 		quote: () => '"',
 		comma: () => ",",
 		colon: () => ":",
@@ -1127,13 +1120,13 @@ module.exports = grammar({
 		at_sign: () => token.immediate("@"),
 		hash_sign: () => token.immediate("#"),
 		pipe: () => token("|>"),
-		pipe_bar: () => token("|"),
+		bar: () => token("|"),
 		or_op: ($) => $.kw_or,
 		and_op: ($) => $.kw_and,
-		plus: () => "+",
-		minus: () => "-",
-		star: () => "*",
-		slash: () => "/",
+		plus_op: () => "+",
+		minus_op: () => "-",
+		star_op: () => "*",
+		slash_op: () => "/",
 		eq_op: () => "==",
 		ne_op: () => "!=",
 		le_op: () => "<=",
