@@ -91,6 +91,10 @@
         {
           "type": "kw_alias",
           "named": true
+        },
+        {
+          "type": "kw_pub",
+          "named": true
         }
       ]
     }
@@ -1008,6 +1012,10 @@
           "named": true
         },
         {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
           "type": "newline",
           "named": true
         },
@@ -1405,6 +1413,10 @@
         },
         {
           "type": "kw_distinct",
+          "named": true
+        },
+        {
+          "type": "kw_pub",
           "named": true
         },
         {
@@ -3174,6 +3186,10 @@
       "required": true,
       "types": [
         {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
           "type": "kw_record",
           "named": true
         },
@@ -3827,6 +3843,10 @@
       "required": true,
       "types": [
         {
+          "type": "kw_pub",
+          "named": true
+        },
+        {
           "type": "kw_tag",
           "named": true
         },
@@ -3887,48 +3907,17 @@
   {
     "type": "test_binding",
     "named": true,
-    "fields": {
-      "value": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "newline",
-            "named": true
-          },
-          {
-            "type": "statement_expression",
-            "named": true
-          }
-        ]
-      }
-    },
+    "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "binding_pattern",
-          "named": true
-        },
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "equals",
+          "type": "binding_core",
           "named": true
         },
         {
           "type": "kw_let",
-          "named": true
-        },
-        {
-          "type": "kw_rec",
-          "named": true
-        },
-        {
-          "type": "type_body",
           "named": true
         }
       ]

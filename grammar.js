@@ -159,12 +159,12 @@ function tuple($, open, close, item, separator) {
 	);
 }
 
-// Braced collection with flexible separators
-function bracedCollection($, rule, separator) {
+// Flexible-separator collection inside arbitrary delimiters
+function flexCollection($, open, close, rule, separator) {
 	return delimited(
 		$,
-		$.lbrace,
-		$.rbrace,
+		open,
+		close,
 		seq(
 			rule,
 			many(choice(
@@ -174,6 +174,46 @@ function bracedCollection($, rule, separator) {
 			)),
 			opt(seq(many($.newline), separator)),
 		),
+	);
+}
+
+// Braced flexible-separator collection (convenience wrapper)
+function bracedCollection($, rule, separator) {
+	return flexCollection($, $.lbrace, $.rbrace, rule, separator);
+}
+
+// --- With-payload pattern: `name with payload, payload, ...` ---
+// Used by both choice_variant and path_pattern.
+function withPayloads($, nameRule, payloadRule) {
+	return seq(
+		nameRule,
+		$.kw_with,
+		field("payload", payloadRule),
+		many(seq($.comma, many($.newline), field("payload", payloadRule))),
+	);
+}
+
+// --- Parameter list: inline comma-sep or multiline ---
+// Used by both lambda_parameters and method_parameter_list.
+function parameterList($, paramRule) {
+	return choice(
+		sep1(field("param", paramRule), $.comma),
+		seq(
+			many1($.newline),
+			separated1($, field("param", paramRule), $.comma),
+			many($.newline),
+		),
+	);
+}
+
+// --- Bare binding: pattern : type = value ---
+// The core of value_declaration, test_value_declaration, and test_binding.
+function bareBinding($, nameRule) {
+	return seq(
+		field("name", nameRule),
+		opt(seq($.colon, $.type_body)),
+		$.equals,
+		$.value_slot,
 	);
 }
 
@@ -265,7 +305,10 @@ function buildExpressionLadder(suffix, baseRule) {
 
 // Generate expression precedence ladders
 const expressionRules = buildExpressionLadder("", "application_expression");
-const noBraceExpressionRules = buildExpressionLadder("_no_brace", "application_expression_no_brace");
+const noBraceExpressionRules = buildExpressionLadder(
+	"_no_brace",
+	"application_expression_no_brace",
+);
 
 // --- Expression Bottom Generator ---
 // Generates the four bottom rules (application, postfix, primary, inline)
@@ -370,7 +413,11 @@ const POSTFIX_NO_BRACE = ($) => [
 ];
 
 const expressionBottom = buildExpressionBottom("", INLINE_ALL, POSTFIX_ALL);
-const noBraceExpressionBottom = buildExpressionBottom("_no_brace", INLINE_NO_BRACE, POSTFIX_NO_BRACE);
+const noBraceExpressionBottom = buildExpressionBottom(
+	"_no_brace",
+	INLINE_NO_BRACE,
+	POSTFIX_NO_BRACE,
+);
 
 module.exports = grammar({
 	name: "kippy",
@@ -475,6 +522,7 @@ module.exports = grammar({
 		module_declaration: ($) => seq($.kw_module, field("name", $.path)),
 		alias_declaration: ($) =>
 			seq(
+				visibility_modifier($),
 				$.kw_alias,
 				field("name", $.binding_name),
 				$.equals,
@@ -483,6 +531,7 @@ module.exports = grammar({
 
 		distinct_declaration: ($) =>
 			seq(
+				visibility_modifier($),
 				$.kw_distinct,
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
@@ -492,6 +541,7 @@ module.exports = grammar({
 
 		tag_declaration: ($) =>
 			seq(
+				visibility_modifier($),
 				$.kw_tag,
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
@@ -499,6 +549,7 @@ module.exports = grammar({
 
 		record_declaration: ($) =>
 			seq(
+				visibility_modifier($),
 				$.kw_record,
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
@@ -508,6 +559,7 @@ module.exports = grammar({
 
 		choice_declaration: ($) =>
 			seq(
+				visibility_modifier($),
 				$.kw_choice,
 				field("name", $.binding_name),
 				opt($.type_parameter_list),
@@ -519,14 +571,7 @@ module.exports = grammar({
 
 		choice_variant: ($) =>
 			choice(
-				seq(
-					field("name", $.identifier),
-					$.kw_with,
-					field("payload", $.type_expression),
-					many(
-						seq($.comma, many($.newline), field("payload", $.type_expression)),
-					),
-				),
+				withPayloads($, field("name", $.identifier), $.type_expression),
 				seq(
 					field("name", $.identifier),
 					field("payload", $.record_type),
@@ -560,10 +605,7 @@ module.exports = grammar({
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
-				field("name", $.binding_name),
-				opt(seq($.colon, $.type_body)),
-				$.equals,
-				$.value_slot,
+				bareBinding($, $.binding_name),
 				opt($.semicolon),
 			),
 		attribute: ($) =>
@@ -653,15 +695,7 @@ module.exports = grammar({
 				$.fat_arrow,
 				$.method_body,
 			),
-		method_parameter_list: ($) =>
-			choice(
-				sep1(field("param", $.binding_pattern), $.comma),
-				seq(
-					many1($.newline),
-					separated1($, field("param", $.binding_pattern), $.comma),
-					many($.newline),
-				),
-			),
+		method_parameter_list: ($) => parameterList($, $.binding_pattern),
 		shape_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -688,22 +722,8 @@ module.exports = grammar({
 			),
 		test_statement: ($) =>
 			choice($.test_binding, $.test_value_declaration, $.expect_statement),
-		test_binding: ($) =>
-			seq(
-				$.kw_let,
-				opt($.kw_rec),
-				$.binding_pattern,
-				opt(seq($.colon, $.type_body)),
-				$.equals,
-				$.value_slot,
-			),
-		test_value_declaration: ($) =>
-			seq(
-				field("name", $.binding_name),
-				opt(seq($.colon, $.type_body)),
-				$.equals,
-				$.value_slot,
-			),
+		test_binding: ($) => seq($.kw_let, $.binding_core),
+		test_value_declaration: ($) => bareBinding($, $.binding_name),
 		binding_core: ($) =>
 			seq(
 				opt($.kw_rec),
@@ -816,18 +836,17 @@ module.exports = grammar({
 			),
 		match_arm: ($) =>
 			seq(field("pattern", $.pattern), $.arrow, $.match_arm_value),
-		lambda_parameters: ($) =>
-			choice(
-				sep1(field("param", $.binding_pattern), $.comma),
-				seq(
-					many1($.newline),
-					lineSeparated1($, field("param", $.binding_pattern)),
-					many($.newline),
-				),
-			),
+		lambda_parameters: ($) => parameterList($, $.binding_pattern),
 		lambda_expression: ($) =>
 			prec.right(choice(
-				seq($.kw_fn, $.lparen, many($.newline), $.rparen, $.fat_arrow, $.lambda_body),
+				seq(
+					$.kw_fn,
+					$.lparen,
+					many($.newline),
+					$.rparen,
+					$.fat_arrow,
+					$.lambda_body,
+				),
 				seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body),
 			)),
 		if_expression: ($) =>
@@ -876,19 +895,9 @@ module.exports = grammar({
 			),
 
 		path_pattern: ($) =>
-			seq(
+			choice(
+				withPayloads($, field("constructor", $.path), $.tag_payload_pattern),
 				field("constructor", $.path),
-				opt(seq(
-					$.kw_with,
-					field("payload", $.tag_payload_pattern),
-					many(
-						seq(
-							$.comma,
-							many($.newline),
-							field("payload", $.tag_payload_pattern),
-						),
-					),
-				)),
 			),
 		wildcard_pattern: ($) => $.wildcard,
 		binding_list_pattern: ($) =>
@@ -973,19 +982,7 @@ module.exports = grammar({
 				$.kw_where,
 				choice(
 					$.constraint_entry,
-					seq(
-						$.lparen,
-						many($.newline),
-						$.constraint_entry,
-						many(
-							choice(
-								seq($.comma, many($.newline), $.constraint_entry),
-								seq(many1($.newline), $.constraint_entry),
-							),
-						),
-						many($.newline),
-						$.rparen,
-					),
+					flexCollection($, $.lparen, $.rparen, $.constraint_entry, $.comma),
 				),
 			),
 		constraint_entry: ($) =>
@@ -996,7 +993,10 @@ module.exports = grammar({
 			),
 		constraint_sum: ($) =>
 			prec.left(
-				seq(field("shape", $.path), many(seq($.plus_op, field("shape", $.path)))),
+				seq(
+					field("shape", $.path),
+					many(seq($.plus_op, field("shape", $.path))),
+				),
 			),
 		function_type: ($) =>
 			seq(
