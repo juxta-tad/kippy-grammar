@@ -663,7 +663,7 @@ module.exports = grammar({
 				field("members", bracedBlock($, $.fit_member)),
 			),
 
-		// [CHANGED] Added field("type_params", ...), inlined implementation_shapes to field("shape", $.path)
+		// [CHANGED] Added field("type_params", ... ), inlined implementation_shapes to field("shape", $.path)
 		derive_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -674,7 +674,6 @@ module.exports = grammar({
 				$.colon,
 				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
-				$.semicolon,
 			),
 		impl_type_head: ($) =>
 			choice(
@@ -724,7 +723,7 @@ module.exports = grammar({
 			seq(
 				attributePrefix($),
 				$.kw_test,
-				field("name", $.static_string),
+				field("name", $.static_text),
 				many($.newline),
 				field("body", bracedBlock($, $.test_statement)),
 			),
@@ -1049,7 +1048,7 @@ module.exports = grammar({
 				$.int_literal,
 				$.float_literal,
 				$.char_literal,
-				$.string,
+				$.text,
 			),
 		// 50% => desugars to 50 / 100. Only unsuffixed numeric forms allowed.
 		percent_literal: ($) =>
@@ -1083,13 +1082,13 @@ module.exports = grammar({
 					new RustRegex(`${DEC_DIGITS}${INT_SUFFIX}`),
 				),
 			),
-		string: ($) =>
+		text: ($) =>
 			seq(
 				$.quote,
-				many(choice($.string_content, $.escape_sequence, $.interpolation)),
+				many(choice($.text_content, $.escape_sequence, $.interpolation)),
 				$.quote,
 			),
-		string_content: ($) => token(new RustRegex('[^"\\\\\\n]+')),
+		text_content: ($) => token(new RustRegex('[^"\\\\\\n]+')),
 		char_literal: ($) =>
 			token(
 				choice(
@@ -1100,13 +1099,13 @@ module.exports = grammar({
 		interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
 		interpolation_start: ($) => token(new RustRegex("\\\\\\(")),
 		escape_sequence: ($) => token(new RustRegex(`\\\\${STRING_ESCAPE}`)),
-		static_string: ($) =>
+		static_text: ($) =>
 			seq(
 				$.quote,
-				many(choice($.static_string_text, $.escape_sequence)),
+				many(choice($.static_text_content, $.escape_sequence)),
 				$.quote,
 			),
-		static_string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
+		static_text_content: ($) => token(new RustRegex('[^"\\\\\\n]+')),
 		line_comment: (_) => token(new RustRegex("//[^\\n]*")),
 		block_comment: (_) =>
 			token(seq("/>", new RustRegex("([^<]|<[^/])*"), "</")),

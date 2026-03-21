@@ -1521,10 +1521,6 @@
         {
           "type": "kw_pub",
           "named": true
-        },
-        {
-          "type": "semicolon",
-          "named": true
         }
       ]
     }
@@ -2462,7 +2458,7 @@
           "named": true
         },
         {
-          "type": "string",
+          "type": "text",
           "named": true
         }
       ]
@@ -4075,7 +4071,7 @@
     }
   },
   {
-    "type": "static_string",
+    "type": "static_text",
     "named": true,
     "fields": {},
     "children": {
@@ -4091,46 +4087,14 @@
           "named": true
         },
         {
-          "type": "static_string_text",
+          "type": "static_text_content",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "static_string_text",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "string",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "escape_sequence",
-          "named": true
-        },
-        {
-          "type": "interpolation",
-          "named": true
-        },
-        {
-          "type": "quote",
-          "named": true
-        },
-        {
-          "type": "string_content",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "string_content",
+    "type": "static_text_content",
     "named": true,
     "fields": {}
   },
@@ -4285,7 +4249,7 @@
         "required": true,
         "types": [
           {
-            "type": "static_string",
+            "type": "static_text",
             "named": true
           }
         ]
@@ -4382,6 +4346,38 @@
         }
       ]
     }
+  },
+  {
+    "type": "text",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        },
+        {
+          "type": "interpolation",
+          "named": true
+        },
+        {
+          "type": "quote",
+          "named": true
+        },
+        {
+          "type": "text_content",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "text_content",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "tuple_expression",
