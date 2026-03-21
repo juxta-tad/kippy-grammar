@@ -18,7 +18,6 @@ const KEYWORDS = [
 	"tag",
 	"record",
 	"choice",
-	"cert",
 	"expect",
 	"if",
 	"then",
@@ -44,7 +43,6 @@ const KEYWORDS = [
 	"as",
 	"self",
 	"Self",
-	"unit",
 ];
 
 // --- Lexical Regex Constants ---
@@ -53,14 +51,16 @@ const HEX_DIGITS = "(?:[0-9a-fA-F]|[0-9a-fA-F][0-9a-fA-F_]*[0-9a-fA-F])";
 const OCT_DIGITS = "(?:[0-7]|[0-7][0-7_]*[0-7])";
 const BIN_DIGITS = "(?:[01]|[01][01_]*[01])";
 
-const INT_SUFFIX = "(?:u8|u16|u32|u64|i8|i16|i32|i64)?%?";
-const FLOAT_SUFFIX = "(?:f32|f64)?%?";
+const INT_SUFFIX = "(?:u8|u16|u32|u64|i8|i16|i32|i64)?";
+const FLOAT_SUFFIX = "(?:f32|f64)?";
+const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
 
 const CHAR_ESCAPE =
 	`(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
+const LINE_SPLICE = "\\r?\\n[ \\t]*";
 const STRING_ESCAPE =
-	`(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[\\\\'"ntrbfv])`;
+	`(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[\\\\'"ntrbfv]|${LINE_SPLICE})`;
 
 const opt = optional;
 const many = repeat;
@@ -254,7 +254,7 @@ function buildExpressionLadder(suffix, baseRule) {
 				prec.right(
 					PREC.UNARY,
 					seq(
-						choice($.minus_op, $.kw_not, $.kw_cert),
+						choice($.minus_op, $.kw_not),
 						$[name("unary_expression")],
 					),
 				),
@@ -272,7 +272,7 @@ const noBraceExpressionRules = buildExpressionLadder("_no_brace", "application_e
 // that sit below the operator ladder. The `suffix` parameter creates parallel
 // variants, and `inlineChoices` controls which inline expression forms are
 // included — this is where the no-brace chain diverges.
-function buildExpressionBottom(suffix, inlineChoices) {
+function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 	const s = (name) => `${name}${suffix}`;
 	return {
 		[s("application_expression")]: ($) =>
@@ -307,12 +307,7 @@ function buildExpressionBottom(suffix, inlineChoices) {
 				PREC.POSTFIX,
 				seq(
 					$[s("primary_expression")],
-					many(choice(
-						$.index_suffix,
-						$.field_suffix,
-						$.try_op,
-						$.method_suffix,
-					)),
+					many(choice(...postfixSuffixes($))),
 				),
 			),
 
@@ -331,11 +326,11 @@ function buildExpressionBottom(suffix, inlineChoices) {
 
 // All inline expression forms
 const INLINE_ALL = ($) => [
-	$.constructed_record_expression,
 	$.record_builder,
 	$.literal,
 	$.path,
 	$.placeholder,
+	$.unit_expression,
 	$.list_expression,
 	$.map_expression,
 	$.record_expression,
@@ -348,14 +343,34 @@ const INLINE_NO_BRACE = ($) => [
 	$.literal,
 	$.path,
 	$.placeholder,
+	$.unit_expression,
 	$.list_expression,
 	$.map_expression,
 	$.tuple_expression,
 	$.parenthesized_expression,
 ];
 
-const expressionBottom = buildExpressionBottom("", INLINE_ALL);
-const noBraceExpressionBottom = buildExpressionBottom("_no_brace", INLINE_NO_BRACE);
+// Postfix suffixes for general expression context (includes record construction)
+const POSTFIX_ALL = ($) => [
+	$.record_suffix,
+	$.call_suffix,
+	$.index_suffix,
+	$.field_suffix,
+	$.try_op,
+	$.method_suffix,
+];
+
+// Postfix suffixes excluding brace-starting constructs (for match/if subjects)
+const POSTFIX_NO_BRACE = ($) => [
+	$.call_suffix,
+	$.index_suffix,
+	$.field_suffix,
+	$.try_op,
+	$.method_suffix,
+];
+
+const expressionBottom = buildExpressionBottom("", INLINE_ALL, POSTFIX_ALL);
+const noBraceExpressionBottom = buildExpressionBottom("_no_brace", INLINE_NO_BRACE, POSTFIX_NO_BRACE);
 
 module.exports = grammar({
 	name: "kippy",
@@ -372,7 +387,6 @@ module.exports = grammar({
 			$.kw_tag,
 			$.kw_record,
 			$.kw_choice,
-			$.kw_cert,
 			$.kw_expect,
 			$.kw_if,
 			$.kw_then,
@@ -397,7 +411,6 @@ module.exports = grammar({
 			$.kw_as,
 			$.kw_self,
 			$.kw_Self,
-			$.kw_unit,
 		],
 	},
 
@@ -405,8 +418,6 @@ module.exports = grammar({
 		new RustRegex("[ \\t\\r\\f]+"),
 		$.line_comment,
 		$.block_comment,
-		$.doc_comment,
-		$.doc_block_comment,
 	],
 
 	supertypes: ($) => [
@@ -524,7 +535,7 @@ module.exports = grammar({
 			),
 
 		type_parameter_list: ($) =>
-			collection($, $.lt_op, $.gt_op, $.identifier, $.comma),
+			collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
 		shape_method: ($) =>
 			seq(
 				attributePrefix($),
@@ -707,8 +718,8 @@ module.exports = grammar({
 
 		statement_expression: ($) => $.pipe_expression,
 
-		// Arguments in comma-delimited call lists (same-line): exclude tag_value_expression to prevent ambiguity
-		call_argument_inline: ($) => $.comma_safe_expression,
+		// Arguments in comma-delimited call lists (same-line)
+		call_argument_inline: ($) => $.postfix_expression,
 
 		// Arguments in newline-delimited call lists: allow full expressions
 		call_argument_block: ($) => $.pipe_expression,
@@ -727,6 +738,9 @@ module.exports = grammar({
 		...expressionBottom,
 		...noBraceExpressionBottom,
 
+		// f() — postfix call sugar for `f with ()`
+		call_suffix: ($) => seq($.lparen, many($.newline), $.rparen),
+
 		index_suffix: ($) =>
 			seq($.lbracket, field("index", $.expression), $.rbracket),
 		field_suffix: ($) => seq($.dot, field("field", $.field_name)),
@@ -738,18 +752,12 @@ module.exports = grammar({
 				opt(seq($.colon, field("shape", $.path))),
 			),
 
-		constructed_record_expression: ($) =>
-			prec(1, seq(field("constructor", $.path), field("body", $.record_body))),
+		// Foo { x = 1 } — record construction as postfix suffix on a path.
+		// Only valid after a path in practice; semantic analysis can enforce this.
+		record_suffix: ($) => field("body", $.record_body),
 
-		// Expressions safe in comma-delimited parent lists
-		comma_safe_expression: ($) =>
-			choice(
-				$.inline_expression,
-				$.match_expression,
-				$.if_expression,
-				$.lambda_expression,
-				$.let_expression,
-			),
+		// () — unit value
+		unit_expression: ($) => seq($.lparen, many($.newline), $.rparen),
 
 		list_expression: ($) =>
 			collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
@@ -818,7 +826,10 @@ module.exports = grammar({
 				),
 			),
 		lambda_expression: ($) =>
-			prec.right(seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body)),
+			prec.right(choice(
+				seq($.kw_fn, $.lparen, many($.newline), $.rparen, $.fat_arrow, $.lambda_body),
+				seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body),
+			)),
 		if_expression: ($) =>
 			prec.right(
 				seq(
@@ -853,19 +864,31 @@ module.exports = grammar({
 				),
 			),
 
-		// Patterns: bare identifiers and qualified paths are both parsed as $.path.
-		// Name resolution (not the parser) decides whether a path is a binding or
-		// a nullary constructor — same approach as Rust, OCaml, etc.
 		atomic_pattern: ($) =>
 			choice(
 				$.literal,
 				$.wildcard_pattern,
-				$.with_tag_pattern,
-				$.path,
+				$.path_pattern,
 				$.list_pattern,
 				$.tuple_pattern,
 				$.record_pattern,
 				seq($.lparen, $.pattern, $.rparen),
+			),
+
+		path_pattern: ($) =>
+			seq(
+				field("constructor", $.path),
+				opt(seq(
+					$.kw_with,
+					field("payload", $.tag_payload_pattern),
+					many(
+						seq(
+							$.comma,
+							many($.newline),
+							field("payload", $.tag_payload_pattern),
+						),
+					),
+				)),
 			),
 		wildcard_pattern: ($) => $.wildcard,
 		binding_list_pattern: ($) =>
@@ -893,25 +916,7 @@ module.exports = grammar({
 		binding_record_pattern_field: ($) =>
 			fieldPattern($.field_name, $.colon, $.binding_pattern),
 
-		// Tag pattern with payload: `Foo with x` or `Mod::Foo with x, y`
-		// Nested tag patterns must be parenthesized: `X with (Y with z)`
-		// prec(2) ensures `Foo with x` is parsed as a tag pattern, not a bare
-		// path followed by a `with` at expression level.
-		with_tag_pattern: ($) =>
-			prec(2, seq(
-				field("constructor", $.path),
-				$.kw_with,
-				field("payload", $.tag_payload_pattern),
-				many(
-					seq(
-						$.comma,
-						many($.newline),
-						field("payload", $.tag_payload_pattern),
-					),
-				),
-			)),
-
-		// Payload patterns in tag constructors: excludes with_tag_pattern to prevent bare chaining
+		// Payload patterns in tag constructors: excludes path_pattern to prevent bare chaining
 		tag_payload_pattern: ($) =>
 			choice(
 				$.literal,
@@ -961,7 +966,7 @@ module.exports = grammar({
 				seq($.ellipsis, field("item", $.base_type)),
 			),
 		type_body: ($) => layoutType($),
-		ellipsis: ($) => token(prec(1, "...")),
+		ellipsis: ($) => "...",
 		rest_op: ($) => "..",
 		constraint_clause: ($) =>
 			seq(
@@ -1006,10 +1011,10 @@ module.exports = grammar({
 				$.arrow,
 				field("result", $.type_expression),
 			),
-		applied_type: ($) => prec(1, seq($.path, $.type_argument_list)),
+		applied_type: ($) => seq($.path, $.type_argument_list),
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
-			collection($, $.lt_op, $.gt_op, $.type_expression, $.comma),
+			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
 		record_type_field: ($) =>
 			seq(field("name", $.field_name), $.colon, $.type_body),
 		record_type: ($) => bracedCollection($, $.record_type_field, $.semicolon),
@@ -1026,13 +1031,24 @@ module.exports = grammar({
 			),
 		literal: ($) =>
 			choice(
-				$.unit_literal,
+				$.percent_literal,
 				$.int_literal,
 				$.float_literal,
 				$.char_literal,
 				$.string,
 			),
-		unit_literal: ($) => $.kw_unit,
+		// 50% => desugars to 50 / 100. Only unsuffixed numeric forms allowed.
+		percent_literal: ($) =>
+			token(
+				choice(
+					new RustRegex(
+						`${DEC_DIGITS}\\.${DEC_DIGITS}${EXPONENT}?${PERCENT}`,
+					),
+					new RustRegex(`${DEC_DIGITS}\\.${EXPONENT}?${PERCENT}`),
+					new RustRegex(`\\.${DEC_DIGITS}${EXPONENT}?${PERCENT}`),
+					new RustRegex(`${DEC_DIGITS}${EXPONENT}?${PERCENT}`),
+				),
+			),
 		float_literal: ($) =>
 			token(
 				choice(
@@ -1077,22 +1093,9 @@ module.exports = grammar({
 				$.quote,
 			),
 		static_string_text: ($) => token(new RustRegex('[^"\\\\\\n]+')),
-		doc_comment: (_) =>
-			token(
-				prec(
-					2,
-					seq(
-						"///",
-						new RustRegex("[^\\n]*"),
-						many(seq("\n", "///", new RustRegex("[^\\n]*"))),
-					),
-				),
-			),
-		line_comment: (_) => token(prec(1, new RustRegex("//[^\\n]*"))),
+		line_comment: (_) => token(new RustRegex("//[^\\n]*")),
 		block_comment: (_) =>
-			token(prec(-3, seq("/>", new RustRegex("[\\s\\S]*?"), "</"))),
-		doc_block_comment: (_) =>
-			token(prec(2, seq("<///", new RustRegex("[\\s\\S]*?"), "///"))),
+			token(seq("/>", new RustRegex("([^<]|<[^/])*"), "</")),
 		identifier: ($) =>
 			token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*!?")),
 		path_head: ($) => choice($.identifier, $.kw_self),

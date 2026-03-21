@@ -1,6 +1,0 @@
-type User = { name: String, items: List[Item] }
-
-let point = Point { x = 1, y = 2 }
-let list_int = List[Int]
-let dict = Dict[String, Int]
-let tagged = Person { age = 30 }

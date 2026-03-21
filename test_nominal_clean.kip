@@ -1,2 +1,0 @@
-let point = Point { x = 1 }
-let list = List[Int]
