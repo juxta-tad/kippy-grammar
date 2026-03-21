@@ -207,19 +207,20 @@ function parameterList($, paramRule) {
 }
 
 // --- Bare binding: pattern : type = value ---
-// The core of value_declaration, test_value_declaration, and test_binding.
+// [CHANGED] Added field("type_ann", ...) around type_body
 function bareBinding($, nameRule) {
 	return seq(
 		field("name", nameRule),
-		opt(seq($.colon, $.type_body)),
+		opt(seq($.colon, field("type_ann", $.type_body))),
 		$.equals,
 		$.value_slot,
 	);
 }
 
 // --- Common Patterns ---
+// [CHANGED] Wrap each attribute in field("attribute", ...)
 function attributePrefix($) {
-	return many(seq($.attribute, opt($.newline)));
+	return many(field("attribute", seq($.attribute, opt($.newline))));
 }
 
 function visibility_modifier($) {
@@ -227,9 +228,7 @@ function visibility_modifier($) {
 }
 
 // --- Expression Ladder Generator ---
-// Generates a full precedence ladder (pipe > or > and > compare > add > mul > unary).
-// `suffix` allows generating parallel ladders (e.g. "_no_brace") that diverge only
-// at the base rule, sharing all operator semantics.
+// [CHANGED] Added field("op", ...), field("lhs", ...), field("rhs", ...) throughout
 function buildExpressionLadder(suffix, baseRule) {
 	const name = (level) => `${level}${suffix}`;
 	return {
@@ -237,34 +236,34 @@ function buildExpressionLadder(suffix, baseRule) {
 			prec.left(
 				PREC.PIPE,
 				seq(
-					$[name("or_expression")],
-					many(seq($.pipe, $[name("or_expression")])),
+					field("lhs", $[name("or_expression")]),
+					many(seq($.pipe, field("rhs", $[name("or_expression")]))),
 				),
 			),
 		[name("or_expression")]: ($) =>
 			prec.left(
 				PREC.OR,
 				seq(
-					$[name("and_expression")],
-					many(seq($.or_op, $[name("and_expression")])),
+					field("lhs", $[name("and_expression")]),
+					many(seq($.or_op, field("rhs", $[name("and_expression")]))),
 				),
 			),
 		[name("and_expression")]: ($) =>
 			prec.left(
 				PREC.AND,
 				seq(
-					$[name("compare_expression")],
-					many(seq($.and_op, $[name("compare_expression")])),
+					field("lhs", $[name("compare_expression")]),
+					many(seq($.and_op, field("rhs", $[name("compare_expression")]))),
 				),
 			),
 		[name("compare_expression")]: ($) =>
 			prec.left(
 				PREC.COMPARE,
 				seq(
-					$[name("add_expression")],
+					field("lhs", $[name("add_expression")]),
 					opt(seq(
-						choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-						$[name("add_expression")],
+						field("op", choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op)),
+						field("rhs", $[name("add_expression")]),
 					)),
 				),
 			),
@@ -272,19 +271,19 @@ function buildExpressionLadder(suffix, baseRule) {
 			prec.left(
 				PREC.ADD,
 				seq(
-					$[name("mul_expression")],
-					many(seq(choice($.plus_op, $.minus_op), $[name("mul_expression")])),
+					field("lhs", $[name("mul_expression")]),
+					many(seq(field("op", choice($.plus_op, $.minus_op)), field("rhs", $[name("mul_expression")]))),
 				),
 			),
 		[name("mul_expression")]: ($) =>
 			prec.left(
 				PREC.MUL,
 				seq(
-					$[name("unary_expression")],
+					field("lhs", $[name("unary_expression")]),
 					many(
 						seq(
-							choice($.star_op, $.slash_op, $.kw_mod),
-							$[name("unary_expression")],
+							field("op", choice($.star_op, $.slash_op, $.kw_mod)),
+							field("rhs", $[name("unary_expression")]),
 						),
 					),
 				),
@@ -294,8 +293,8 @@ function buildExpressionLadder(suffix, baseRule) {
 				prec.right(
 					PREC.UNARY,
 					seq(
-						choice($.minus_op, $.kw_not),
-						$[name("unary_expression")],
+						field("op", choice($.minus_op, $.kw_not)),
+						field("operand", $[name("unary_expression")]),
 					),
 				),
 				$[baseRule],
@@ -311,10 +310,6 @@ const noBraceExpressionRules = buildExpressionLadder(
 );
 
 // --- Expression Bottom Generator ---
-// Generates the four bottom rules (application, postfix, primary, inline)
-// that sit below the operator ladder. The `suffix` parameter creates parallel
-// variants, and `inlineChoices` controls which inline expression forms are
-// included — this is where the no-brace chain diverges.
 function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 	const s = (name) => `${name}${suffix}`;
 	return {
@@ -323,7 +318,7 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 				PREC.POSTFIX,
 				choice(
 					seq(
-						$[s("postfix_expression")],
+						field("callee", $[s("postfix_expression")]),
 						$.kw_with,
 						field("arg", $.call_argument_inline),
 						many(
@@ -335,7 +330,7 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 						),
 					),
 					seq(
-						$[s("postfix_expression")],
+						field("callee", $[s("postfix_expression")]),
 						$.kw_with,
 						many1($.newline),
 						field("arg", $.call_argument_block),
@@ -349,7 +344,7 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 			prec.left(
 				PREC.POSTFIX,
 				seq(
-					$[s("primary_expression")],
+					field("base", $[s("primary_expression")]),
 					many(choice(...postfixSuffixes($))),
 				),
 			),
@@ -479,6 +474,7 @@ module.exports = grammar({
 		$.let_body,
 		$.if_then_value,
 		$.if_else_value,
+		$.statement_expression, // [CHANGED] inlined so it doesn't produce a wrapper node
 	],
 
 	rules: {
@@ -529,45 +525,49 @@ module.exports = grammar({
 				field("body", $.type_expression),
 			),
 
+		// [CHANGED] Added field("type_params", ...)
 		distinct_declaration: ($) =>
 			seq(
 				visibility_modifier($),
 				$.kw_distinct,
 				field("name", $.binding_name),
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 				$.equals,
 				field("body", $.type_expression),
 			),
 
+		// [CHANGED] Added field("type_params", ...)
 		tag_declaration: ($) =>
 			seq(
 				visibility_modifier($),
 				$.kw_tag,
 				field("name", $.binding_name),
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 			),
 
+		// [CHANGED] Added field("type_params", ...)
 		record_declaration: ($) =>
 			seq(
 				visibility_modifier($),
 				$.kw_record,
 				field("name", $.binding_name),
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 				many($.newline),
 				field("body", $.record_type),
 			),
 
+		// [CHANGED] Added field("type_params", ...)
 		choice_declaration: ($) =>
 			seq(
 				visibility_modifier($),
 				$.kw_choice,
 				field("name", $.binding_name),
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 				many($.newline),
-				field("body", $.choice_body),
+				field("body", bracedBlock($, $.choice_variant)),
 			),
 
-		choice_body: ($) => bracedBlock($, $.choice_variant),
+		// [CHANGED] choice_body inlined directly into choice_declaration
 
 		choice_variant: ($) =>
 			choice(
@@ -581,16 +581,20 @@ module.exports = grammar({
 
 		type_parameter_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
+
+		// [CHANGED] Added field("type_ann", ...) around type_body
 		shape_method: ($) =>
 			seq(
 				attributePrefix($),
 				field("name", $.binding_name),
 				$.colon,
-				$.type_body,
+				field("type_ann", $.type_body),
 				opt(field("default", $.method_default)),
 				opt(field("constraints", $.constraint_clause)),
 			),
 		method_default: ($) => seq($.equals, $.value_slot),
+
+		// [CHANGED] Added field("type_ann", ...) around type_body
 		signature: ($) =>
 			seq(
 				attributePrefix($),
@@ -598,7 +602,7 @@ module.exports = grammar({
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
-				$.type_body,
+				field("type_ann", $.type_body),
 				opt(field("constraints", $.constraint_clause)),
 			),
 		value_declaration: ($) =>
@@ -609,7 +613,7 @@ module.exports = grammar({
 				opt($.semicolon),
 			),
 		attribute: ($) =>
-			seq($.hash_sign, $.path, opt($.attribute_arguments_inline)),
+			seq($.hash_sign, field("path", $.path), opt(field("args", $.attribute_arguments_inline))),
 		attribute_arguments_inline: ($) =>
 			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
 
@@ -644,29 +648,31 @@ module.exports = grammar({
 				),
 			),
 
+		// [CHANGED] Added field("type_params", ...), inlined implementation_shapes to field("shape", $.path)
 		implementation: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_fit,
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 				field("type", $.impl_type_head),
 				$.colon,
-				field("shape", $.implementation_shapes),
+				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
 				many($.newline),
 				field("members", bracedBlock($, $.fit_member)),
 			),
 
+		// [CHANGED] Added field("type_params", ...), inlined implementation_shapes to field("shape", $.path)
 		derive_declaration: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_derive,
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 				field("type", $.impl_type_head),
 				$.colon,
-				field("shape", $.implementation_shapes),
+				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
 				$.semicolon,
 			),
@@ -679,7 +685,7 @@ module.exports = grammar({
 				$.record_type,
 				$.parenthesized_type,
 			),
-		implementation_shapes: ($) => $.path,
+		// [CHANGED] Removed implementation_shapes — inlined as field("shape", $.path) above
 		fit_member: ($) => choice($.fit_type_def, $.fit_method),
 		fit_type_def: ($) =>
 			seq(
@@ -696,13 +702,15 @@ module.exports = grammar({
 				$.method_body,
 			),
 		method_parameter_list: ($) => parameterList($, $.binding_pattern),
+
+		// [CHANGED] Added field("type_params", ...)
 		shape_declaration: ($) =>
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
 				$.kw_shape,
 				field("name", $.binding_name),
-				opt($.type_parameter_list),
+				opt(field("type_params", $.type_parameter_list)),
 				opt(field("parents", $.shape_parents)),
 				many($.newline),
 				field("members", bracedBlock($, $.shape_member)),
@@ -724,11 +732,13 @@ module.exports = grammar({
 			choice($.test_binding, $.test_value_declaration, $.expect_statement),
 		test_binding: ($) => seq($.kw_let, $.binding_core),
 		test_value_declaration: ($) => bareBinding($, $.binding_name),
+
+		// [CHANGED] Added field("type_ann", ...) around type_body
 		binding_core: ($) =>
 			seq(
 				opt($.kw_rec),
 				field("pattern", $.binding_pattern),
-				opt(seq($.colon, $.type_body)),
+				opt(seq($.colon, field("type_ann", $.type_body))),
 				$.equals,
 				$.value_slot,
 			),
@@ -773,7 +783,6 @@ module.exports = grammar({
 			),
 
 		// Foo { x = 1 } — record construction as postfix suffix on a path.
-		// Only valid after a path in practice; semantic analysis can enforce this.
 		record_suffix: ($) => field("body", $.record_body),
 
 		// () — unit value
@@ -977,6 +986,9 @@ module.exports = grammar({
 		type_body: ($) => layoutType($),
 		ellipsis: ($) => "...",
 		rest_op: ($) => "..",
+
+		// [CHANGED] Added field("type_var", ...) and field("constraint", ...) on constraint_entry via existing fields,
+		// plus field("type_ann", ...) pattern on constraint_entry's type_body usage (none here — already structured)
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
@@ -1011,12 +1023,14 @@ module.exports = grammar({
 				$.arrow,
 				field("result", $.type_expression),
 			),
-		applied_type: ($) => seq($.path, $.type_argument_list),
+		applied_type: ($) => seq(field("constructor", $.path), field("args", $.type_argument_list)),
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
+
+		// [CHANGED] Added field("type_ann", ...) around type_body
 		record_type_field: ($) =>
-			seq(field("name", $.field_name), $.colon, $.type_body),
+			seq(field("name", $.field_name), $.colon, field("type_ann", $.type_body)),
 		record_type: ($) => bracedCollection($, $.record_type_field, $.semicolon),
 		tuple_type: ($) =>
 			tuple($, $.lparen_hash, $.rparen, $.type_expression, $.semicolon),
