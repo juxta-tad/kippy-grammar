@@ -310,6 +310,7 @@ const noBraceExpressionRules = buildExpressionLadder(
 );
 
 // --- Expression Bottom Generator ---
+// [CHANGED] primary_expression no longer includes lambda/if/let/match
 function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 	const s = (name) => `${name}${suffix}`;
 	return {
@@ -349,20 +350,15 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 				),
 			),
 
+		// [CHANGED] primary_expression is now atoms only — no lambda/if/let/match
 		[s("primary_expression")]: ($) =>
-			choice(
-				$[s("inline_expression")],
-				$.match_expression,
-				$.if_expression,
-				$.lambda_expression,
-				$.let_expression,
-			),
+			choice(...inlineChoices($)),
 
-		[s("inline_expression")]: ($) => choice(...inlineChoices($)),
+		// [REMOVED] inline_expression eliminated — its choices folded into primary_expression
 	};
 }
 
-// All inline expression forms
+// All inline expression forms (atoms only)
 const INLINE_ALL = ($) => [
 	$.record_builder,
 	$.literal,
@@ -474,7 +470,7 @@ module.exports = grammar({
 		$.let_body,
 		$.if_then_value,
 		$.if_else_value,
-		$.statement_expression, // [CHANGED] inlined so it doesn't produce a wrapper node
+		$.statement_expression,
 	],
 
 	rules: {
@@ -525,7 +521,6 @@ module.exports = grammar({
 				field("body", $.type_expression),
 			),
 
-		// [CHANGED] Added field("type_params", ...)
 		distinct_declaration: ($) =>
 			seq(
 				visibility_modifier($),
@@ -536,7 +531,6 @@ module.exports = grammar({
 				field("body", $.type_expression),
 			),
 
-		// [CHANGED] Added field("type_params", ...)
 		tag_declaration: ($) =>
 			seq(
 				visibility_modifier($),
@@ -545,7 +539,6 @@ module.exports = grammar({
 				opt(field("type_params", $.type_parameter_list)),
 			),
 
-		// [CHANGED] Added field("type_params", ...)
 		record_declaration: ($) =>
 			seq(
 				visibility_modifier($),
@@ -556,7 +549,6 @@ module.exports = grammar({
 				field("body", $.record_type),
 			),
 
-		// [CHANGED] Added field("type_params", ...)
 		choice_declaration: ($) =>
 			seq(
 				visibility_modifier($),
@@ -566,8 +558,6 @@ module.exports = grammar({
 				many($.newline),
 				field("body", bracedBlock($, $.choice_variant)),
 			),
-
-		// [CHANGED] choice_body inlined directly into choice_declaration
 
 		choice_variant: ($) =>
 			choice(
@@ -582,7 +572,6 @@ module.exports = grammar({
 		type_parameter_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
 
-		// [CHANGED] Added field("type_ann", ...) around type_body
 		shape_method: ($) =>
 			seq(
 				attributePrefix($),
@@ -594,7 +583,6 @@ module.exports = grammar({
 			),
 		method_default: ($) => seq($.equals, $.value_slot),
 
-		// [CHANGED] Added field("type_ann", ...) around type_body
 		signature: ($) =>
 			seq(
 				attributePrefix($),
@@ -617,7 +605,6 @@ module.exports = grammar({
 		attribute_arguments_inline: ($) =>
 			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
 
-		// Attribute values: restricted grammar for metadata (paths, literals, structured data, not control flow)
 		attribute_value: ($) =>
 			choice(
 				$.literal,
@@ -648,7 +635,6 @@ module.exports = grammar({
 				),
 			),
 
-		// [CHANGED] Added field("type_params", ...), inlined implementation_shapes to field("shape", $.path)
 		implementation: ($) =>
 			seq(
 				attributePrefix($),
@@ -663,7 +649,6 @@ module.exports = grammar({
 				field("members", bracedBlock($, $.fit_member)),
 			),
 
-		// [CHANGED] Added field("type_params", ... ), inlined implementation_shapes to field("shape", $.path)
 		derive_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -684,7 +669,6 @@ module.exports = grammar({
 				$.record_type,
 				$.parenthesized_type,
 			),
-		// [CHANGED] Removed implementation_shapes — inlined as field("shape", $.path) above
 		fit_member: ($) => choice($.fit_type_def, $.fit_method),
 		fit_type_def: ($) =>
 			seq(
@@ -702,7 +686,6 @@ module.exports = grammar({
 			),
 		method_parameter_list: ($) => parameterList($, $.binding_pattern),
 
-		// [CHANGED] Added field("type_params", ...)
 		shape_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -732,7 +715,6 @@ module.exports = grammar({
 		test_binding: ($) => seq($.kw_let, $.binding_core),
 		test_value_declaration: ($) => bareBinding($, $.binding_name),
 
-		// [CHANGED] Added field("type_ann", ...) around type_body
 		binding_core: ($) =>
 			seq(
 				opt($.kw_rec),
@@ -743,15 +725,33 @@ module.exports = grammar({
 			),
 		binding_name: ($) => reserved("global", $.identifier),
 		type_member_name: ($) => reserved("global", $.identifier),
-		expression: ($) => $.pipe_expression,
 
-		statement_expression: ($) => $.pipe_expression,
+		// [CHANGED] expression now chooses between low-precedence forms and the infix ladder.
+		// Lambda, if, let, match sit ABOVE the infix ladder — they are not atoms.
+		expression: ($) =>
+			choice(
+				$.lambda_expression,
+				$.if_expression,
+				$.let_expression,
+				$.match_expression,
+				$.pipe_expression,
+			),
 
-		// Arguments in comma-delimited call lists (same-line)
+		// [CHANGED] Same treatment for statement_expression
+		statement_expression: ($) =>
+			choice(
+				$.lambda_expression,
+				$.if_expression,
+				$.let_expression,
+				$.match_expression,
+				$.pipe_expression,
+			),
+
+		// Arguments in comma-delimited call lists (same-line): atoms only, parens needed for lambda
 		call_argument_inline: ($) => $.postfix_expression,
 
-		// Arguments in newline-delimited call lists: allow full expressions
-		call_argument_block: ($) => $.pipe_expression,
+		// [CHANGED] Block arguments allow full expressions (including lambda etc.)
+		call_argument_block: ($) => $.expression,
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		value_slot: ($) =>
@@ -933,7 +933,6 @@ module.exports = grammar({
 		binding_record_pattern_field: ($) =>
 			fieldPattern($.field_name, $.colon, $.binding_pattern),
 
-		// Payload patterns in tag constructors: excludes path_pattern to prevent bare chaining
 		tag_payload_pattern: ($) =>
 			choice(
 				$.literal,
@@ -986,8 +985,6 @@ module.exports = grammar({
 		ellipsis: ($) => "...",
 		rest_op: ($) => "..",
 
-		// [CHANGED] Added field("type_var", ...) and field("constraint", ...) on constraint_entry via existing fields,
-		// plus field("type_ann", ...) pattern on constraint_entry's type_body usage (none here — already structured)
 		constraint_clause: ($) =>
 			seq(
 				$.kw_where,
@@ -1027,7 +1024,6 @@ module.exports = grammar({
 		type_argument_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
 
-		// [CHANGED] Added field("type_ann", ...) around type_body
 		record_type_field: ($) =>
 			seq(field("name", $.field_name), $.colon, field("type_ann", $.type_body)),
 		record_type: ($) => bracedCollection($, $.record_type_field, $.semicolon),
@@ -1050,7 +1046,6 @@ module.exports = grammar({
 				$.char_literal,
 				$.text,
 			),
-		// 50% => desugars to 50 / 100. Only unsuffixed numeric forms allowed.
 		percent_literal: ($) =>
 			token(
 				choice(
