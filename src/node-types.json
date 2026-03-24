@@ -1136,6 +1136,10 @@
           {
             "type": "rbrace",
             "named": true
+          },
+          {
+            "type": "semicolon",
+            "named": true
           }
         ]
       },
@@ -2023,6 +2027,10 @@
           {
             "type": "rbrace",
             "named": true
+          },
+          {
+            "type": "semicolon",
+            "named": true
           }
         ]
       },
@@ -2318,6 +2326,10 @@
         {
           "type": "newline",
           "named": true
+        },
+        {
+          "type": "semicolon",
+          "named": true
         }
       ]
     }
@@ -2583,6 +2595,10 @@
           },
           {
             "type": "rbrace",
+            "named": true
+          },
+          {
+            "type": "semicolon",
             "named": true
           }
         ]
@@ -3802,6 +3818,10 @@
             "named": true
           },
           {
+            "type": "semicolon",
+            "named": true
+          },
+          {
             "type": "shape_member",
             "named": true
           }
@@ -4286,6 +4306,10 @@
           },
           {
             "type": "rbrace",
+            "named": true
+          },
+          {
+            "type": "semicolon",
             "named": true
           },
           {

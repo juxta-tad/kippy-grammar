@@ -647,21 +647,97 @@
                           {
                             "type": "REPEAT",
                             "content": {
-                              "type": "SEQ",
+                              "type": "CHOICE",
                               "members": [
                                 {
-                                  "type": "REPEAT1",
-                                  "content": {
-                                    "type": "SYMBOL",
-                                    "name": "newline"
-                                  }
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "choice_variant"
+                                    }
+                                  ]
                                 },
                                 {
-                                  "type": "SYMBOL",
-                                  "name": "choice_variant"
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "choice_variant"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "choice_variant"
+                                    }
+                                  ]
                                 }
                               ]
                             }
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  },
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
                           }
                         ]
                       },
@@ -1803,21 +1879,97 @@
                           {
                             "type": "REPEAT",
                             "content": {
-                              "type": "SEQ",
+                              "type": "CHOICE",
                               "members": [
                                 {
-                                  "type": "REPEAT1",
-                                  "content": {
-                                    "type": "SYMBOL",
-                                    "name": "newline"
-                                  }
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "fit_member"
+                                    }
+                                  ]
                                 },
                                 {
-                                  "type": "SYMBOL",
-                                  "name": "fit_member"
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "fit_member"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "fit_member"
+                                    }
+                                  ]
                                 }
                               ]
                             }
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  },
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
                           }
                         ]
                       },
@@ -2319,21 +2471,97 @@
                           {
                             "type": "REPEAT",
                             "content": {
-                              "type": "SEQ",
+                              "type": "CHOICE",
                               "members": [
                                 {
-                                  "type": "REPEAT1",
-                                  "content": {
-                                    "type": "SYMBOL",
-                                    "name": "newline"
-                                  }
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "shape_member"
+                                    }
+                                  ]
                                 },
                                 {
-                                  "type": "SYMBOL",
-                                  "name": "shape_member"
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "shape_member"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "shape_member"
+                                    }
+                                  ]
                                 }
                               ]
                             }
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  },
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
                           }
                         ]
                       },
@@ -2532,21 +2760,97 @@
                           {
                             "type": "REPEAT",
                             "content": {
-                              "type": "SEQ",
+                              "type": "CHOICE",
                               "members": [
                                 {
-                                  "type": "REPEAT1",
-                                  "content": {
-                                    "type": "SYMBOL",
-                                    "name": "newline"
-                                  }
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "test_statement"
+                                    }
+                                  ]
                                 },
                                 {
-                                  "type": "SYMBOL",
-                                  "name": "test_statement"
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "test_statement"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT1",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "test_statement"
+                                    }
+                                  ]
                                 }
                               ]
                             }
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  },
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
                           }
                         ]
                       },
@@ -5003,21 +5307,63 @@
                       {
                         "type": "REPEAT",
                         "content": {
-                          "type": "SEQ",
+                          "type": "CHOICE",
                           "members": [
                             {
-                              "type": "REPEAT1",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "newline"
-                              }
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "semicolon"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "binding_core"
+                                }
+                              ]
                             },
                             {
-                              "type": "SYMBOL",
-                              "name": "binding_core"
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "BLANK"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "REPEAT1",
+                                  "content": {
+                                    "type": "SYMBOL",
+                                    "name": "newline"
+                                  }
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "binding_core"
+                                }
+                              ]
                             }
                           ]
                         }
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "semicolon"
+                          },
+                          {
+                            "type": "BLANK"
+                          }
+                        ]
                       }
                     ]
                   },
@@ -5050,21 +5396,63 @@
                       {
                         "type": "REPEAT",
                         "content": {
-                          "type": "SEQ",
+                          "type": "CHOICE",
                           "members": [
                             {
-                              "type": "REPEAT1",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "newline"
-                              }
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "semicolon"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "binding_core"
+                                }
+                              ]
                             },
                             {
-                              "type": "SYMBOL",
-                              "name": "binding_core"
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "BLANK"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "REPEAT1",
+                                  "content": {
+                                    "type": "SYMBOL",
+                                    "name": "newline"
+                                  }
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "binding_core"
+                                }
+                              ]
                             }
                           ]
                         }
+                      },
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "semicolon"
+                          },
+                          {
+                            "type": "BLANK"
+                          }
+                        ]
                       }
                     ]
                   },
@@ -5148,21 +5536,97 @@
                             {
                               "type": "REPEAT",
                               "content": {
-                                "type": "SEQ",
+                                "type": "CHOICE",
                                 "members": [
                                   {
-                                    "type": "REPEAT1",
-                                    "content": {
-                                      "type": "SYMBOL",
-                                      "name": "newline"
-                                    }
+                                    "type": "SEQ",
+                                    "members": [
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "semicolon"
+                                      },
+                                      {
+                                        "type": "REPEAT",
+                                        "content": {
+                                          "type": "SYMBOL",
+                                          "name": "newline"
+                                        }
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "match_arm"
+                                      }
+                                    ]
                                   },
                                   {
-                                    "type": "SYMBOL",
-                                    "name": "match_arm"
+                                    "type": "SEQ",
+                                    "members": [
+                                      {
+                                        "type": "REPEAT1",
+                                        "content": {
+                                          "type": "SYMBOL",
+                                          "name": "newline"
+                                        }
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "semicolon"
+                                      },
+                                      {
+                                        "type": "REPEAT",
+                                        "content": {
+                                          "type": "SYMBOL",
+                                          "name": "newline"
+                                        }
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "match_arm"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "SEQ",
+                                    "members": [
+                                      {
+                                        "type": "REPEAT1",
+                                        "content": {
+                                          "type": "SYMBOL",
+                                          "name": "newline"
+                                        }
+                                      },
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "match_arm"
+                                      }
+                                    ]
                                   }
                                 ]
                               }
+                            },
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    },
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "BLANK"
+                                }
+                              ]
                             }
                           ]
                         },

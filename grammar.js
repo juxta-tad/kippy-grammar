@@ -86,18 +86,9 @@ function separated1(
 	return seq(rule, many(next), opt(separator));
 }
 
-function lineSeparated1($, rule) {
-	return seq(rule, many(seq(many1($.newline), rule)));
-}
-
 // Delimited collection with flexible interior
 function delimited($, open, close, interior) {
 	return seq(open, opt(seq(many($.newline), interior, many($.newline))), close);
-}
-
-// Braced newline-separated block
-function bracedBlock($, rule) {
-	return delimited($, $.lbrace, $.rbrace, lineSeparated1($, rule));
 }
 
 // --- Layout & Expression Helpers ---
@@ -556,7 +547,7 @@ module.exports = grammar({
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
 				many($.newline),
-				field("body", bracedBlock($, $.choice_variant)),
+				field("body", bracedCollection($, $.choice_variant, $.semicolon)),
 			),
 
 		choice_variant: ($) =>
@@ -646,7 +637,7 @@ module.exports = grammar({
 				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
 				many($.newline),
-				field("members", bracedBlock($, $.fit_member)),
+				field("members", bracedCollection($, $.fit_member, $.semicolon)),
 			),
 
 		derive_declaration: ($) =>
@@ -695,7 +686,7 @@ module.exports = grammar({
 				opt(field("type_params", $.type_parameter_list)),
 				opt(field("parents", $.shape_parents)),
 				many($.newline),
-				field("members", bracedBlock($, $.shape_member)),
+				field("members", bracedCollection($, $.shape_member, $.semicolon)),
 			),
 		shape_member: ($) => choice($.shape_type_decl, $.shape_method),
 		shape_type_decl: ($) => seq($.kw_type, field("name", $.type_member_name)),
@@ -708,7 +699,7 @@ module.exports = grammar({
 				$.kw_test,
 				field("name", $.static_text),
 				many($.newline),
-				field("body", bracedBlock($, $.test_statement)),
+				field("body", bracedCollection($, $.test_statement, $.semicolon)),
 			),
 		test_statement: ($) =>
 			choice($.test_binding, $.test_value_declaration, $.expect_statement),
@@ -822,10 +813,10 @@ module.exports = grammar({
 				seq(
 					$.kw_let,
 					choice(
-						seq(lineSeparated1($, $.binding_core), many($.newline)),
+						seq(separated1($, $.binding_core, $.semicolon), many($.newline)),
 						seq(
 							many1($.newline),
-							lineSeparated1($, $.binding_core),
+							separated1($, $.binding_core, $.semicolon),
 							many($.newline),
 						),
 					),
@@ -839,7 +830,7 @@ module.exports = grammar({
 					$.kw_match,
 					field("subject", $.pipe_expression_no_brace),
 					many($.newline),
-					field("body", bracedBlock($, $.match_arm)),
+					field("body", bracedCollection($, $.match_arm, $.semicolon)),
 				),
 			),
 		match_arm: ($) =>
