@@ -879,6 +879,10 @@
           "named": true
         },
         {
+          "type": "unit_pattern",
+          "named": true
+        },
+        {
           "type": "wildcard_pattern",
           "named": true
         }
@@ -2249,18 +2253,6 @@
         },
         {
           "type": "lambda_parameters",
-          "named": true
-        },
-        {
-          "type": "lparen",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "rparen",
           "named": true
         }
       ]
@@ -4815,6 +4807,29 @@
   },
   {
     "type": "unit_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "lparen",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rparen",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "unit_pattern",
     "named": true,
     "fields": {},
     "children": {

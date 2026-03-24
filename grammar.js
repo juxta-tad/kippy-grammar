@@ -838,17 +838,9 @@ module.exports = grammar({
 			seq(field("pattern", $.pattern), $.arrow, $.match_arm_value),
 		lambda_parameters: ($) => parameterList($, $.binding_pattern),
 		lambda_expression: ($) =>
-			prec.right(choice(
-				seq(
-					$.kw_fn,
-					$.lparen,
-					many($.newline),
-					$.rparen,
-					$.fat_arrow,
-					$.lambda_body,
-				),
+			prec.right(
 				seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body),
-			)),
+			),
 		if_expression: ($) =>
 			prec.right(
 				seq(
@@ -867,6 +859,7 @@ module.exports = grammar({
 		unguarded_pattern: ($) => $.or_pattern,
 		binding_pattern: ($) =>
 			choice(
+				$.unit_pattern,
 				$.wildcard_pattern,
 				$.identifier,
 				$.binding_list_pattern,
@@ -900,6 +893,7 @@ module.exports = grammar({
 				field("constructor", $.path),
 			),
 		wildcard_pattern: ($) => $.wildcard,
+		unit_pattern: ($) => seq($.lparen, many($.newline), $.rparen),
 		binding_list_pattern: ($) =>
 			seq(
 				$.lbracket,

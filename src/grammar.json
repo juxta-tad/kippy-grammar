@@ -5822,60 +5822,23 @@
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
-        "type": "CHOICE",
+        "type": "SEQ",
         "members": [
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "kw_fn"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "lparen"
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "newline"
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "rparen"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "fat_arrow"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "lambda_body"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "kw_fn"
           },
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "kw_fn"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "lambda_parameters"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "fat_arrow"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "lambda_body"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "lambda_parameters"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "fat_arrow"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "lambda_body"
           }
         ]
       }
@@ -5972,6 +5935,10 @@
     "binding_pattern": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "unit_pattern"
+        },
         {
           "type": "SYMBOL",
           "name": "wildcard_pattern"
@@ -6171,6 +6138,26 @@
     "wildcard_pattern": {
       "type": "SYMBOL",
       "name": "wildcard"
+    },
+    "unit_pattern": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "lparen"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "newline"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rparen"
+        }
+      ]
     },
     "binding_list_pattern": {
       "type": "SEQ",
