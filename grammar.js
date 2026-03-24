@@ -656,6 +656,7 @@ module.exports = grammar({
 				$.applied_type,
 				$.path,
 				$.self_type,
+				$.unit_type,
 				$.tuple_type,
 				$.record_type,
 				$.parenthesized_type,
@@ -961,6 +962,7 @@ module.exports = grammar({
 				$.applied_type,
 				$.path,
 				$.self_type,
+				$.unit_type,
 				$.wildcard_type,
 				$.tuple_type,
 				$.record_type,
@@ -1013,6 +1015,9 @@ module.exports = grammar({
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
+
+		// () — unit type
+		unit_type: ($) => seq($.lparen, many($.newline), $.rparen),
 
 		record_type_field: ($) =>
 			seq(field("name", $.field_name), $.colon, field("type_ann", $.type_body)),

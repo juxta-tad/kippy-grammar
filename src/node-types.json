@@ -724,6 +724,10 @@
           "named": true
         },
         {
+          "type": "unit_type",
+          "named": true
+        },
+        {
           "type": "wildcard_type",
           "named": true
         }
@@ -1975,6 +1979,10 @@
         },
         {
           "type": "tuple_type",
+          "named": true
+        },
+        {
+          "type": "unit_type",
           "named": true
         }
       ]
@@ -4807,6 +4815,29 @@
   },
   {
     "type": "unit_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "lparen",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "rparen",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "unit_type",
     "named": true,
     "fields": {},
     "children": {
