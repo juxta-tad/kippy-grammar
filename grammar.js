@@ -999,18 +999,19 @@ module.exports = grammar({
 					many(seq($.plus_op, field("shape", $.path))),
 				),
 			),
-			function_type: ($) =>
-				seq(
-					$.kw_fn,
-					collection(
-						$,
-						$.lparen,
-						$.rparen,
-						field("param", $.type_expression),
-						$.comma,
-					),
-					opt(seq($.arrow, field("result", $.type_expression))),
+
+		function_type: ($) =>
+			seq(
+				$.kw_fn,
+				collection(
+					$,
+					$.lparen,
+					$.rparen,
+					field("param", $.type_expression),
+					$.comma,
 				),
+				opt(seq($.arrow, field("result", $.type_expression))),
+			),
 		applied_type: ($) => seq(field("constructor", $.path), field("args", $.type_argument_list)),
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
