@@ -1004,18 +1004,21 @@ module.exports = grammar({
 				),
 			),
 
+		fn_params: ($) =>
+			choice(
+				$.unit_type,
+				delimited(
+					$,
+					$.lparen,
+					$.rparen,
+					separated1($, field("param", $.type_expression), $.comma),
+				),
+			),
+
 		function_type: ($) =>
 			seq(
 				$.kw_fn,
-				choice(
-					$.unit_type,
-					delimited(
-						$,
-						$.lparen,
-						$.rparen,
-						separated1($, field("param", $.type_expression), $.comma),
-					),
-				),
+				$.fn_params,
 				opt(seq($.arrow, field("result", $.type_expression))),
 			),
 		applied_type: ($) =>
