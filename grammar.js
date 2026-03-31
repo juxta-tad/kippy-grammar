@@ -253,10 +253,7 @@ function buildExpressionLadder(suffix, baseRule) {
 				seq(
 					field("lhs", $[name("add_expression")]),
 					opt(seq(
-						field(
-							"op",
-							choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-						),
+						field("op", choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op)),
 						field("rhs", $[name("add_expression")]),
 					)),
 				),
@@ -266,12 +263,7 @@ function buildExpressionLadder(suffix, baseRule) {
 				PREC.ADD,
 				seq(
 					field("lhs", $[name("mul_expression")]),
-					many(
-						seq(
-							field("op", choice($.plus_op, $.minus_op)),
-							field("rhs", $[name("mul_expression")]),
-						),
-					),
+					many(seq(field("op", choice($.plus_op, $.minus_op)), field("rhs", $[name("mul_expression")]))),
 				),
 			),
 		[name("mul_expression")]: ($) =>
@@ -350,7 +342,9 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 			),
 
 		// [CHANGED] primary_expression is now atoms only — no lambda/if/let/match
-		[s("primary_expression")]: ($) => choice(...inlineChoices($)),
+		[s("primary_expression")]: ($) =>
+			choice(...inlineChoices($)),
+
 		// [REMOVED] inline_expression eliminated — its choices folded into primary_expression
 	};
 }
@@ -598,11 +592,7 @@ module.exports = grammar({
 				opt($.semicolon),
 			),
 		attribute: ($) =>
-			seq(
-				$.hash_sign,
-				field("path", $.path),
-				opt(field("args", $.attribute_arguments_inline)),
-			),
+			seq($.hash_sign, field("path", $.path), opt(field("args", $.attribute_arguments_inline))),
 		attribute_arguments_inline: ($) =>
 			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
 
@@ -1004,25 +994,19 @@ module.exports = grammar({
 				),
 			),
 
-		fn_params: ($) =>
-			choice(
-				$.unit_type,
-				delimited(
-					$,
-					$.lparen,
-					$.rparen,
-					separated1($, field("param", $.type_expression), $.comma),
-				),
-			),
-
 		function_type: ($) =>
 			seq(
 				$.kw_fn,
-				$.fn_params,
+				collection(
+					$,
+					$.lparen,
+					$.rparen,
+					field("param", $.type_expression),
+					$.comma,
+				),
 				opt(seq($.arrow, field("result", $.type_expression))),
 			),
-		applied_type: ($) =>
-			seq(field("constructor", $.path), field("args", $.type_argument_list)),
+		applied_type: ($) => seq(field("constructor", $.path), field("args", $.type_argument_list)),
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),

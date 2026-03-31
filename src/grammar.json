@@ -7269,12 +7269,12 @@
         ]
       }
     },
-    "fn_params": {
-      "type": "CHOICE",
+    "function_type": {
+      "type": "SEQ",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "unit_type"
+          "name": "kw_fn"
         },
         {
           "type": "SEQ",
@@ -7397,19 +7397,6 @@
               "name": "rparen"
             }
           ]
-        }
-      ]
-    },
-    "function_type": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "kw_fn"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "fn_params"
         },
         {
           "type": "CHOICE",
