@@ -691,7 +691,7 @@ module.exports = grammar({
 			),
 		shape_member: ($) => choice($.shape_type_decl, $.shape_method),
 		shape_type_decl: ($) => seq($.kw_type, field("name", $.type_member_name)),
-		shape_parents: ($) => seq($.colon, sep1(field("parent", $.path), $.comma)),
+		shape_parents: ($) => seq($.colon, sep1(field("parent", choice($.applied_type, $.path)), $.comma)),
 		expect_statement: ($) =>
 			seq($.kw_expect, field("value", $.statement_expression)),
 		test_declaration: ($) =>

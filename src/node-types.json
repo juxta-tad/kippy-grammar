@@ -3975,6 +3975,10 @@
         "required": true,
         "types": [
           {
+            "type": "applied_type",
+            "named": true
+          },
+          {
             "type": "path",
             "named": true
           }

@@ -2636,8 +2636,17 @@
               "type": "FIELD",
               "name": "parent",
               "content": {
-                "type": "SYMBOL",
-                "name": "path"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "applied_type"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "path"
+                  }
+                ]
               }
             },
             {
@@ -2653,8 +2662,17 @@
                     "type": "FIELD",
                     "name": "parent",
                     "content": {
-                      "type": "SYMBOL",
-                      "name": "path"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "applied_type"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "path"
+                        }
+                      ]
                     }
                   }
                 ]
