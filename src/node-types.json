@@ -683,7 +683,15 @@
           "named": true
         },
         {
-          "type": "literal",
+          "type": "char_literal",
+          "named": true
+        },
+        {
+          "type": "float_literal",
+          "named": true
+        },
+        {
+          "type": "int_literal",
           "named": true
         },
         {
@@ -695,7 +703,15 @@
           "named": true
         },
         {
+          "type": "percent_literal",
+          "named": true
+        },
+        {
           "type": "rparen",
+          "named": true
+        },
+        {
+          "type": "static_text",
           "named": true
         }
       ]

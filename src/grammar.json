@@ -1558,7 +1558,23 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "literal"
+          "name": "percent_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "int_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "float_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "char_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "static_text"
         },
         {
           "type": "SYMBOL",

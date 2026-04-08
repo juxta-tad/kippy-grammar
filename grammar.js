@@ -635,7 +635,11 @@ module.exports = grammar({
 
 		attribute_value: ($) =>
 			choice(
-				$.literal,
+				$.percent_literal,
+				$.int_literal,
+				$.float_literal,
+				$.char_literal,
+				$.static_text,
 				$.path,
 				$.attribute_list_value,
 				$.attribute_record_value,
