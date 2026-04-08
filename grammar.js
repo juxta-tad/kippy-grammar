@@ -198,7 +198,6 @@ function parameterList($, paramRule) {
 }
 
 // --- Bare binding: pattern : type = value ---
-// [CHANGED] Added field("type_ann", ...) around type_body
 function bareBinding($, nameRule) {
 	return seq(
 		field("name", nameRule),
@@ -209,7 +208,6 @@ function bareBinding($, nameRule) {
 }
 
 // --- Common Patterns ---
-// [CHANGED] Wrap each attribute in field("attribute", ...)
 function attributePrefix($) {
 	return many(field("attribute", seq($.attribute, opt($.newline))));
 }
@@ -219,7 +217,6 @@ function visibility_modifier($) {
 }
 
 // --- Expression Ladder Generator ---
-// [CHANGED] Added field("op", ...), field("lhs", ...), field("rhs", ...) throughout
 function buildExpressionLadder(suffix, baseRule) {
 	const name = (level) => `${level}${suffix}`;
 	return {
@@ -791,7 +788,6 @@ module.exports = grammar({
 		// Arguments in comma-delimited call lists (same-line): atoms only, parens needed for lambda
 		call_argument_inline: ($) => $.postfix_expression,
 
-		// [CHANGED] Block arguments allow full expressions (including lambda etc.)
 		call_argument_block: ($) => $.expression,
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
@@ -1106,7 +1102,6 @@ module.exports = grammar({
 		// () — unit type
 		unit_type: ($) => seq($.lparen, many($.newline), $.rparen),
 
-		// [CHANGED] Allow attributes on record fields, Rust-style.
 		record_type_field: ($) =>
 			seq(
 				attributePrefix($),
