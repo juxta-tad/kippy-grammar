@@ -198,6 +198,7 @@ function parameterList($, paramRule) {
 }
 
 // --- Bare binding: pattern : type = value ---
+// [CHANGED] Added field("type_ann", ...) around type_body
 function bareBinding($, nameRule) {
 	return seq(
 		field("name", nameRule),
@@ -208,8 +209,11 @@ function bareBinding($, nameRule) {
 }
 
 // --- Common Patterns ---
+// [CHANGED] Wrap each attribute in field("attribute", ...)
+// [CHANGED] Allow zero or more newlines after each attribute so attributes
+// can appear inline or on preceding lines without requiring layout sensitivity.
 function attributePrefix($) {
-	return many(field("attribute", seq($.attribute, opt($.newline))));
+	return many(field("attribute", seq($.attribute, many($.newline))));
 }
 
 function visibility_modifier($) {
@@ -217,6 +221,7 @@ function visibility_modifier($) {
 }
 
 // --- Expression Ladder Generator ---
+// [CHANGED] Added field("op", ...), field("lhs", ...), field("rhs", ...) throughout
 function buildExpressionLadder(suffix, baseRule) {
 	const name = (level) => `${level}${suffix}`;
 	return {
@@ -250,7 +255,10 @@ function buildExpressionLadder(suffix, baseRule) {
 				seq(
 					field("lhs", $[name("add_expression")]),
 					opt(seq(
-						field("op", choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op)),
+						field(
+							"op",
+							choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
+						),
 						field("rhs", $[name("add_expression")]),
 					)),
 				),
@@ -260,7 +268,12 @@ function buildExpressionLadder(suffix, baseRule) {
 				PREC.ADD,
 				seq(
 					field("lhs", $[name("mul_expression")]),
-					many(seq(field("op", choice($.plus_op, $.minus_op)), field("rhs", $[name("mul_expression")]))),
+					many(
+						seq(
+							field("op", choice($.plus_op, $.minus_op)),
+							field("rhs", $[name("mul_expression")]),
+						),
+					),
 				),
 			),
 		[name("mul_expression")]: ($) =>
@@ -339,9 +352,7 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 			),
 
 		// [CHANGED] primary_expression is now atoms only — no lambda/if/let/match
-		[s("primary_expression")]: ($) =>
-			choice(...inlineChoices($)),
-
+		[s("primary_expression")]: ($) => choice(...inlineChoices($)),
 		// [REMOVED] inline_expression eliminated — its choices folded into primary_expression
 	};
 }
@@ -480,7 +491,7 @@ module.exports = grammar({
 				$.implementation,
 			),
 
-		// [CHANGED] Allow outer attributes on use items, Rust-style.
+		// [CHANGED] Allow attributes on use items, Rust-style.
 		use_statement: ($) =>
 			seq(
 				attributePrefix($),
@@ -524,8 +535,10 @@ module.exports = grammar({
 				$.kw_distinct,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
-				$.equals,
-				field("body", $.type_expression),
+				opt(seq(
+					$.equals,
+					field("body", $.type_expression),
+				)),
 			),
 
 		// [CHANGED] Allow attributes on tag declarations.
@@ -562,7 +575,7 @@ module.exports = grammar({
 				field("body", bracedCollection($, $.choice_variant, $.semicolon)),
 			),
 
-		// [CHANGED] Allow attributes on individual variants, Rust-style.
+		// [CHANGED] Allow attributes on individual choice variants, Rust-style.
 		choice_variant: ($) =>
 			seq(
 				attributePrefix($),
@@ -611,7 +624,11 @@ module.exports = grammar({
 			),
 
 		attribute: ($) =>
-			seq($.hash_sign, field("path", $.path), opt(field("args", $.attribute_arguments_inline))),
+			seq(
+				$.hash_sign,
+				field("path", $.path),
+				opt(field("args", $.attribute_arguments_inline)),
+			),
 
 		attribute_arguments_inline: ($) =>
 			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
@@ -723,7 +740,7 @@ module.exports = grammar({
 
 		shape_member: ($) => choice($.shape_type_decl, $.shape_method),
 
-		// [CHANGED] Allow attributes on shape associated type declarations.
+		// [CHANGED] Allow attributes on associated type declarations in shapes.
 		shape_type_decl: ($) =>
 			seq(
 				attributePrefix($),
@@ -732,7 +749,10 @@ module.exports = grammar({
 			),
 
 		shape_parents: ($) =>
-			seq($.colon, sep1(field("parent", choice($.applied_type, $.path)), $.comma)),
+			seq(
+				$.colon,
+				sep1(field("parent", choice($.applied_type, $.path)), $.comma),
+			),
 
 		expect_statement: ($) =>
 			seq($.kw_expect, field("value", $.statement_expression)),
@@ -788,20 +808,18 @@ module.exports = grammar({
 		// Arguments in comma-delimited call lists (same-line): atoms only, parens needed for lambda
 		call_argument_inline: ($) => $.postfix_expression,
 
+		// [CHANGED] Block arguments allow full expressions (including lambda etc.)
 		call_argument_block: ($) => $.expression,
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
-
 		value_slot: ($) =>
 			field("value", seq(many($.newline), $.statement_expression)),
-
 		if_then_value: ($) => layoutExpr($, "then_value"),
 		if_else_value: ($) => layoutExpr($, "else_value"),
 		let_body: ($) => layoutExpr($, "body"),
 		lambda_body: ($) => layoutExpr($, "body"),
 		method_body: ($) => layoutExpr($, "body"),
 		match_arm_value: ($) => layoutExpr($, "value"),
-
 		...expressionRules,
 		...noBraceExpressionRules,
 		...expressionBottom,
@@ -1093,7 +1111,6 @@ module.exports = grammar({
 
 		applied_type: ($) =>
 			seq(field("constructor", $.path), field("args", $.type_argument_list)),
-
 		self_type: ($) => $.kw_Self,
 
 		type_argument_list: ($) =>
@@ -1102,6 +1119,7 @@ module.exports = grammar({
 		// () — unit type
 		unit_type: ($) => seq($.lparen, many($.newline), $.rparen),
 
+		// [CHANGED] Allow attributes on record fields, Rust-style.
 		record_type_field: ($) =>
 			seq(
 				attributePrefix($),
