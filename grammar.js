@@ -51,8 +51,8 @@ const HEX_DIGITS = "(?:[0-9a-fA-F]|[0-9a-fA-F][0-9a-fA-F_]*[0-9a-fA-F])";
 const OCT_DIGITS = "(?:[0-7]|[0-7][0-7_]*[0-7])";
 const BIN_DIGITS = "(?:[01]|[01][01_]*[01])";
 
-const INT_SUFFIX = "(?:u8|u16|u32|u64|i8|i16|i32|i64)?";
-const FLOAT_SUFFIX = "(?:f32|f64)?";
+const INT_SUFFIX = "(?:U8|U16|U32|U64|I8|I16|I32|I64)?";
+const FLOAT_SUFFIX = "(?:F32|F64)?";
 const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
 
