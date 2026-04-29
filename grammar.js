@@ -146,8 +146,8 @@ function looseSeparated2Plus($, rule, separator) {
 }
 
 // Collection: delimited with interior separated items
-function collection($, open, close, item, separator) {
-	return delimited($, open, close, separated1($, item, separator));
+function collection($, open, close, item, separator, { allow_newline_separator = true } = {}) {
+	return delimited($, open, close, separated1($, item, separator, { allow_newline_separator }));
 }
 
 // Tuple: delimited with 2+ elements required
@@ -161,17 +161,20 @@ function tuple($, open, close, item, separator) {
 }
 
 // Flexible-separator collection inside arbitrary delimiters
-function flexCollection($, open, close, rule, separator) {
+function flexCollection($, open, close, rule, separator, { allow_newline_separator = true } = {}) {
+	const nextItem = allow_newline_separator
+		? choice(
+			seq(separator, many($.newline), rule),
+			seq(many1($.newline), opt(separator), many($.newline), rule),
+		)
+		: seq(separator, many($.newline), rule);
 	return delimited(
 		$,
 		open,
 		close,
 		seq(
 			rule,
-			many(choice(
-				seq(separator, many($.newline), rule),
-				seq(many1($.newline), opt(separator), many($.newline), rule),
-			)),
+			many(nextItem),
 			opt(seq(many($.newline), separator)),
 		),
 	);
@@ -504,7 +507,7 @@ module.exports = grammar({
 		import_set: ($) =>
 			seq(
 				$.lbrace,
-				opt(separated1($, $.import_item, $.comma)),
+				opt(separated1($, $.import_item, $.comma, { allow_newline_separator: false })),
 				$.rbrace,
 			),
 
@@ -584,7 +587,7 @@ module.exports = grammar({
 			),
 
 		type_parameter_list: ($) =>
-			collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
+			collection($, $.lbracket, $.rbracket, $.identifier, $.comma, { allow_newline_separator: false }),
 
 		shape_method: ($) =>
 			seq(
@@ -625,7 +628,7 @@ module.exports = grammar({
 			),
 
 		attribute_arguments_inline: ($) =>
-			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
+			collection($, $.lparen, $.rparen, $.attribute_argument, $.comma, { allow_newline_separator: false }),
 
 		attribute_value: ($) =>
 			choice(
@@ -1073,7 +1076,7 @@ module.exports = grammar({
 				$.kw_where,
 				choice(
 					$.constraint_entry,
-					flexCollection($, $.lparen, $.rparen, $.constraint_entry, $.comma),
+					flexCollection($, $.lparen, $.rparen, $.constraint_entry, $.comma, { allow_newline_separator: false }),
 				),
 			),
 
@@ -1101,6 +1104,7 @@ module.exports = grammar({
 					$.rparen,
 					field("param", $.type_expression),
 					$.comma,
+					{ allow_newline_separator: false },
 				),
 				opt(seq($.arrow, field("result", $.type_expression))),
 			),
@@ -1110,7 +1114,7 @@ module.exports = grammar({
 		self_type: ($) => $.kw_Self,
 
 		type_argument_list: ($) =>
-			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
+			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma, { allow_newline_separator: false }),
 
 		// () — unit type
 		unit_type: ($) => seq($.lparen, many($.newline), $.rparen),
