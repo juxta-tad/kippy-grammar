@@ -752,7 +752,7 @@ module.exports = grammar({
 			),
 
 		expect_statement: ($) =>
-			seq($.kw_expect, field("value", $.statement_expression)),
+			seq($.kw_expect, field("value", $.inline_value_slot)),
 
 		test_declaration: ($) =>
 			seq(
