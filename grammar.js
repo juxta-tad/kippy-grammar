@@ -615,7 +615,6 @@ module.exports = grammar({
 				visibility_modifier($),
 				opt($.kw_rec),
 				bareBinding($, $.binding_name),
-				opt($.semicolon),
 			),
 
 		attribute: ($) =>
