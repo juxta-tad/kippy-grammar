@@ -491,7 +491,6 @@ module.exports = grammar({
 				$.value_declaration,
 				$.shape_declaration,
 				$.test_declaration,
-				$.expect_statement,
 				$.implementation,
 			),
 
