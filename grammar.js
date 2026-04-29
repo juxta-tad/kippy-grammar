@@ -71,20 +71,18 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-// [CHANGED] separated1 now treats newlines and semicolons as interchangeable
-// terminators between items. Any mix of newlines, semicolons, or both works.
+// separated1: uses named $.item_sep for newline/semicolon interchangeability,
+// or a raw comma-only sep when allow_newline_separator is false.
 function separated1(
 	$,
 	rule,
 	separator,
 	{ allow_newline_separator = true } = {},
 ) {
-	const itemSep = allow_newline_separator
-		? choice(
-			seq(separator, many($.newline)),
-			seq(many1($.newline), opt(seq(separator, many($.newline)))),
-		)
-		: seq(separator, many($.newline));
+	if (allow_newline_separator) {
+		return seq(rule, many(seq($.item_sep, rule)), opt($.item_sep));
+	}
+	const itemSep = seq(separator, many($.newline));
 	return seq(rule, many(seq(itemSep, rule)), opt(itemSep));
 }
 
@@ -102,19 +100,12 @@ function layoutType($, name = "type") {
 	return field(name, seq(many($.newline), $.type_expression));
 }
 
-// [CHANGED] fileBody now allows top-level items to be separated by either
-// newlines OR semicolons. Items are paragraph-level by convention but the
-// grammar no longer enforces it.
+// fileBody: uses named $.item_sep for top-level separation.
 function fileBody($, header, item) {
-	const topSep = choice(
-		many1($.newline),
-		seq($.semicolon, many($.newline)),
-		seq(many1($.newline), $.semicolon, many($.newline)),
-	);
 	return seq(
 		many($.newline),
-		opt(seq(header, topSep)),
-		opt(seq(item, many(seq(topSep, item)))),
+		opt(seq(header, $.item_sep)),
+		opt(seq(item, many(seq($.item_sep, item)))),
 	);
 }
 
@@ -138,12 +129,9 @@ function fieldPattern(fieldName, colon, valueRule) {
 
 function looseSeparated2Plus($, rule, separator, { allow_newline_separator = true } = {}) {
 	const next = allow_newline_separator
-		? choice(
-			seq(separator, many($.newline), rule),
-			seq(many1($.newline), opt(separator), many($.newline), rule),
-		)
+		? seq($.item_sep, rule)
 		: seq(separator, many($.newline), rule);
-	return seq(rule, next, many(next), opt(separator));
+	return seq(rule, next, many(next), opt($.item_sep));
 }
 
 // Collection: delimited with interior separated items
@@ -163,12 +151,20 @@ function tuple($, open, close, item, separator, { allow_newline_separator = true
 
 // Flexible-separator collection inside arbitrary delimiters
 function flexCollection($, open, close, rule, separator, { allow_newline_separator = true } = {}) {
-	const nextItem = allow_newline_separator
-		? choice(
-			seq(separator, many($.newline), rule),
-			seq(many1($.newline), opt(separator), many($.newline), rule),
-		)
-		: seq(separator, many($.newline), rule);
+	if (allow_newline_separator) {
+		return seq(
+			open,
+			many($.newline),
+			opt(seq(
+				rule,
+				many(seq($.item_sep, rule)),
+				opt($.item_sep),
+			)),
+			many($.newline),
+			close,
+		);
+	}
+	const nextItem = seq(separator, many($.newline), rule);
 	return delimited(
 		$,
 		open,
@@ -478,6 +474,13 @@ module.exports = grammar({
 	],
 
 	rules: {
+		// Named separator rule — gives tree-sitter its own state machine,
+		// preventing repeat-state sharing with source_file_repeat1.
+		item_sep: ($) => choice(
+			seq($.semicolon, many($.newline)),
+			seq(many1($.newline), opt(seq($.semicolon, many($.newline)))),
+		),
+
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 		module_item: ($) => choice($.use_statement, $.declaration),
 		declaration: ($) =>
