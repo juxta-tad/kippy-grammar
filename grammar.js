@@ -479,8 +479,8 @@ module.exports = grammar({
 		// Named separator rule — gives tree-sitter its own state machine,
 		// preventing repeat-state sharing with source_file_repeat1.
 		item_sep: ($) => choice(
-			seq($.semicolon, many($.newline)),
-			seq(many1($.newline), opt(seq($.semicolon, many($.newline)))),
+			$.semicolon,
+			many1($.newline),
 		),
 
 		module_item: ($) => choice($.use_statement, $.declaration),
