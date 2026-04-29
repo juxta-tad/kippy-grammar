@@ -114,7 +114,7 @@ function fileBody($, header, item) {
 	return seq(
 		many($.newline),
 		opt(seq(header, topSep)),
-		opt(seq(item, many(seq(topSep, item)), opt(topSep))),
+		opt(seq(item, many(seq(topSep, item)))),
 	);
 }
 
@@ -879,14 +879,20 @@ module.exports = grammar({
 				$.rparen,
 			),
 
-		// [CHANGED] let_expression: one unified form. Bindings separated by
-		// `;` or newlines or both, freely mixed. No more multi-line trigger.
+		// [CHANGED] let_expression: bindings wrapped in braces, separated by
+		// `;` or newlines or both. Fully one-linable, no ambiguity.
+		// let { x = 1; y = 2 } in x + y
+		// let { x = 1\n y = 2 } in x + y
 		let_expression: ($) =>
 			prec.right(
 				seq(
 					$.kw_let,
 					many($.newline),
+					$.lbrace,
+					many($.newline),
 					separated1($, $.binding_core, $.semicolon),
+					many($.newline),
+					$.rbrace,
 					many($.newline),
 					$.kw_in,
 					$.let_body,
