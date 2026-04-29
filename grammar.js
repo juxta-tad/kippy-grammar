@@ -136,12 +136,13 @@ function fieldPattern(fieldName, colon, valueRule) {
 	);
 }
 
-// [CHANGED] looseSeparated2Plus uses the same newline-or-separator policy.
-function looseSeparated2Plus($, rule, separator) {
-	const next = choice(
-		seq(separator, many($.newline), rule),
-		seq(many1($.newline), opt(separator), many($.newline), rule),
-	);
+function looseSeparated2Plus($, rule, separator, { allow_newline_separator = true } = {}) {
+	const next = allow_newline_separator
+		? choice(
+			seq(separator, many($.newline), rule),
+			seq(many1($.newline), opt(separator), many($.newline), rule),
+		)
+		: seq(separator, many($.newline), rule);
 	return seq(rule, next, many(next), opt(separator));
 }
 
@@ -151,12 +152,12 @@ function collection($, open, close, item, separator, { allow_newline_separator =
 }
 
 // Tuple: delimited with 2+ elements required
-function tuple($, open, close, item, separator) {
+function tuple($, open, close, item, separator, { allow_newline_separator = true } = {}) {
 	return delimited(
 		$,
 		open,
 		close,
-		looseSeparated2Plus($, field("element", item), separator),
+		looseSeparated2Plus($, field("element", item), separator, { allow_newline_separator }),
 	);
 }
 
@@ -871,7 +872,7 @@ module.exports = grammar({
 		field_name: ($) => reserved("global", $.identifier),
 
 		tuple_expression: ($) =>
-			tuple($, $.lparen_hash, $.rparen, $.expression, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.expression, $.semicolon, { allow_newline_separator: false }),
 
 		parenthesized_expression: ($) =>
 			seq(
@@ -995,7 +996,7 @@ module.exports = grammar({
 			),
 
 		binding_tuple_pattern: ($) =>
-			tuple($, $.lparen_hash, $.rparen, $.binding_pattern, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.binding_pattern, $.semicolon, { allow_newline_separator: false }),
 
 		binding_record_pattern: ($) =>
 			seq(
@@ -1032,7 +1033,7 @@ module.exports = grammar({
 		rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
 
 		tuple_pattern: ($) =>
-			tuple($, $.lparen_hash, $.rparen, $.pattern, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.pattern, $.semicolon, { allow_newline_separator: false }),
 
 		record_pattern: ($) =>
 			seq(
@@ -1129,7 +1130,7 @@ module.exports = grammar({
 		record_type: ($) => flexCollection($, $.lbrace, $.rbrace, $.record_type_field, $.comma, { allow_newline_separator: false }),
 
 		tuple_type: ($) =>
-			tuple($, $.lparen_hash, $.rparen, $.type_expression, $.semicolon),
+			tuple($, $.lparen_hash, $.rparen, $.type_expression, $.comma, { allow_newline_separator: false }),
 
 		wildcard_type: ($) => $.wildcard,
 
