@@ -219,7 +219,7 @@ function bareBinding($, nameRule) {
 		field("name", nameRule),
 		opt(seq($.colon, field("type_ann", $.type_body))),
 		$.equals,
-		$.inline_value_slot,
+		$.value_slot,
 	);
 }
 
@@ -467,7 +467,6 @@ module.exports = grammar({
 
 	inline: ($) => [
 		$.value_slot,
-		$.inline_value_slot,
 		$.match_arm_value,
 		$.method_body,
 		$.lambda_body,
@@ -492,6 +491,7 @@ module.exports = grammar({
 				$.value_declaration,
 				$.shape_declaration,
 				$.test_declaration,
+				$.expect_statement,
 				$.implementation,
 			),
 
@@ -616,6 +616,7 @@ module.exports = grammar({
 			seq(
 				attributePrefix($),
 				visibility_modifier($),
+				$.kw_let,
 				opt($.kw_rec),
 				bareBinding($, $.binding_name),
 			),
@@ -754,7 +755,7 @@ module.exports = grammar({
 			),
 
 		expect_statement: ($) =>
-			seq($.kw_expect, field("value", $.inline_value_slot)),
+			seq($.kw_expect, field("value", $.statement_expression)),
 
 		test_declaration: ($) =>
 			seq(
@@ -808,7 +809,6 @@ module.exports = grammar({
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		value_slot: ($) =>
 			field("value", seq(many($.newline), $.statement_expression)),
-		inline_value_slot: ($) => field("value", $.statement_expression),
 		if_then_value: ($) => layoutExpr($, "then_value"),
 		if_else_value: ($) => layoutExpr($, "else_value"),
 		let_body: ($) => layoutExpr($, "body"),
