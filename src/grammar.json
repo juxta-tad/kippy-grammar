@@ -24,8 +24,29 @@
                   "name": "module_declaration"
                 },
                 {
-                  "type": "SYMBOL",
-                  "name": "item_sep"
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "semicolon"
+                        },
+                        {
+                          "type": "REPEAT",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "file_break"
+                    }
+                  ]
                 }
               ]
             },
@@ -50,8 +71,29 @@
                     "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "item_sep"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              },
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "file_break"
+                          }
+                        ]
                       },
                       {
                         "type": "SYMBOL",
@@ -69,15 +111,31 @@
         }
       ]
     },
-    "item_sep": {
-      "type": "CHOICE",
+    "collection_break": {
+      "type": "SEQ",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "semicolon"
+          "name": "newline"
         },
         {
-          "type": "REPEAT1",
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "newline"
+          }
+        }
+      ]
+    },
+    "file_break": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "newline"
+        },
+        {
+          "type": "REPEAT",
           "content": {
             "type": "SYMBOL",
             "name": "newline"
@@ -788,8 +846,29 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "SYMBOL",
-                              "name": "item_sep"
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "collection_break"
+                                }
+                              ]
                             },
                             {
                               "type": "SYMBOL",
@@ -802,8 +881,20 @@
                         "type": "CHOICE",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              }
+                            ]
                           },
                           {
                             "type": "BLANK"
@@ -1544,8 +1635,29 @@
                         "type": "SEQ",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  },
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "collection_break"
+                              }
+                            ]
                           },
                           {
                             "type": "SYMBOL",
@@ -1558,8 +1670,20 @@
                       "type": "CHOICE",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "item_sep"
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "REPEAT",
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "newline"
+                              }
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "semicolon"
+                            }
+                          ]
                         },
                         {
                           "type": "BLANK"
@@ -1618,8 +1742,29 @@
                     "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "item_sep"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              },
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "collection_break"
+                          }
+                        ]
                       },
                       {
                         "type": "SYMBOL",
@@ -1632,8 +1777,20 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "item_sep"
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "REPEAT",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          }
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "semicolon"
+                        }
+                      ]
                     },
                     {
                       "type": "BLANK"
@@ -1853,8 +2010,29 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "SYMBOL",
-                              "name": "item_sep"
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "collection_break"
+                                }
+                              ]
                             },
                             {
                               "type": "SYMBOL",
@@ -1867,8 +2045,20 @@
                         "type": "CHOICE",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              }
+                            ]
                           },
                           {
                             "type": "BLANK"
@@ -2340,8 +2530,29 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "SYMBOL",
-                              "name": "item_sep"
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "collection_break"
+                                }
+                              ]
                             },
                             {
                               "type": "SYMBOL",
@@ -2354,8 +2565,20 @@
                         "type": "CHOICE",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              }
+                            ]
                           },
                           {
                             "type": "BLANK"
@@ -2593,8 +2816,29 @@
                           "type": "SEQ",
                           "members": [
                             {
-                              "type": "SYMBOL",
-                              "name": "item_sep"
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SEQ",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "semicolon"
+                                    },
+                                    {
+                                      "type": "REPEAT",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "newline"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "collection_break"
+                                }
+                              ]
                             },
                             {
                               "type": "SYMBOL",
@@ -2607,8 +2851,20 @@
                         "type": "CHOICE",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              }
+                            ]
                           },
                           {
                             "type": "BLANK"
@@ -4162,8 +4418,29 @@
                         "type": "SEQ",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  },
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "collection_break"
+                              }
+                            ]
                           },
                           {
                             "type": "SYMBOL",
@@ -4176,8 +4453,20 @@
                       "type": "CHOICE",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "item_sep"
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "REPEAT",
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "newline"
+                              }
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "semicolon"
+                            }
+                          ]
                         },
                         {
                           "type": "BLANK"
@@ -4252,8 +4541,29 @@
                         "type": "SEQ",
                         "members": [
                           {
-                            "type": "SYMBOL",
-                            "name": "item_sep"
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "semicolon"
+                                  },
+                                  {
+                                    "type": "REPEAT",
+                                    "content": {
+                                      "type": "SYMBOL",
+                                      "name": "newline"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "SYMBOL",
+                                "name": "collection_break"
+                              }
+                            ]
                           },
                           {
                             "type": "SYMBOL",
@@ -4266,8 +4576,20 @@
                       "type": "CHOICE",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "item_sep"
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "REPEAT",
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "newline"
+                              }
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "semicolon"
+                            }
+                          ]
                         },
                         {
                           "type": "BLANK"
@@ -4372,8 +4694,29 @@
                     "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "item_sep"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              },
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "collection_break"
+                          }
+                        ]
                       },
                       {
                         "type": "SYMBOL",
@@ -4386,8 +4729,20 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "item_sep"
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "REPEAT",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          }
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "semicolon"
+                        }
+                      ]
                     },
                     {
                       "type": "BLANK"
@@ -4444,8 +4799,29 @@
                     "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "item_sep"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SEQ",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "semicolon"
+                              },
+                              {
+                                "type": "REPEAT",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "newline"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "collection_break"
+                          }
+                        ]
                       },
                       {
                         "type": "SYMBOL",
@@ -4458,8 +4834,20 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "item_sep"
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "REPEAT",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "newline"
+                          }
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "semicolon"
+                        }
+                      ]
                     },
                     {
                       "type": "BLANK"
@@ -4632,7 +5020,7 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "item_sep"
+                          "name": "semicolon"
                         },
                         {
                           "type": "BLANK"
@@ -4737,8 +5125,29 @@
                   "type": "SEQ",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "item_sep"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "SYMBOL",
+                              "name": "semicolon"
+                            },
+                            {
+                              "type": "REPEAT",
+                              "content": {
+                                "type": "SYMBOL",
+                                "name": "newline"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "collection_break"
+                        }
+                      ]
                     },
                     {
                       "type": "SYMBOL",
@@ -4751,8 +5160,20 @@
                 "type": "CHOICE",
                 "members": [
                   {
-                    "type": "SYMBOL",
-                    "name": "item_sep"
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "REPEAT",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "newline"
+                        }
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "semicolon"
+                      }
+                    ]
                   },
                   {
                     "type": "BLANK"
@@ -4848,8 +5269,29 @@
                             "type": "SEQ",
                             "members": [
                               {
-                                "type": "SYMBOL",
-                                "name": "item_sep"
+                                "type": "CHOICE",
+                                "members": [
+                                  {
+                                    "type": "SEQ",
+                                    "members": [
+                                      {
+                                        "type": "SYMBOL",
+                                        "name": "semicolon"
+                                      },
+                                      {
+                                        "type": "REPEAT",
+                                        "content": {
+                                          "type": "SYMBOL",
+                                          "name": "newline"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "collection_break"
+                                  }
+                                ]
                               },
                               {
                                 "type": "SYMBOL",
@@ -4862,8 +5304,20 @@
                           "type": "CHOICE",
                           "members": [
                             {
-                              "type": "SYMBOL",
-                              "name": "item_sep"
+                              "type": "SEQ",
+                              "members": [
+                                {
+                                  "type": "REPEAT",
+                                  "content": {
+                                    "type": "SYMBOL",
+                                    "name": "newline"
+                                  }
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "semicolon"
+                                }
+                              ]
                             },
                             {
                               "type": "BLANK"
@@ -5490,7 +5944,7 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "item_sep"
+                          "name": "semicolon"
                         },
                         {
                           "type": "BLANK"
@@ -5857,7 +6311,7 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "item_sep"
+                          "name": "semicolon"
                         },
                         {
                           "type": "BLANK"
@@ -6784,7 +7238,7 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "item_sep"
+                          "name": "comma"
                         },
                         {
                           "type": "BLANK"

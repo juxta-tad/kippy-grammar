@@ -71,7 +71,7 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-// separated1: uses named $.item_sep for newline/semicolon interchangeability,
+// separated1: uses collection_break for newline/semicolon interchangeability,
 // or a raw comma-only sep when allow_newline_separator is false.
 function separated1(
 	$,
@@ -80,7 +80,11 @@ function separated1(
 	{ allow_newline_separator = true } = {},
 ) {
 	if (allow_newline_separator) {
-		return seq(rule, many(seq($.item_sep, rule)), opt($.item_sep));
+		const sep = choice(
+			seq($.semicolon, many($.newline)),
+			$.collection_break,
+		);
+		return seq(rule, many(seq(sep, rule)), opt(seq(many($.newline), $.semicolon)));
 	}
 	const itemSep = seq(separator, many($.newline));
 	return seq(rule, many(seq(itemSep, rule)), opt(itemSep));
@@ -100,12 +104,16 @@ function layoutType($, name = "type") {
 	return field(name, seq(many($.newline), $.type_expression));
 }
 
-// fileBody: uses named $.item_sep for top-level separation.
+// fileBody: uses file_break (distinct from collection_break) for top-level separation.
 function fileBody($, header, item) {
+	const topSep = choice(
+		seq($.semicolon, many($.newline)),
+		$.file_break,
+	);
 	return seq(
 		many($.newline),
-		opt(seq(header, $.item_sep)),
-		opt(seq(item, many(seq($.item_sep, item)))),
+		opt(seq(header, topSep)),
+		opt(seq(item, many(seq(topSep, item)))),
 	);
 }
 
@@ -128,10 +136,15 @@ function fieldPattern(fieldName, colon, valueRule) {
 }
 
 function looseSeparated2Plus($, rule, separator, { allow_newline_separator = true } = {}) {
-	const next = allow_newline_separator
-		? seq($.item_sep, rule)
-		: seq(separator, many($.newline), rule);
-	return seq(rule, next, many(next), opt($.item_sep));
+	if (allow_newline_separator) {
+		const sep = choice(
+			seq($.semicolon, many($.newline)),
+			$.collection_break,
+		);
+		return seq(rule, seq(sep, rule), many(seq(sep, rule)), opt(seq(many($.newline), $.semicolon)));
+	}
+	const next = seq(separator, many($.newline), rule);
+	return seq(rule, next, many(next), opt(separator));
 }
 
 // Collection: delimited with interior separated items
@@ -152,13 +165,17 @@ function tuple($, open, close, item, separator, { allow_newline_separator = true
 // Flexible-separator collection inside arbitrary delimiters
 function flexCollection($, open, close, rule, separator, { allow_newline_separator = true } = {}) {
 	if (allow_newline_separator) {
+		const sep = choice(
+			seq($.semicolon, many($.newline)),
+			$.collection_break,
+		);
 		return seq(
 			open,
 			many($.newline),
 			opt(seq(
 				rule,
-				many(seq($.item_sep, rule)),
-				opt($.item_sep),
+				many(seq(sep, rule)),
+				opt(seq(many($.newline), $.semicolon)),
 			)),
 			many($.newline),
 			close,
@@ -476,12 +493,11 @@ module.exports = grammar({
 	rules: {
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 
-		// Named separator rule — gives tree-sitter its own state machine,
-		// preventing repeat-state sharing with source_file_repeat1.
-		item_sep: ($) => choice(
-			$.semicolon,
-			many1($.newline),
-		),
+		// Two distinct named break rules — same shape, different names.
+		// tree-sitter generates separate LR nonterminals so their states
+		// never merge with each other or with source_file_repeat1.
+		collection_break: ($) => seq($.newline, many($.newline)),
+		file_break: ($) => seq($.newline, many($.newline)),
 
 		module_item: ($) => choice($.use_statement, $.declaration),
 		declaration: ($) =>
