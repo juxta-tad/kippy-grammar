@@ -71,13 +71,16 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-// separated1: separator-only (newlines are extras, not separators).
+// separated1: separator optional when allow_newline_separator (juxtaposition works).
 function separated1(
 	$,
 	rule,
 	separator,
 	{ allow_newline_separator = true } = {},
 ) {
+	if (allow_newline_separator) {
+		return seq(rule, many(seq(opt(separator), rule)), opt(separator));
+	}
 	return seq(rule, many(seq(separator, rule)), opt(separator));
 }
 
@@ -95,12 +98,12 @@ function layoutType($, name = "type") {
 	return field(name, $.type_expression);
 }
 
-// fileBody: newlines are extras so top-level items just juxtapose.
-// Every top-level item starts with an unambiguous keyword so no separator needed.
+// fileBody: top-level items are terminated by semicolon.
+// Newlines are extras (whitespace) so no newline conflicts at top level.
 function fileBody($, header, item) {
 	return seq(
 		opt(seq(header, $.semicolon)),
-		repeat(item),
+		repeat(seq(item, $.semicolon)),
 	);
 }
 
@@ -123,6 +126,9 @@ function fieldPattern(fieldName, colon, valueRule) {
 }
 
 function looseSeparated2Plus($, rule, separator, { allow_newline_separator = true } = {}) {
+	if (allow_newline_separator) {
+		return seq(rule, opt(separator), rule, many(seq(opt(separator), rule)), opt(separator));
+	}
 	return seq(rule, separator, rule, many(seq(separator, rule)), opt(separator));
 }
 
@@ -141,8 +147,17 @@ function tuple($, open, close, item, separator, { allow_newline_separator = true
 	);
 }
 
-// Flexible-separator collection inside arbitrary delimiters
+// Flexible-separator collection inside arbitrary delimiters.
+// separator is optional between items — juxtaposition works since newlines
+// are extras and each item has an unambiguous start token in context.
 function flexCollection($, open, close, rule, separator, { allow_newline_separator = true } = {}) {
+	if (allow_newline_separator) {
+		return seq(
+			open,
+			opt(seq(rule, many(seq(opt(separator), rule)), opt(separator))),
+			close,
+		);
+	}
 	return seq(
 		open,
 		opt(seq(rule, many(seq(separator, rule)), opt(separator))),
