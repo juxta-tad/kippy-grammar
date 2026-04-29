@@ -221,10 +221,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "expect_statement"
-        },
-        {
-          "type": "SYMBOL",
           "name": "implementation"
         }
       ]
