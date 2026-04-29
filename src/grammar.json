@@ -1623,7 +1623,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "value_slot"
+              "name": "inline_value_slot"
             }
           ]
         }
@@ -3460,7 +3460,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "value_slot"
+          "name": "inline_value_slot"
         }
       ]
     },
@@ -3627,6 +3627,14 @@
             "name": "statement_expression"
           }
         ]
+      }
+    },
+    "inline_value_slot": {
+      "type": "FIELD",
+      "name": "value",
+      "content": {
+        "type": "SYMBOL",
+        "name": "statement_expression"
       }
     },
     "if_then_value": {
@@ -9330,6 +9338,7 @@
   "externals": [],
   "inline": [
     "value_slot",
+    "inline_value_slot",
     "match_arm_value",
     "method_body",
     "lambda_body",

@@ -216,7 +216,7 @@ function bareBinding($, nameRule) {
 		field("name", nameRule),
 		opt(seq($.colon, field("type_ann", $.type_body))),
 		$.equals,
-		$.value_slot,
+		$.inline_value_slot,
 	);
 }
 
@@ -464,6 +464,7 @@ module.exports = grammar({
 
 	inline: ($) => [
 		$.value_slot,
+		$.inline_value_slot,
 		$.match_arm_value,
 		$.method_body,
 		$.lambda_body,
@@ -805,6 +806,7 @@ module.exports = grammar({
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		value_slot: ($) =>
 			field("value", seq(many($.newline), $.statement_expression)),
+		inline_value_slot: ($) => field("value", $.statement_expression),
 		if_then_value: ($) => layoutExpr($, "then_value"),
 		if_else_value: ($) => layoutExpr($, "else_value"),
 		let_body: ($) => layoutExpr($, "body"),
