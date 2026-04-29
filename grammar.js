@@ -71,19 +71,21 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
+// [CHANGED] separated1 now treats newlines and semicolons as interchangeable
+// terminators between items. Any mix of newlines, semicolons, or both works.
 function separated1(
 	$,
 	rule,
 	separator,
 	{ allow_newline_separator = true } = {},
 ) {
-	const next = allow_newline_separator
+	const itemSep = allow_newline_separator
 		? choice(
-			seq(separator, rule),
-			seq(opt(separator), many1($.newline), rule),
+			seq(separator, many($.newline)),
+			seq(many1($.newline), opt(seq(separator, many($.newline)))),
 		)
-		: seq(separator, many($.newline), rule);
-	return seq(rule, many(next), opt(separator));
+		: seq(separator, many($.newline));
+	return seq(rule, many(seq(itemSep, rule)), opt(itemSep));
 }
 
 // Delimited collection with flexible interior
@@ -100,11 +102,19 @@ function layoutType($, name = "type") {
 	return field(name, seq(many($.newline), $.type_expression));
 }
 
+// [CHANGED] fileBody now allows top-level items to be separated by either
+// newlines OR semicolons. Items are paragraph-level by convention but the
+// grammar no longer enforces it.
 function fileBody($, header, item) {
+	const topSep = choice(
+		many1($.newline),
+		seq($.semicolon, many($.newline)),
+		seq(many1($.newline), $.semicolon, many($.newline)),
+	);
 	return seq(
 		many($.newline),
-		opt(seq(header, many1($.newline))),
-		opt(seq(item, many(seq(many1($.newline), item)), many($.newline))),
+		opt(seq(header, topSep)),
+		opt(seq(item, many(seq(topSep, item)), opt(topSep))),
 	);
 }
 
@@ -126,11 +136,11 @@ function fieldPattern(fieldName, colon, valueRule) {
 	);
 }
 
-// Tuple form (2+ elements required)
+// [CHANGED] looseSeparated2Plus uses the same newline-or-separator policy.
 function looseSeparated2Plus($, rule, separator) {
 	const next = choice(
-		seq(separator, rule),
-		seq(opt(separator), many1($.newline), rule),
+		seq(separator, many($.newline), rule),
+		seq(many1($.newline), opt(separator), many($.newline), rule),
 	);
 	return seq(rule, next, many(next), opt(separator));
 }
@@ -160,8 +170,7 @@ function flexCollection($, open, close, rule, separator) {
 			rule,
 			many(choice(
 				seq(separator, many($.newline), rule),
-				seq(many1($.newline), separator, many($.newline), rule),
-				seq(many1($.newline), rule),
+				seq(many1($.newline), opt(separator), many($.newline), rule),
 			)),
 			opt(seq(many($.newline), separator)),
 		),
@@ -184,21 +193,24 @@ function withPayloads($, nameRule, payloadRule) {
 	);
 }
 
-// --- Parameter list: inline comma-sep or multiline ---
-// Used by both lambda_parameters and method_parameter_list.
+// [CHANGED] parameterList: comma-separated only. Newlines around commas
+// are allowed for readability, but the multi-line form no longer requires
+// or accepts a newline-only-separator branch.
 function parameterList($, paramRule) {
-	return choice(
-		sep1(field("param", paramRule), $.comma),
-		seq(
-			many1($.newline),
-			separated1($, field("param", paramRule), $.comma),
+	return seq(
+		many($.newline),
+		field("param", paramRule),
+		many(seq(
+			$.comma,
 			many($.newline),
-		),
+			field("param", paramRule),
+		)),
+		opt($.comma),
+		many($.newline),
 	);
 }
 
 // --- Bare binding: pattern : type = value ---
-// [CHANGED] Added field("type_ann", ...) around type_body
 function bareBinding($, nameRule) {
 	return seq(
 		field("name", nameRule),
@@ -209,9 +221,6 @@ function bareBinding($, nameRule) {
 }
 
 // --- Common Patterns ---
-// [CHANGED] Wrap each attribute in field("attribute", ...)
-// [CHANGED] Allow zero or more newlines after each attribute so attributes
-// can appear inline or on preceding lines without requiring layout sensitivity.
 function attributePrefix($) {
 	return many(field("attribute", seq($.attribute, many($.newline))));
 }
@@ -221,7 +230,6 @@ function visibility_modifier($) {
 }
 
 // --- Expression Ladder Generator ---
-// [CHANGED] Added field("op", ...), field("lhs", ...), field("rhs", ...) throughout
 function buildExpressionLadder(suffix, baseRule) {
 	const name = (level) => `${level}${suffix}`;
 	return {
@@ -311,7 +319,9 @@ const noBraceExpressionRules = buildExpressionLadder(
 );
 
 // --- Expression Bottom Generator ---
-// [CHANGED] primary_expression no longer includes lambda/if/let/match
+// [CHANGED] application_expression collapses to a single comma-separated form.
+// No more block-vs-inline distinction. Newlines are permitted around commas,
+// so multi-line argument lists still work, but they're always comma-separated.
 function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 	const s = (name) => `${name}${suffix}`;
 	return {
@@ -322,21 +332,14 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 					seq(
 						field("callee", $[s("postfix_expression")]),
 						$.kw_with,
-						field("arg", $.call_argument_inline),
-						many(
-							seq(
-								$.comma,
-								many($.newline),
-								field("arg", $.call_argument_inline),
-							),
-						),
-					),
-					seq(
-						field("callee", $[s("postfix_expression")]),
-						$.kw_with,
-						many1($.newline),
-						field("arg", $.call_argument_block),
-						many(seq(many1($.newline), field("arg", $.call_argument_block))),
+						many($.newline),
+						field("arg", $.call_argument),
+						many(seq(
+							$.comma,
+							many($.newline),
+							field("arg", $.call_argument),
+						)),
+						opt($.comma),
 					),
 					$[s("postfix_expression")],
 				),
@@ -351,9 +354,7 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 				),
 			),
 
-		// [CHANGED] primary_expression is now atoms only — no lambda/if/let/match
 		[s("primary_expression")]: ($) => choice(...inlineChoices($)),
-		// [REMOVED] inline_expression eliminated — its choices folded into primary_expression
 	};
 }
 
@@ -491,7 +492,6 @@ module.exports = grammar({
 				$.implementation,
 			),
 
-		// [CHANGED] Allow attributes on use items, Rust-style.
 		use_statement: ($) =>
 			seq(
 				attributePrefix($),
@@ -516,7 +516,6 @@ module.exports = grammar({
 
 		module_declaration: ($) => seq($.kw_module, field("name", $.path)),
 
-		// [CHANGED] Allow attributes on alias declarations.
 		alias_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -527,7 +526,6 @@ module.exports = grammar({
 				field("body", $.type_expression),
 			),
 
-		// [CHANGED] Allow attributes on distinct declarations.
 		distinct_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -541,7 +539,6 @@ module.exports = grammar({
 				)),
 			),
 
-		// [CHANGED] Allow attributes on tag declarations.
 		tag_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -551,7 +548,6 @@ module.exports = grammar({
 				opt(field("type_params", $.type_parameter_list)),
 			),
 
-		// [CHANGED] Allow attributes on record declarations.
 		record_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -563,7 +559,6 @@ module.exports = grammar({
 				field("body", $.record_type),
 			),
 
-		// [CHANGED] Allow attributes on choice declarations.
 		choice_declaration: ($) =>
 			seq(
 				attributePrefix($),
@@ -575,7 +570,6 @@ module.exports = grammar({
 				field("body", bracedCollection($, $.choice_variant, $.semicolon)),
 			),
 
-		// [CHANGED] Allow attributes on individual choice variants, Rust-style.
 		choice_variant: ($) =>
 			seq(
 				attributePrefix($),
@@ -709,7 +703,6 @@ module.exports = grammar({
 
 		fit_member: ($) => choice($.fit_type_def, $.fit_method),
 
-		// [CHANGED] Allow attributes on associated type defs.
 		fit_type_def: ($) =>
 			seq(
 				attributePrefix($),
@@ -719,7 +712,6 @@ module.exports = grammar({
 				field("value", $.type_body),
 			),
 
-		// [CHANGED] Allow attributes on fit methods.
 		fit_method: ($) =>
 			seq(
 				attributePrefix($),
@@ -729,6 +721,7 @@ module.exports = grammar({
 				$.method_body,
 			),
 
+		// [CHANGED] parameterList: comma-only, newlines permitted around commas.
 		method_parameter_list: ($) => parameterList($, $.binding_pattern),
 
 		shape_declaration: ($) =>
@@ -745,7 +738,6 @@ module.exports = grammar({
 
 		shape_member: ($) => choice($.shape_type_decl, $.shape_method),
 
-		// [CHANGED] Allow attributes on associated type declarations in shapes.
 		shape_type_decl: ($) =>
 			seq(
 				attributePrefix($),
@@ -789,8 +781,6 @@ module.exports = grammar({
 		binding_name: ($) => reserved("global", $.identifier),
 		type_member_name: ($) => reserved("global", $.identifier),
 
-		// [CHANGED] expression now chooses between low-precedence forms and the infix ladder.
-		// Lambda, if, let, match sit ABOVE the infix ladder — they are not atoms.
 		expression: ($) =>
 			choice(
 				$.lambda_expression,
@@ -800,7 +790,6 @@ module.exports = grammar({
 				$.pipe_expression,
 			),
 
-		// [CHANGED] Same treatment for statement_expression
 		statement_expression: ($) =>
 			choice(
 				$.lambda_expression,
@@ -810,11 +799,9 @@ module.exports = grammar({
 				$.pipe_expression,
 			),
 
-		// Arguments in comma-delimited call lists (same-line): atoms only, parens needed for lambda
-		call_argument_inline: ($) => $.postfix_expression,
-
-		// [CHANGED] Block arguments allow full expressions (including lambda etc.)
-		call_argument_block: ($) => $.expression,
+		// [CHANGED] Single unified call_argument rule. No more inline-vs-block split.
+		// Lambdas in arguments require parens since call_argument is postfix_expression.
+		call_argument: ($) => $.postfix_expression,
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 		value_slot: ($) =>
@@ -893,18 +880,15 @@ module.exports = grammar({
 				$.rparen,
 			),
 
+		// [CHANGED] let_expression: one unified form. Bindings separated by
+		// `;` or newlines or both, freely mixed. No more multi-line trigger.
 		let_expression: ($) =>
 			prec.right(
 				seq(
 					$.kw_let,
-					choice(
-						seq(separated1($, $.binding_core, $.semicolon), many($.newline)),
-						seq(
-							many1($.newline),
-							separated1($, $.binding_core, $.semicolon),
-							many($.newline),
-						),
-					),
+					many($.newline),
+					separated1($, $.binding_core, $.semicolon),
+					many($.newline),
 					$.kw_in,
 					$.let_body,
 				),
@@ -923,6 +907,7 @@ module.exports = grammar({
 		match_arm: ($) =>
 			seq(field("pattern", $.pattern), $.arrow, $.match_arm_value),
 
+		// [CHANGED] lambda_parameters uses the new comma-only parameterList.
 		lambda_parameters: ($) => parameterList($, $.binding_pattern),
 
 		lambda_expression: ($) =>
@@ -1124,7 +1109,6 @@ module.exports = grammar({
 		// () — unit type
 		unit_type: ($) => seq($.lparen, many($.newline), $.rparen),
 
-		// [CHANGED] Allow attributes on record fields, Rust-style.
 		record_type_field: ($) =>
 			seq(
 				attributePrefix($),
