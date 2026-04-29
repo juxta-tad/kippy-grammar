@@ -98,12 +98,12 @@ function layoutType($, name = "type") {
 	return field(name, $.type_expression);
 }
 
-// fileBody: top-level items are terminated by semicolon.
-// Newlines are extras (whitespace) so no newline conflicts at top level.
+// fileBody: top-level items self-delimit by their starting keyword.
+// Semicolons are optional — the parser commits on the first token of each item.
 function fileBody($, header, item) {
 	return seq(
-		opt(seq(header, $.semicolon)),
-		repeat(seq(item, $.semicolon)),
+		opt(header),
+		repeat(item),
 	);
 }
 

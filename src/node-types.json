@@ -4005,10 +4005,6 @@
         {
           "type": "module_item",
           "named": true
-        },
-        {
-          "type": "semicolon",
-          "named": true
         }
       ]
     }
