@@ -6362,11 +6362,8 @@
       }
     },
     "hash_sign": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "#"
-      }
+      "type": "STRING",
+      "value": "#"
     },
     "pipe": {
       "type": "TOKEN",
