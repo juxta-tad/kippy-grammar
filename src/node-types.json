@@ -2265,14 +2265,6 @@
           "named": true
         },
         {
-          "type": "lbrace",
-          "named": true
-        },
-        {
-          "type": "rbrace",
-          "named": true
-        },
-        {
           "type": "semicolon",
           "named": true
         }

@@ -864,9 +864,7 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_let,
-					$.lbrace,
 					separated1($, $.binding_core, $.semicolon),
-					$.rbrace,
 					$.kw_in,
 					$.let_body,
 				),

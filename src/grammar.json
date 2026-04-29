@@ -4104,10 +4104,6 @@
             "name": "kw_let"
           },
           {
-            "type": "SYMBOL",
-            "name": "lbrace"
-          },
-          {
             "type": "SEQ",
             "members": [
               {
@@ -4151,10 +4147,6 @@
                 ]
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "rbrace"
           },
           {
             "type": "SYMBOL",
