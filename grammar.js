@@ -1127,7 +1127,7 @@ module.exports = grammar({
 				field("type_ann", $.type_body),
 			),
 
-		record_type: ($) => bracedCollection($, $.record_type_field, $.semicolon),
+		record_type: ($) => flexCollection($, $.lbrace, $.rbrace, $.record_type_field, $.comma, { allow_newline_separator: false }),
 
 		tuple_type: ($) =>
 			tuple($, $.lparen_hash, $.rparen, $.type_expression, $.semicolon),
