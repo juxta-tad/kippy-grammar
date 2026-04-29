@@ -71,49 +71,36 @@ function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
 }
 
-// separated1: uses collection_break for newline/semicolon interchangeability,
-// or a raw comma-only sep when allow_newline_separator is false.
+// separated1: separator-only (newlines are extras, not separators).
 function separated1(
 	$,
 	rule,
 	separator,
 	{ allow_newline_separator = true } = {},
 ) {
-	if (allow_newline_separator) {
-		const sep = choice(
-			seq($.semicolon, many($.newline)),
-			$.collection_break,
-		);
-		return seq(rule, many(seq(sep, rule)), opt(seq(many($.newline), $.semicolon)));
-	}
-	const itemSep = seq(separator, many($.newline));
-	return seq(rule, many(seq(itemSep, rule)), opt(itemSep));
+	return seq(rule, many(seq(separator, rule)), opt(separator));
 }
 
 // Delimited collection with flexible interior
 function delimited($, open, close, interior) {
-	return seq(open, opt(seq(many($.newline), interior, many($.newline))), close);
+	return seq(open, opt(interior), close);
 }
 
 // --- Layout & Expression Helpers ---
 function layoutExpr($, name = "value") {
-	return field(name, seq(many($.newline), $.expression));
+	return field(name, $.expression);
 }
 
 function layoutType($, name = "type") {
-	return field(name, seq(many($.newline), $.type_expression));
+	return field(name, $.type_expression);
 }
 
-// fileBody: uses file_break (distinct from collection_break) for top-level separation.
+// fileBody: newlines are extras so top-level items just juxtapose.
+// Every top-level item starts with an unambiguous keyword so no separator needed.
 function fileBody($, header, item) {
-	const topSep = choice(
-		seq($.semicolon, many($.newline)),
-		$.file_break,
-	);
 	return seq(
-		many($.newline),
-		opt(seq(header, topSep)),
-		opt(seq(item, many(seq(topSep, item)))),
+		opt(seq(header, $.semicolon)),
+		repeat(item),
 	);
 }
 
@@ -136,15 +123,7 @@ function fieldPattern(fieldName, colon, valueRule) {
 }
 
 function looseSeparated2Plus($, rule, separator, { allow_newline_separator = true } = {}) {
-	if (allow_newline_separator) {
-		const sep = choice(
-			seq($.semicolon, many($.newline)),
-			$.collection_break,
-		);
-		return seq(rule, seq(sep, rule), many(seq(sep, rule)), opt(seq(many($.newline), $.semicolon)));
-	}
-	const next = seq(separator, many($.newline), rule);
-	return seq(rule, next, many(next), opt(separator));
+	return seq(rule, separator, rule, many(seq(separator, rule)), opt(separator));
 }
 
 // Collection: delimited with interior separated items
@@ -164,33 +143,10 @@ function tuple($, open, close, item, separator, { allow_newline_separator = true
 
 // Flexible-separator collection inside arbitrary delimiters
 function flexCollection($, open, close, rule, separator, { allow_newline_separator = true } = {}) {
-	if (allow_newline_separator) {
-		const sep = choice(
-			seq($.semicolon, many($.newline)),
-			$.collection_break,
-		);
-		return seq(
-			open,
-			many($.newline),
-			opt(seq(
-				rule,
-				many(seq(sep, rule)),
-				opt(seq(many($.newline), $.semicolon)),
-			)),
-			many($.newline),
-			close,
-		);
-	}
-	const nextItem = seq(separator, many($.newline), rule);
-	return delimited(
-		$,
+	return seq(
 		open,
+		opt(seq(rule, many(seq(separator, rule)), opt(separator))),
 		close,
-		seq(
-			rule,
-			many(nextItem),
-			opt(seq(many($.newline), separator)),
-		),
 	);
 }
 
@@ -206,7 +162,7 @@ function withPayloads($, nameRule, payloadRule) {
 		nameRule,
 		$.kw_with,
 		field("payload", payloadRule),
-		many(seq($.comma, many($.newline), field("payload", payloadRule))),
+		many(seq($.comma, field("payload", payloadRule))),
 	);
 }
 
@@ -215,15 +171,12 @@ function withPayloads($, nameRule, payloadRule) {
 // or accepts a newline-only-separator branch.
 function parameterList($, paramRule) {
 	return seq(
-		many($.newline),
 		field("param", paramRule),
 		many(seq(
 			$.comma,
-			many($.newline),
 			field("param", paramRule),
 		)),
 		opt($.comma),
-		many($.newline),
 	);
 }
 
@@ -239,7 +192,7 @@ function bareBinding($, nameRule) {
 
 // --- Common Patterns ---
 function attributePrefix($) {
-	return many(field("attribute", seq($.attribute, many($.newline))));
+	return many(field("attribute", seq($.attribute)));
 }
 
 function visibility_modifier($) {
@@ -349,11 +302,9 @@ function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 					seq(
 						field("callee", $[s("postfix_expression")]),
 						$.kw_with,
-						many($.newline),
 						field("arg", $.call_argument),
 						many(seq(
 							$.comma,
-							many($.newline),
 							field("arg", $.call_argument),
 						)),
 						opt($.comma),
@@ -471,6 +422,7 @@ module.exports = grammar({
 
 	extras: ($) => [
 		new RustRegex("[ \\t\\r\\f]+"),
+		new RustRegex("\\r?\\n"),
 		$.line_comment,
 		$.block_comment,
 	],
@@ -492,12 +444,6 @@ module.exports = grammar({
 
 	rules: {
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
-
-		// Two distinct named break rules — same shape, different names.
-		// tree-sitter generates separate LR nonterminals so their states
-		// never merge with each other or with source_file_repeat1.
-		collection_break: ($) => seq($.newline, many($.newline)),
-		file_break: ($) => seq($.newline, many($.newline)),
 
 		module_item: ($) => choice($.use_statement, $.declaration),
 		declaration: ($) =>
@@ -578,7 +524,6 @@ module.exports = grammar({
 				$.kw_record,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
-				many($.newline),
 				field("body", $.record_type),
 			),
 
@@ -589,7 +534,6 @@ module.exports = grammar({
 				$.kw_choice,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
-				many($.newline),
 				field("body", bracedCollection($, $.choice_variant, $.semicolon)),
 			),
 
@@ -697,7 +641,6 @@ module.exports = grammar({
 				$.colon,
 				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
-				many($.newline),
 				field("members", bracedCollection($, $.fit_member, $.semicolon)),
 			),
 
@@ -755,7 +698,6 @@ module.exports = grammar({
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
 				opt(field("parents", $.shape_parents)),
-				many($.newline),
 				field("members", bracedCollection($, $.shape_member, $.semicolon)),
 			),
 
@@ -782,7 +724,6 @@ module.exports = grammar({
 				attributePrefix($),
 				$.kw_test,
 				field("name", $.static_text),
-				many($.newline),
 				field("body", bracedCollection($, $.test_statement, $.semicolon)),
 			),
 
@@ -827,8 +768,7 @@ module.exports = grammar({
 		call_argument: ($) => $.postfix_expression,
 
 		spread_element: ($) => seq($.rest_op, field("base", $.expression)),
-		value_slot: ($) =>
-			field("value", seq(many($.newline), $.statement_expression)),
+		value_slot: ($) => field("value", $.statement_expression),
 		if_then_value: ($) => layoutExpr($, "then_value"),
 		if_else_value: ($) => layoutExpr($, "else_value"),
 		let_body: ($) => layoutExpr($, "body"),
@@ -841,7 +781,7 @@ module.exports = grammar({
 		...noBraceExpressionBottom,
 
 		// f() — postfix call sugar for `f with ()`
-		call_suffix: ($) => seq($.lparen, many($.newline), $.rparen),
+		call_suffix: ($) => seq($.lparen, $.rparen),
 
 		index_suffix: ($) =>
 			seq($.lbracket, field("index", $.expression), $.rbracket),
@@ -859,7 +799,7 @@ module.exports = grammar({
 		record_suffix: ($) => field("body", $.record_body),
 
 		// () — unit value
-		unit_expression: ($) => seq($.lparen, many($.newline), $.rparen),
+		unit_expression: ($) => seq($.lparen, $.rparen),
 
 		list_expression: ($) =>
 			collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
@@ -897,9 +837,7 @@ module.exports = grammar({
 		parenthesized_expression: ($) =>
 			seq(
 				$.lparen,
-				many($.newline),
 				field("value", $.expression),
-				many($.newline),
 				$.rparen,
 			),
 
@@ -911,13 +849,9 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_let,
-					many($.newline),
 					$.lbrace,
-					many($.newline),
 					separated1($, $.binding_core, $.semicolon),
-					many($.newline),
 					$.rbrace,
-					many($.newline),
 					$.kw_in,
 					$.let_body,
 				),
@@ -928,7 +862,6 @@ module.exports = grammar({
 				seq(
 					$.kw_match,
 					field("subject", $.pipe_expression_no_brace),
-					many($.newline),
 					field("body", bracedCollection($, $.match_arm, $.semicolon)),
 				),
 			),
@@ -949,10 +882,8 @@ module.exports = grammar({
 				seq(
 					$.kw_if,
 					field("condition", $.pipe_expression_no_brace),
-					many($.newline),
 					$.kw_then,
 					$.if_then_value,
-					many($.newline),
 					$.kw_else,
 					$.if_else_value,
 				),
@@ -1002,7 +933,7 @@ module.exports = grammar({
 			),
 
 		wildcard_pattern: ($) => $.wildcard,
-		unit_pattern: ($) => seq($.lparen, many($.newline), $.rparen),
+		unit_pattern: ($) => seq($.lparen, $.rparen),
 
 		binding_list_pattern: ($) =>
 			seq(
@@ -1137,7 +1068,7 @@ module.exports = grammar({
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma, { allow_newline_separator: false }),
 
 		// () — unit type
-		unit_type: ($) => seq($.lparen, many($.newline), $.rparen),
+		unit_type: ($) => seq($.lparen, $.rparen),
 
 		record_type_field: ($) =>
 			seq(
@@ -1157,9 +1088,7 @@ module.exports = grammar({
 		parenthesized_type: ($) =>
 			seq(
 				$.lparen,
-				many($.newline),
 				$.type_expression,
-				many($.newline),
 				$.rparen,
 			),
 
@@ -1244,7 +1173,6 @@ module.exports = grammar({
 
 		path_head: ($) => choice($.identifier, $.kw_self),
 		path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
-		newline: () => token(new RustRegex("\\r?\\n")),
 		placeholder: ($) => token("__"),
 		wildcard: ($) => "_",
 
