@@ -9055,9 +9055,7 @@
     "compare_expression_no_brace",
     "add_expression_no_brace",
     "mul_expression_no_brace",
-    "unary_expression_no_brace",
     "application_expression_no_brace",
-    "postfix_expression_no_brace",
     "primary_expression_no_brace"
   ],
   "supertypes": [
