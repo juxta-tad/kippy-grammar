@@ -207,10 +207,6 @@ function attributePrefix($) {
 	return many(field("attribute", $.attribute));
 }
 
-function visibility_modifier($) {
-	return opt($.kw_pub);
-}
-
 function buildExpressionLadder(suffix, baseRule) {
 	const name = (level) => `${level}${suffix}`;
 	return {
@@ -400,12 +396,30 @@ module.exports = grammar({
 		$.if_then_value,
 		$.if_else_value,
 		$.statement_expression,
+		$._declaration_inner,
+		$._top_level_item,
 	],
 
 	rules: {
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
-		module_item: ($) => choice($.use_statement, $.declaration),
+
+		// === Top-level items ===
+		// Attributes are hoisted to the module_item wrapper. Visibility is
+		// hoisted to the declaration wrapper (use_statement and test_declaration
+		// don't take visibility, so they branch above the visibility hoist).
+		module_item: ($) =>
+			seq(
+				attributePrefix($),
+				$._top_level_item,
+			),
+		_top_level_item: ($) => choice($.use_statement, $.declaration),
+
 		declaration: ($) =>
+			seq(
+				field("visibility", opt($.kw_pub)),
+				$._declaration_inner,
+			),
+		_declaration_inner: ($) =>
 			choice(
 				$.alias_declaration,
 				$.distinct_declaration,
@@ -420,9 +434,9 @@ module.exports = grammar({
 				$.implementation,
 			),
 
+		// === use_statement (no visibility) ===
 		use_statement: ($) =>
 			seq(
-				attributePrefix($),
 				$.kw_use,
 				field("module", $.path),
 				opt(seq($.kw_as, field("alias", $.identifier))),
@@ -445,10 +459,9 @@ module.exports = grammar({
 			),
 		module_declaration: ($) => seq($.kw_module, field("name", $.path)),
 
+		// === Type/value declarations (attributes + visibility hoisted out) ===
 		alias_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_alias,
 				field("name", $.binding_name),
 				$.equals,
@@ -456,8 +469,6 @@ module.exports = grammar({
 			),
 		distinct_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_distinct,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
@@ -465,16 +476,12 @@ module.exports = grammar({
 			),
 		tag_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_tag,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
 			),
 		record_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_record,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
@@ -482,20 +489,27 @@ module.exports = grammar({
 			),
 		choice_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_choice,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
 				field("body", bracedCollection($, $.choice_variant, $.semicolon)),
 			),
+		// Left-factored: identifier is parsed first, then the optional payload
+		// shape is decided by the next token (with -> with-list, { -> record
+		// payload, anything else -> bare variant).
 		choice_variant: ($) =>
 			seq(
 				attributePrefix($),
-				choice(
-					withPayloads($, field("name", $.identifier), $.type_expression),
-					seq(field("name", $.identifier), field("payload", $.record_type)),
-					field("name", $.identifier),
+				field("name", $.identifier),
+				opt(
+					choice(
+						seq(
+							$.kw_with,
+							field("payload", $.type_expression),
+							many(seq($.comma, field("payload", $.type_expression))),
+						),
+						field("payload", $.record_type),
+					),
 				),
 			),
 
@@ -515,8 +529,6 @@ module.exports = grammar({
 		method_default: ($) => seq($.equals, $.value_slot),
 		signature: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_sig,
 				field("name", $.identifier),
 				$.colon,
@@ -525,8 +537,6 @@ module.exports = grammar({
 			),
 		value_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_let,
 				opt($.kw_rec),
 				bareBinding($, $.binding_name),
@@ -576,8 +586,6 @@ module.exports = grammar({
 
 		implementation: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_fit,
 				opt(field("type_params", $.type_parameter_list)),
 				field("type", $.impl_type_head),
@@ -588,8 +596,6 @@ module.exports = grammar({
 			),
 		derive_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_derive,
 				opt(field("type_params", $.type_parameter_list)),
 				field("type", $.impl_type_head),
@@ -597,10 +603,11 @@ module.exports = grammar({
 				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
 			),
+		// Folded: `applied_type` and `path` collapsed into `path_or_applied`.
+		// Other type alternatives unchanged.
 		impl_type_head: ($) =>
 			choice(
-				$.applied_type,
-				$.path,
+				$.path_or_applied,
 				$.self_type,
 				$.unit_type,
 				$.tuple_type,
@@ -628,8 +635,6 @@ module.exports = grammar({
 
 		shape_declaration: ($) =>
 			seq(
-				attributePrefix($),
-				visibility_modifier($),
 				$.kw_shape,
 				field("name", $.binding_name),
 				opt(field("type_params", $.type_parameter_list)),
@@ -642,14 +647,13 @@ module.exports = grammar({
 		shape_parents: ($) =>
 			seq(
 				$.colon,
-				sep1(field("parent", choice($.applied_type, $.path)), $.comma),
+				sep1(field("parent", $.path_or_applied), $.comma),
 			),
 
 		expect_statement: ($) =>
 			seq($.kw_expect, field("value", $.statement_expression)),
 		test_declaration: ($) =>
 			seq(
-				attributePrefix($),
 				$.kw_test,
 				field("name", $.static_text),
 				field("body", bracedCollection($, $.test_statement, $.semicolon)),
@@ -871,11 +875,18 @@ module.exports = grammar({
 			),
 		record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
 
+		// Folded: `applied_type` is gone; `path_or_applied` covers both bare
+		// path and path-with-type-args. Consumers in type position read the
+		// optional `args` field to tell them apart.
+		path_or_applied: ($) =>
+			seq(
+				field("constructor", $.path),
+				opt(field("args", $.type_argument_list)),
+			),
 		base_type: ($) =>
 			choice(
 				$.function_type,
-				$.applied_type,
-				$.path,
+				$.path_or_applied,
 				$.self_type,
 				$.unit_type,
 				$.wildcard_type,
@@ -925,8 +936,6 @@ module.exports = grammar({
 				),
 				opt(seq($.arrow, field("result", $.type_expression))),
 			),
-		applied_type: ($) =>
-			seq(field("constructor", $.path), field("args", $.type_argument_list)),
 		self_type: ($) => $.kw_Self,
 		type_argument_list: ($) =>
 			collection($, $.lbracket, $.rbracket, $.type_expression, $.comma, {
