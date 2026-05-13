@@ -66,46 +66,6 @@
     }
   },
   {
-    "type": "add_expression_no_brace",
-    "named": true,
-    "fields": {
-      "lhs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "mul_expression_no_brace",
-            "named": true
-          }
-        ]
-      },
-      "op": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "minus_op",
-            "named": true
-          },
-          {
-            "type": "plus_op",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "mul_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "alias_declaration",
     "named": true,
     "fields": {
@@ -182,42 +142,6 @@
     }
   },
   {
-    "type": "and_expression_no_brace",
-    "named": true,
-    "fields": {
-      "lhs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "compare_expression_no_brace",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "compare_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "and_op",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "and_op",
     "named": true,
     "fields": {},
@@ -271,50 +195,6 @@
         },
         {
           "type": "postfix_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "application_expression_no_brace",
-    "named": true,
-    "fields": {
-      "arg": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "call_argument",
-            "named": true
-          }
-        ]
-      },
-      "callee": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "postfix_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "comma",
-          "named": true
-        },
-        {
-          "type": "kw_with",
-          "named": true
-        },
-        {
-          "type": "postfix_expression_no_brace",
           "named": true
         }
       ]
@@ -1209,62 +1089,6 @@
     }
   },
   {
-    "type": "compare_expression_no_brace",
-    "named": true,
-    "fields": {
-      "lhs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "add_expression_no_brace",
-            "named": true
-          }
-        ]
-      },
-      "op": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "eq_op",
-            "named": true
-          },
-          {
-            "type": "ge_op",
-            "named": true
-          },
-          {
-            "type": "gt_op",
-            "named": true
-          },
-          {
-            "type": "le_op",
-            "named": true
-          },
-          {
-            "type": "lt_op",
-            "named": true
-          },
-          {
-            "type": "ne_op",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "add_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "constraint_clause",
     "named": true,
     "fields": {},
@@ -1802,7 +1626,7 @@
         "required": true,
         "types": [
           {
-            "type": "pipe_expression_no_brace",
+            "type": "pipe_expression",
             "named": true
           }
         ]
@@ -2432,7 +2256,7 @@
         "required": true,
         "types": [
           {
-            "type": "pipe_expression_no_brace",
+            "type": "pipe_expression",
             "named": true
           }
         ]
@@ -2658,50 +2482,6 @@
     }
   },
   {
-    "type": "mul_expression_no_brace",
-    "named": true,
-    "fields": {
-      "lhs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "unary_expression_no_brace",
-            "named": true
-          }
-        ]
-      },
-      "op": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "kw_mod",
-            "named": true
-          },
-          {
-            "type": "slash_op",
-            "named": true
-          },
-          {
-            "type": "star_op",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "unary_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "or_expression",
     "named": true,
     "fields": {
@@ -2721,42 +2501,6 @@
         "types": [
           {
             "type": "and_expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "or_op",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "or_expression_no_brace",
-    "named": true,
-    "fields": {
-      "lhs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "and_expression_no_brace",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "and_expression_no_brace",
             "named": true
           }
         ]
@@ -3035,42 +2779,6 @@
     }
   },
   {
-    "type": "pipe_expression_no_brace",
-    "named": true,
-    "fields": {
-      "lhs": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "or_expression_no_brace",
-            "named": true
-          }
-        ]
-      },
-      "rhs": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "or_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "pipe",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "postfix_expression",
     "named": true,
     "fields": {
@@ -3117,48 +2825,6 @@
     }
   },
   {
-    "type": "postfix_expression_no_brace",
-    "named": true,
-    "fields": {
-      "base": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "primary_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "call_suffix",
-          "named": true
-        },
-        {
-          "type": "field_suffix",
-          "named": true
-        },
-        {
-          "type": "index_suffix",
-          "named": true
-        },
-        {
-          "type": "method_suffix",
-          "named": true
-        },
-        {
-          "type": "try_op",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "primary_expression",
     "named": true,
     "fields": {},
@@ -3192,53 +2858,6 @@
         },
         {
           "type": "record_builder",
-          "named": true
-        },
-        {
-          "type": "record_expression",
-          "named": true
-        },
-        {
-          "type": "tuple_expression",
-          "named": true
-        },
-        {
-          "type": "unit_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "primary_expression_no_brace",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "list_expression",
-          "named": true
-        },
-        {
-          "type": "literal",
-          "named": true
-        },
-        {
-          "type": "map_expression",
-          "named": true
-        },
-        {
-          "type": "parenthesized_expression",
-          "named": true
-        },
-        {
-          "type": "path",
-          "named": true
-        },
-        {
-          "type": "placeholder",
           "named": true
         },
         {
@@ -3350,21 +2969,6 @@
       "types": [
         {
           "type": "kw_record",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "record_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "record_body",
           "named": true
         }
       ]
@@ -4476,46 +4080,6 @@
       "types": [
         {
           "type": "application_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "unary_expression_no_brace",
-    "named": true,
-    "fields": {
-      "op": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "kw_not",
-            "named": true
-          },
-          {
-            "type": "minus_op",
-            "named": true
-          }
-        ]
-      },
-      "operand": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "unary_expression_no_brace",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "application_expression_no_brace",
           "named": true
         }
       ]

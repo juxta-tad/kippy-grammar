@@ -291,10 +291,6 @@ function buildExpressionLadder(suffix, baseRule) {
 }
 
 const expressionRules = buildExpressionLadder("", "application_expression");
-const noBraceExpressionRules = buildExpressionLadder(
-	"_no_brace",
-	"application_expression_no_brace",
-);
 
 function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 	const s = (name) => `${name}${suffix}`;
@@ -335,19 +331,6 @@ const INLINE_ALL = (
 	$.unit_expression,
 	$.list_expression,
 	$.map_expression,
-	$.record_expression,
-	$.tuple_expression,
-	$.parenthesized_expression,
-];
-const INLINE_NO_BRACE = (
-	$,
-) => [
-	$.literal,
-	$.path,
-	$.placeholder,
-	$.unit_expression,
-	$.list_expression,
-	$.map_expression,
 	$.tuple_expression,
 	$.parenthesized_expression,
 ];
@@ -361,16 +344,8 @@ const POSTFIX_ALL = (
 	$.try_op,
 	$.method_suffix,
 ];
-const POSTFIX_NO_BRACE = (
-	$,
-) => [$.call_suffix, $.index_suffix, $.field_suffix, $.try_op, $.method_suffix];
 
 const expressionBottom = buildExpressionBottom("", INLINE_ALL, POSTFIX_ALL);
-const noBraceExpressionBottom = buildExpressionBottom(
-	"_no_brace",
-	INLINE_NO_BRACE,
-	POSTFIX_NO_BRACE,
-);
 
 module.exports = grammar({
 	name: "kippy",
@@ -700,9 +675,7 @@ module.exports = grammar({
 		match_arm_value: ($) => layoutExpr($, "value"),
 
 		...expressionRules,
-		...noBraceExpressionRules,
 		...expressionBottom,
-		...noBraceExpressionBottom,
 
 		call_suffix: ($) => seq($.lparen, $.rparen),
 		index_suffix: ($) =>
@@ -724,7 +697,6 @@ module.exports = grammar({
 			collection($, $.lbracket_map, $.rbracket, $.map_entry, $.semicolon),
 		map_entry: ($) =>
 			seq(field("key", $.expression), $.fat_arrow, $.value_slot),
-		record_expression: ($) => $.record_body,
 		record_builder: ($) =>
 			seq($.kw_build, field("builder", $.path), $.builder_body),
 		record_body: ($) => bracedCollection($, $.record_field, $.semicolon),
@@ -757,7 +729,7 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_match,
-					field("subject", $.pipe_expression_no_brace),
+					field("subject", $.pipe_expression),
 					field("body", bracedCollection($, $.match_arm, $.semicolon)),
 				),
 			),
@@ -770,7 +742,7 @@ module.exports = grammar({
 			prec.right(
 				seq(
 					$.kw_if,
-					field("condition", $.pipe_expression_no_brace),
+					field("condition", $.pipe_expression),
 					$.kw_then,
 					$.if_then_value,
 					$.kw_else,
