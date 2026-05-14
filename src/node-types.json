@@ -16,10 +16,6 @@
         "named": true
       },
       {
-        "type": "match_expression",
-        "named": true
-      },
-      {
         "type": "pipe_expression",
         "named": true
       }
@@ -609,10 +605,6 @@
             "named": true
           },
           {
-            "type": "match_expression",
-            "named": true
-          },
-          {
             "type": "pipe_expression",
             "named": true
           }
@@ -862,10 +854,6 @@
           },
           {
             "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
             "named": true
           },
           {
@@ -1375,10 +1363,6 @@
           },
           {
             "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
             "named": true
           },
           {
@@ -2141,10 +2125,6 @@
             "named": true
           },
           {
-            "type": "match_expression",
-            "named": true
-          },
-          {
             "type": "pipe_expression",
             "named": true
           }
@@ -2231,7 +2211,7 @@
     "fields": {
       "body": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "lbrace",
@@ -2253,10 +2233,10 @@
       },
       "subject": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
-            "type": "pipe_expression",
+            "type": "application_expression",
             "named": true
           }
         ]
@@ -2267,7 +2247,11 @@
       "required": true,
       "types": [
         {
-          "type": "kw_match",
+          "type": "application_expression",
+          "named": true
+        },
+        {
+          "type": "kw_to",
           "named": true
         }
       ]
@@ -2291,10 +2275,6 @@
           },
           {
             "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
             "named": true
           },
           {
@@ -3002,10 +2982,6 @@
           },
           {
             "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
             "named": true
           },
           {
@@ -3771,10 +3747,6 @@
             "named": true
           },
           {
-            "type": "match_expression",
-            "named": true
-          },
-          {
             "type": "pipe_expression",
             "named": true
           }
@@ -4079,7 +4051,7 @@
       "required": false,
       "types": [
         {
-          "type": "application_expression",
+          "type": "match_expression",
           "named": true
         }
       ]
@@ -4249,10 +4221,6 @@
           },
           {
             "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "match_expression",
             "named": true
           },
           {
@@ -4457,10 +4425,6 @@
     "named": true
   },
   {
-    "type": "kw_match",
-    "named": true
-  },
-  {
     "type": "kw_mod",
     "named": true
   },
@@ -4510,6 +4474,10 @@
   },
   {
     "type": "kw_then",
+    "named": true
+  },
+  {
+    "type": "kw_to",
     "named": true
   },
   {

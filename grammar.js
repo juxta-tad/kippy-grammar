@@ -7,6 +7,7 @@ const PREC = {
 	MUL: 6,
 	UNARY: 7,
 	POSTFIX: 8,
+	MATCH: 9,
 };
 
 const KEYWORDS = [
@@ -22,7 +23,7 @@ const KEYWORDS = [
 	"if",
 	"then",
 	"else",
-	"match",
+	"to",
 	"in",
 	"where",
 	"with",
@@ -290,11 +291,28 @@ function buildExpressionLadder(suffix, baseRule) {
 	};
 }
 
-const expressionRules = buildExpressionLadder("", "application_expression");
+const expressionRules = buildExpressionLadder("", "match_expression");
 
 function buildExpressionBottom(suffix, inlineChoices, postfixSuffixes) {
 	const s = (name) => `${name}${suffix}`;
 	return {
+		// `match_expression` sits between the unary/binop ladder and
+		// application. It is a postfix construct: `<expr> to { <arms> }`.
+		// The mandatory `to` keyword unambiguously terminates the subject
+		// expression, so a record-constructor subject like `Foo {x = 2}`
+		// is no longer ambiguous with the match body.
+		[s("match_expression")]: ($) =>
+			prec.left(
+				PREC.MATCH,
+				choice(
+					seq(
+						field("subject", $[s("application_expression")]),
+						$.kw_to,
+						field("body", bracedCollection($, $.match_arm, $.semicolon)),
+					),
+					$[s("application_expression")],
+				),
+			),
 		[s("application_expression")]: ($) =>
 			prec.right(
 				PREC.POSTFIX,
@@ -653,7 +671,6 @@ module.exports = grammar({
 				$.lambda_expression,
 				$.if_expression,
 				$.let_expression,
-				$.match_expression,
 				$.pipe_expression,
 			),
 		statement_expression: ($) =>
@@ -661,7 +678,6 @@ module.exports = grammar({
 				$.lambda_expression,
 				$.if_expression,
 				$.let_expression,
-				$.match_expression,
 				$.pipe_expression,
 			),
 		call_argument: ($) => $.postfix_expression,
@@ -723,14 +739,6 @@ module.exports = grammar({
 					separated1($, $.binding_core, $.semicolon),
 					$.kw_in,
 					$.let_body,
-				),
-			),
-		match_expression: ($) =>
-			prec.right(
-				seq(
-					$.kw_match,
-					field("subject", $.pipe_expression),
-					field("body", bracedCollection($, $.match_arm, $.semicolon)),
 				),
 			),
 		match_arm: ($) =>
