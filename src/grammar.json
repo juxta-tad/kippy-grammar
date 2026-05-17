@@ -5120,7 +5120,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[^\"\\\\]+"
+        "value": "[^\"\\\\\\r\\n]+"
       }
     },
     "char_literal": {
@@ -5167,7 +5167,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "\\\\(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[\\\\'\"ntrbfv]|\\r?\\n[ \\t]*)"
+        "value": "\\\\(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[ntrbfv'\"\\\\])"
       }
     },
     "static_text": {
@@ -5203,7 +5203,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[^\"\\\\]+"
+        "value": "[^\"\\\\\\r\\n]+"
       }
     },
     "line_comment": {
