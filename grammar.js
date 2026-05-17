@@ -1,13 +1,13 @@
 const PREC = {
 	PIPE: 1,
-	OR: 2,
-	AND: 3,
-	COMPARE: 4,
-	ADD: 5,
-	MUL: 6,
-	UNARY: 7,
-	POSTFIX: 8,
-	MATCH: 9,
+	MATCH: 2,
+	OR: 3,
+	AND: 4,
+	COMPARE: 5,
+	ADD: 6,
+	MUL: 7,
+	UNARY: 8,
+	POSTFIX: 9,
 };
 
 const KEYWORDS = [
@@ -949,8 +949,7 @@ module.exports = grammar({
 			),
 		static_text_content: ($) => token(new RustRegex('[^"\\\\]+')),
 		line_comment: (_) => token(new RustRegex("//[^\\n]*")),
-		block_comment: (_) =>
-			token(seq("/>", new RustRegex("([^<]|<[^/])*"), "</")),
+		block_comment: _ => token(seq('/>', /([^<]|<[^/])*/, '</')),
 
 		identifier: ($) =>
 			token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*!?")),
