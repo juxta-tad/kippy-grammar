@@ -83,14 +83,6 @@ function delimited($, open, close, interior) {
   return seq(open, opt(interior), close);
 }
 
-function layoutExpr($, name = "value") {
-  return field(name, $.expression);
-}
-
-function layoutType($, name = "type") {
-  return field(name, $.type_expression);
-}
-
 function fileBody($, header, item) {
   return seq(opt(header), repeat(item));
 }
@@ -501,12 +493,12 @@ module.exports = grammar({
     call_argument: ($) => $.postfix_expression,
     spread_element: ($) => seq($.rest_op, field("base", $.expression)),
     value_slot: ($) => field("value", $.expression),
-    if_then_value: ($) => layoutExpr($, "then_value"),
-    if_else_value: ($) => layoutExpr($, "else_value"),
-    let_body: ($) => layoutExpr($, "body"),
-    lambda_body: ($) => layoutExpr($, "body"),
-    method_body: ($) => layoutExpr($, "body"),
-    match_arm_value: ($) => layoutExpr($, "value"),
+    if_then_value: ($) => field("then_value", $.expression),
+    if_else_value: ($) => field("else_value", $.expression),
+    let_body: ($) => field("body", $.expression),
+    lambda_body: ($) => field("body", $.expression),
+    method_body: ($) => field("body", $.expression),
+    match_arm_value: ($) => field("value", $.expression),
 
     // === Expression ladder ===
     pipe_expression: ($) =>
@@ -598,9 +590,6 @@ module.exports = grammar({
           $.application_expression,
         ),
       ),
-    // Application is also non-recursive on its own branch (the callee is
-    // a `postfix_expression`, not another `application_expression`), so
-    // `prec.right` was load-bearing only as `prec`.
     application_expression: ($) =>
       prec(
         PREC.POSTFIX,
@@ -820,7 +809,7 @@ module.exports = grammar({
       ),
     type_expression: ($) =>
       choice($.base_type, seq($.ellipsis, field("item", $.base_type))),
-    type_body: ($) => layoutType($),
+    type_body: ($) => field("type", $.type_expression),
     ellipsis: ($) => "...",
     rest_op: ($) => "..",
 
