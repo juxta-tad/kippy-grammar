@@ -345,15 +345,15 @@
           "named": true
         },
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbracket",
           "named": true
         },
         {
           "type": "rbracket",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -408,15 +408,15 @@
           "named": true
         },
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbrace",
           "named": true
         },
         {
           "type": "rbrace",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -587,6 +587,10 @@
           "named": true
         },
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbracket",
           "named": true
         },
@@ -596,10 +600,6 @@
         },
         {
           "type": "rest_pattern",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -668,6 +668,10 @@
           "named": true
         },
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbrace",
           "named": true
         },
@@ -677,10 +681,6 @@
         },
         {
           "type": "rest_op",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -729,15 +729,15 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lparen_hash",
           "named": true
         },
         {
           "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -756,15 +756,15 @@
           "named": true
         },
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbrace",
           "named": true
         },
         {
           "type": "rbrace",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -1934,6 +1934,10 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbracket",
           "named": true
         },
@@ -1943,10 +1947,6 @@
         },
         {
           "type": "rbracket",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -1980,6 +1980,10 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbracket",
           "named": true
         },
@@ -1993,10 +1997,6 @@
         },
         {
           "type": "rest_pattern",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -2078,6 +2078,10 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbracket_map",
           "named": true
         },
@@ -2087,10 +2091,6 @@
         },
         {
           "type": "rbracket",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -2126,7 +2126,7 @@
       "required": true,
       "types": [
         {
-          "type": "arrow",
+          "type": "fat_arrow",
           "named": true
         }
       ]
@@ -2779,6 +2779,10 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbrace",
           "named": true
         },
@@ -2788,10 +2792,6 @@
         },
         {
           "type": "record_field",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -2922,6 +2922,10 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lbrace",
           "named": true
         },
@@ -2935,10 +2939,6 @@
         },
         {
           "type": "rest_op",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -3715,15 +3715,15 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lparen_hash",
           "named": true
         },
         {
           "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]
@@ -3749,15 +3749,15 @@
       "required": true,
       "types": [
         {
+          "type": "comma",
+          "named": true
+        },
+        {
           "type": "lparen_hash",
           "named": true
         },
         {
           "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "semicolon",
           "named": true
         }
       ]

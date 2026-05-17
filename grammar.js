@@ -1,6 +1,8 @@
 const PREC = {
-  PIPE: 1,
-  MATCH: 2,
+  // PIPE now binds tighter than MATCH so `a |> b to {...}` parses as
+  // `(a |> b) to {...}` — the way pipelines actually want to read.
+  MATCH: 1,
+  PIPE: 2,
   OR: 3,
   AND: 4,
   COMPARE: 5,
@@ -53,10 +55,12 @@ const INT_SUFFIX = "(?:U8|U16|U32|U64|I8|I16|I32|I64)?";
 const FLOAT_SUFFIX = "(?:F32|F64)?";
 const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
-const CHAR_ESCAPE =
-  `(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\)|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
-const STRING_ESCAPE =
-  `(?:u\\([0-9A-Fa-f]{1,8}\\)|x[0-9A-Fa-f]{2}|[ntrbfv'"\\\\])`;
+
+// Single source of truth for escape sequences. Used by both char and
+// string literals — they previously diverged (chars allowed `\0`,
+// strings didn't; ordering differed). Now they share one definition.
+const ESCAPE_BODY =
+  `(?:[ntrbfv0'"\\\\]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\)|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
 
 const opt = optional;
 const many = repeat;
@@ -151,12 +155,16 @@ function bracedCollection($, rule, separator) {
   return flexCollection($, $.lbrace, $.rbrace, rule, separator);
 }
 
+// Block-of-statements: braces, semicolon-separated. Used for things that
+// are statement-like (choice variants, shape/fit members, match arms,
+// test bodies, record/builder bodies). Semicolons remain the separator
+// in this role because these items read as discrete steps, not data.
 function bracedSemiBlock($, rule) {
   return bracedCollection($, rule, $.semicolon);
 }
 
-// Parenthesized comma-separated payload list, used for choice variants
-// and constructor patterns now that `with` is gone.
+// Parenthesized comma-separated payload list for choice variants and
+// constructor patterns.
 function parenPayloadList($, payloadRule) {
   return seq(
     $.lparen,
@@ -327,8 +335,6 @@ module.exports = grammar({
         optTypeParams($),
         field("body", bracedSemiBlock($, $.choice_variant)),
       ),
-    // Variants use either a parenthesized payload list `Foo(Int, Bool)`
-    // or an inline record `Foo { x: Int; y: Int }`.
     choice_variant: ($) =>
       withAttributes(
         $,
@@ -388,10 +394,12 @@ module.exports = grammar({
         $.attribute_record_value,
         seq($.lparen, $.attribute_value, $.rparen),
       ),
+    // Attribute list values use commas now (data-with-commas rule).
     attribute_list_value: ($) =>
-      collection($, $.lbracket, $.rbracket, $.attribute_value, $.semicolon),
+      collection($, $.lbracket, $.rbracket, $.attribute_value, $.comma),
+    // Attribute record values are a record literal, also commas.
     attribute_record_value: ($) =>
-      bracedSemiBlock($, $.attribute_record_field),
+      bracedCollection($, $.attribute_record_field, $.comma),
     attribute_record_field: ($) =>
       seq(
         field("name", $.field_name),
@@ -512,6 +520,9 @@ module.exports = grammar({
     match_arm_value: ($) => field("value", $.expression),
 
     // === Expression ladder ===
+    // PIPE > MATCH: `data |> filter(f) to { ... }` parses as
+    // `(data |> filter(f)) to { ... }`, which is how pipelines into a
+    // match are expected to read.
     pipe_expression: ($) => leftAssocBinop(PREC.PIPE, $.or_expression, $.pipe),
     or_expression: ($) => leftAssocBinop(PREC.OR, $.and_expression, $.or_op),
     and_expression: ($) => leftAssocBinop(PREC.AND, $.compare_expression, $.and_op),
@@ -541,7 +552,6 @@ module.exports = grammar({
         ),
         $.match_expression,
       ),
-    // `application_expression` is gone — calls are a postfix suffix now.
     match_expression: ($) =>
       prec(
         PREC.MATCH,
@@ -584,8 +594,6 @@ module.exports = grammar({
         $.parenthesized_expression,
       ),
 
-    // Calls now take arguments. `foo()`, `foo(x)`, `foo(x, y)`. Chaining is
-    // automatic via the postfix loop: `f(x)(y).z?@m`.
     call_suffix: ($) =>
       seq(
         $.lparen,
@@ -605,17 +613,21 @@ module.exports = grammar({
     record_suffix: ($) => field("body", $.record_body),
 
     unit_expression: ($) => seq($.lparen, $.rparen),
+    // Lists, maps, tuples now use commas — data uses commas everywhere,
+    // matching the way types already worked. The `Pair(a, b)` pattern
+    // now mirrors the `#(a, b)` value, not a different separator.
     list_expression: ($) =>
-      collection($, $.lbracket, $.rbracket, $.list_item, $.semicolon),
+      collection($, $.lbracket, $.rbracket, $.list_item, $.comma),
     list_item: ($) => choice($.expression, $.spread_element),
     map_expression: ($) =>
-      collection($, $.lbracket_map, $.rbracket, $.map_entry, $.semicolon),
+      collection($, $.lbracket_map, $.rbracket, $.map_entry, $.comma),
     map_entry: ($) =>
       seq(field("key", $.expression), $.fat_arrow, $.value_slot),
     record_builder: ($) =>
       seq($.kw_build, field("builder", $.path), $.builder_body),
-    record_body: ($) => bracedSemiBlock($, $.record_field),
-    builder_body: ($) => bracedSemiBlock($, $.builder_field),
+    // Record / builder literals use commas (they're data, not statements).
+    record_body: ($) => bracedCollection($, $.record_field, $.comma),
+    builder_body: ($) => bracedCollection($, $.builder_field, $.comma),
     record_field: ($) =>
       choice(
         seq(field("name", $.field_name), $.equals, $.value_slot),
@@ -624,10 +636,12 @@ module.exports = grammar({
     builder_field: ($) =>
       seq(field("name", $.field_name), $.left_arrow, $.value_slot),
     field_name: ($) => reserved("global", $.identifier),
-    tuple_expression: ($) => tuple($, $.expression, $.semicolon),
+    tuple_expression: ($) => tuple($, $.expression, $.comma),
     parenthesized_expression: ($) =>
       seq($.lparen, field("value", $.expression), $.rparen),
 
+    // `let` bindings inside a `let ... in` form remain semicolon-
+    // separated — these are statement-like, not data.
     let_expression: ($) =>
       prec.right(
         seq(
@@ -639,8 +653,11 @@ module.exports = grammar({
           $.let_body,
         ),
       ),
+    // Match arms use `=>` (same arrow as lambdas and fit methods).
+    // The old `->` arrow is gone — one arrow for "function-like body
+    // follows" across the language.
     match_arm: ($) =>
-      seq(field("pattern", $.pattern), $.arrow, $.match_arm_value),
+      seq(field("pattern", $.pattern), $.fat_arrow, $.match_arm_value),
     lambda_parameters: ($) => parameterList($, $.binding_pattern),
     lambda_expression: ($) =>
       prec.right(seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body)),
@@ -687,7 +704,6 @@ module.exports = grammar({
         $.record_pattern,
         seq($.lparen, $.pattern, $.rparen),
       ),
-    // Constructor patterns: `Some(x)`, `Pair(a, b)`, or bare `None`.
     path_pattern: ($) =>
       seq(
         field("constructor", $.path),
@@ -696,28 +712,28 @@ module.exports = grammar({
     wildcard_pattern: ($) => $.wildcard,
     unit_pattern: ($) => seq($.lparen, $.rparen),
 
+    // Pattern collections — data-shaped patterns get commas too.
     binding_list_pattern: ($) =>
       bracketedWithRest(
         $,
         $.lbracket,
         $.rbracket,
         $.binding_pattern,
-        $.semicolon,
+        $.comma,
         $.rest_pattern,
       ),
-    binding_tuple_pattern: ($) => tuple($, $.binding_pattern, $.semicolon),
+    binding_tuple_pattern: ($) => tuple($, $.binding_pattern, $.comma),
     binding_record_pattern: ($) =>
       bracketedWithRest(
         $,
         $.lbrace,
         $.rbrace,
         $.binding_record_pattern_field,
-        $.semicolon,
+        $.comma,
         $.rest_op,
       ),
     binding_record_pattern_field: ($) =>
       fieldPattern($.field_name, $.colon, $.binding_pattern),
-    // Tag payload patterns appear inside `Foo(...)` constructor patterns.
     tag_payload_pattern: ($) =>
       choice(
         $.literal,
@@ -734,18 +750,18 @@ module.exports = grammar({
         $.lbracket,
         $.rbracket,
         $.pattern,
-        $.semicolon,
+        $.comma,
         $.rest_pattern,
       ),
     rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
-    tuple_pattern: ($) => tuple($, $.pattern, $.semicolon),
+    tuple_pattern: ($) => tuple($, $.pattern, $.comma),
     record_pattern: ($) =>
       bracketedWithRest(
         $,
         $.lbrace,
         $.rbrace,
         $.record_pattern_field,
-        $.semicolon,
+        $.comma,
         $.rest_op,
       ),
     record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
@@ -861,16 +877,18 @@ module.exports = grammar({
         $.quote,
       ),
     text_content: ($) => token(new RustRegex('[^"\\\\\\r\\n]+')),
+    // Char literals now use the same escape set as strings — single
+    // source of truth via ESCAPE_BODY.
     char_literal: ($) =>
       token(
         choice(
           new RustRegex("'[^'\\\\]'"),
-          new RustRegex(`'\\\\${CHAR_ESCAPE}'`),
+          new RustRegex(`'\\\\${ESCAPE_BODY}'`),
         ),
       ),
     interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
     interpolation_start: ($) => token(new RustRegex("\\\\\\(")),
-    escape_sequence: ($) => token(new RustRegex(`\\\\${STRING_ESCAPE}`)),
+    escape_sequence: ($) => token(new RustRegex(`\\\\${ESCAPE_BODY}`)),
     static_text: ($) =>
       seq(
         $.quote,
@@ -922,6 +940,8 @@ module.exports = grammar({
     ge_op: () => ">=",
     lt_op: () => "<",
     gt_op: () => ">",
+    // `->` survives only as the return-arrow on function types.
+    // Match arms and fit methods both use `=>` (fat_arrow).
     arrow: () => "->",
     left_arrow: () => "<-",
     fat_arrow: () => "=>",
