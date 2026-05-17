@@ -54,9 +54,6 @@ const INT_SUFFIX = "(?:U8|U16|U32|U64|I8|I16|I32|I64)?";
 const FLOAT_SUFFIX = "(?:F32|F64)?";
 const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
-// CHAR_ESCAPE now accepts the same `\u(...)` form as strings so users can
-// write `'\u(1F600)'` for any Unicode scalar. The fixed-width `\u####` /
-// `\U########` forms remain for parity with the prior surface.
 const CHAR_ESCAPE =
 	`(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\)|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
 const LINE_SPLICE = "\\r?\\n[ \\t]*";
@@ -109,12 +106,6 @@ function fieldPattern(fieldName, colon, valueRule) {
 	return choice(seq(fieldName, colon, valueRule), fieldName);
 }
 
-// Two-or-more items, always requiring an explicit separator between adjacent
-// elements. The trailing separator is optional. The `optional_separator`
-// flag is retained for symmetry with `separated1` but is now a no-op here:
-// permitting an implicit (missing) separator between the first two elements
-// would let `#(a b)` parse as a 2-tuple just because newlines are in
-// `extras`, which is not what we want.
 function looseSeparated2Plus(
 	$,
 	rule,
@@ -240,9 +231,6 @@ module.exports = grammar({
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 
 		// === Top-level items ===
-		// Attributes are hoisted to the module_item wrapper. Visibility is
-		// hoisted to the declaration wrapper (use_statement and test_declaration
-		// don't take visibility, so they branch above the visibility hoist).
 		module_item: ($) =>
 			seq(
 				attributePrefix($),
@@ -330,9 +318,6 @@ module.exports = grammar({
 				opt(field("type_params", $.type_parameter_list)),
 				field("body", bracedCollection($, $.choice_variant, $.semicolon)),
 			),
-		// Left-factored: identifier is parsed first, then the optional payload
-		// shape is decided by the next token (with -> with-list, { -> record
-		// payload, anything else -> bare variant).
 		choice_variant: ($) =>
 			seq(
 				attributePrefix($),
@@ -439,12 +424,6 @@ module.exports = grammar({
 				field("shape", $.path),
 				opt(field("constraints", $.constraint_clause)),
 			),
-		// Shared core of "things you can name as a concrete type" — used by
-		// both `base_type` (which adds function and wildcard) and
-		// `impl_type_head` (which does not). Impl heads exclude function
-		// types because a `fit` block targets a nominal/structural type, not
-		// a function value; they exclude wildcards because the target of an
-		// implementation must be a concrete (inferable) type, not a hole.
 		_concrete_type_head: ($) =>
 			choice(
 				$.path_or_applied,
@@ -532,10 +511,6 @@ module.exports = grammar({
 		match_arm_value: ($) => layoutExpr($, "value"),
 
 		// === Expression ladder ===
-		// Inlined (no factory). The previous `buildExpressionLadder`/
-		// `buildExpressionBottom` machinery anticipated a second
-		// instantiation that never landed; rather than carry the dead
-		// generality, the ladder is written out directly.
 		pipe_expression: ($) =>
 			prec.left(
 				PREC.PIPE,
@@ -613,10 +588,6 @@ module.exports = grammar({
 				),
 				$.match_expression,
 			),
-		// `match_expression` is a single non-recursive postfix
-		// (`<expr> to { arms }`); the brace block terminates the construct,
-		// so neither left- nor right-associativity is meaningful. A plain
-		// `prec` is sufficient and more honest about what the rule does.
 		match_expression: ($) =>
 			prec(
 				PREC.MATCH,
@@ -838,17 +809,11 @@ module.exports = grammar({
 			),
 		record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
 
-		// Folded: `applied_type` is gone; `path_or_applied` covers both bare
-		// path and path-with-type-args. Consumers in type position read the
-		// optional `args` field to tell them apart.
 		path_or_applied: ($) =>
 			seq(
 				field("constructor", $.path),
 				opt(field("args", $.type_argument_list)),
 			),
-		// `base_type` = the concrete-type core + the two type-position-only
-		// extras (function types and wildcards). The shared core lives in
-		// `_concrete_type_head` and is also used by `impl_type_head`.
 		base_type: ($) =>
 			choice(
 				$.function_type,
@@ -965,11 +930,6 @@ module.exports = grammar({
 				many(choice($.text_content, $.escape_sequence, $.interpolation)),
 				$.quote,
 			),
-		// Raw newlines are permitted inside string contents — multi-line
-		// strings are a first-class feature, not something users have to
-		// escape. The string is still terminated by `"`, and `\` still
-		// introduces an escape sequence (including `\<newline>` line splices
-		// via `STRING_ESCAPE`).
 		text_content: ($) => token(new RustRegex('[^"\\\\]+')),
 		char_literal: ($) =>
 			token(
@@ -987,7 +947,6 @@ module.exports = grammar({
 				many(choice($.static_text_content, $.escape_sequence)),
 				$.quote,
 			),
-		// Same allowance as `text_content` — multi-line static text is fine.
 		static_text_content: ($) => token(new RustRegex('[^"\\\\]+')),
 		line_comment: (_) => token(new RustRegex("//[^\\n]*")),
 		block_comment: (_) =>
