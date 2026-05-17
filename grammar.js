@@ -181,7 +181,7 @@ function parameterList($, paramRule) {
 function bareBinding($, nameRule) {
   return seq(
     field("name", nameRule),
-    opt(seq($.colon, field("type_ann", $.type_body))),
+    opt(seq($.colon, field("type_ann", $.type_expression))),
     $.equals,
     $.value_slot,
   );
@@ -334,7 +334,7 @@ module.exports = grammar({
         attributePrefix($),
         field("name", $.binding_name),
         $.colon,
-        field("type_ann", $.type_body),
+        field("type_ann", $.type_expression),
         opt(field("default", $.method_default)),
         opt(field("constraints", $.constraint_clause)),
       ),
@@ -344,7 +344,7 @@ module.exports = grammar({
         $.kw_sig,
         field("name", $.identifier),
         $.colon,
-        field("type_ann", $.type_body),
+        field("type_ann", $.type_expression),
         opt(field("constraints", $.constraint_clause)),
       ),
     value_declaration: ($) =>
@@ -432,7 +432,7 @@ module.exports = grammar({
         $.kw_type,
         field("name", $.type_member_name),
         $.equals,
-        field("value", $.type_body),
+        field("value", $.type_expression),
       ),
     fit_method: ($) =>
       seq(
@@ -476,7 +476,7 @@ module.exports = grammar({
       seq(
         opt($.kw_rec),
         field("pattern", $.binding_pattern),
-        opt(seq($.colon, field("type_ann", $.type_body))),
+        opt(seq($.colon, field("type_ann", $.type_expression))),
         $.equals,
         $.value_slot,
       ),
@@ -809,7 +809,6 @@ module.exports = grammar({
       ),
     type_expression: ($) =>
       choice($.base_type, seq($.ellipsis, field("item", $.base_type))),
-    type_body: ($) => field("type", $.type_expression),
     ellipsis: ($) => "...",
     rest_op: ($) => "..",
 
@@ -860,7 +859,7 @@ module.exports = grammar({
         attributePrefix($),
         field("name", $.field_name),
         $.colon,
-        field("type_ann", $.type_body),
+        field("type_ann", $.type_expression),
       ),
     record_type: ($) =>
       flexCollection($, $.lbrace, $.rbrace, $.record_type_field, $.comma, {
