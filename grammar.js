@@ -394,10 +394,10 @@ module.exports = grammar({
         $.attribute_record_value,
         seq($.lparen, $.attribute_value, $.rparen),
       ),
-    // Attribute list values use commas now (data-with-commas rule).
+    // Attribute list values are data — commas, same as list_expression.
     attribute_list_value: ($) =>
       collection($, $.lbracket, $.rbracket, $.attribute_value, $.comma),
-    // Attribute record values are a record literal, also commas.
+    // Attribute record values are data — commas, same as record_body.
     attribute_record_value: ($) =>
       bracedCollection($, $.attribute_record_field, $.comma),
     attribute_record_field: ($) =>
