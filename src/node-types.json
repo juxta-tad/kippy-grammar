@@ -593,19 +593,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -845,19 +833,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -1354,19 +1330,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -2113,19 +2077,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -2266,19 +2218,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -2973,19 +2913,7 @@
         "required": false,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -3735,19 +3663,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
@@ -4212,19 +4128,7 @@
         "required": true,
         "types": [
           {
-            "type": "if_expression",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "let_expression",
-            "named": true
-          },
-          {
-            "type": "pipe_expression",
+            "type": "expression",
             "named": true
           }
         ]
