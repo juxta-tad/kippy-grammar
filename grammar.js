@@ -26,7 +26,6 @@ const KEYWORDS = [
   "to",
   "in",
   "where",
-  "with",
   "shape",
   "module",
   "use",
@@ -67,7 +66,6 @@ function sep1(rule, separator) {
   return seq(rule, many(seq(separator, rule)));
 }
 
-// IMPROVEMENT #2: Flip default — optional_separator: false is the common case.
 function separated1(
   $,
   rule,
@@ -123,6 +121,7 @@ function collection(
     separated1($, item, separator, { optional_separator }),
   );
 }
+
 function tuple($, item, separator) {
   return delimited(
     $,
@@ -151,16 +150,18 @@ function flexCollection(
 function bracedCollection($, rule, separator) {
   return flexCollection($, $.lbrace, $.rbrace, rule, separator);
 }
+
 function bracedSemiBlock($, rule) {
   return bracedCollection($, rule, $.semicolon);
 }
 
-function withPayloads($, nameRule, payloadRule) {
+// Parenthesized comma-separated payload list, used for choice variants
+// and constructor patterns now that `with` is gone.
+function parenPayloadList($, payloadRule) {
   return seq(
-    nameRule,
-    $.kw_with,
-    field("payload", payloadRule),
-    many(seq($.comma, field("payload", payloadRule))),
+    $.lparen,
+    separated1($, field("payload", payloadRule), $.comma),
+    $.rparen,
   );
 }
 
@@ -185,24 +186,8 @@ function withAttributes($, ...rest) {
   return seq(many(field("attribute", $.attribute)), ...rest);
 }
 
-function namedTypeDecl($, keyword, extras = {}) {
-  const { typeParams = true, body = null } = extras;
-  const parts = [keyword, field("name", $.binding_name)];
-  if (typeParams) {
-    parts.push(opt(field("type_params", $.type_parameter_list)));
-  }
-  if (body) parts.push(body);
-  return seq(...parts);
-}
-
-function leftAssocBinop(
-  precedence,
-  operandRule,
-  opRule,
-  { single = false } = {},
-) {
+function leftAssocBinop(precedence, operandRule, opRule, { single = false } = {}) {
   if (single) {
-    // For compare_expression: at most one operator.
     return prec.left(
       precedence,
       seq(
@@ -220,7 +205,6 @@ function leftAssocBinop(
   );
 }
 
-// IMPROVEMENT #5: Single helper for "[ ... ] or { ... } with rest binding".
 function bracketedWithRest($, open, close, item, separator, rest) {
   return seq(
     open,
@@ -229,7 +213,6 @@ function bracketedWithRest($, open, close, item, separator, rest) {
   );
 }
 
-// IMPROVEMENT #7: Optional type-parameter-list field appears on six rules.
 function optTypeParams($) {
   return opt(field("type_params", $.type_parameter_list));
 }
@@ -309,12 +292,14 @@ module.exports = grammar({
       ),
     module_declaration: ($) => seq($.kw_module, field("name", $.path)),
 
-    // === Type/value declarations (improvement #3 + #7) ===
+    // === Type/value declarations ===
     alias_declaration: ($) =>
-      namedTypeDecl($, $.kw_alias, {
-        typeParams: false,
-        body: seq($.equals, field("body", $.type_expression)),
-      }),
+      seq(
+        $.kw_alias,
+        field("name", $.binding_name),
+        $.equals,
+        field("body", $.type_expression),
+      ),
     distinct_declaration: ($) =>
       seq(
         $.kw_distinct,
@@ -342,17 +327,15 @@ module.exports = grammar({
         optTypeParams($),
         field("body", bracedSemiBlock($, $.choice_variant)),
       ),
+    // Variants use either a parenthesized payload list `Foo(Int, Bool)`
+    // or an inline record `Foo { x: Int; y: Int }`.
     choice_variant: ($) =>
       withAttributes(
         $,
         field("name", $.identifier),
         opt(
           choice(
-            seq(
-              $.kw_with,
-              field("payload", $.type_expression),
-              many(seq($.comma, field("payload", $.type_expression))),
-            ),
+            parenPayloadList($, $.type_expression),
             field("payload", $.record_type),
           ),
         ),
@@ -407,7 +390,8 @@ module.exports = grammar({
       ),
     attribute_list_value: ($) =>
       collection($, $.lbracket, $.rbracket, $.attribute_value, $.semicolon),
-    attribute_record_value: ($) => bracedSemiBlock($, $.attribute_record_field),
+    attribute_record_value: ($) =>
+      bracedSemiBlock($, $.attribute_record_field),
     attribute_record_field: ($) =>
       seq(
         field("name", $.field_name),
@@ -518,7 +502,6 @@ module.exports = grammar({
         $.let_expression,
         $.pipe_expression,
       ),
-    call_argument: ($) => $.postfix_expression,
     spread_element: ($) => seq($.rest_op, field("base", $.expression)),
     value_slot: ($) => field("value", $.expression),
     if_then_value: ($) => field("then_value", $.expression),
@@ -528,11 +511,10 @@ module.exports = grammar({
     method_body: ($) => field("body", $.expression),
     match_arm_value: ($) => field("value", $.expression),
 
-    // === Expression ladder (improvement #4) ===
+    // === Expression ladder ===
     pipe_expression: ($) => leftAssocBinop(PREC.PIPE, $.or_expression, $.pipe),
     or_expression: ($) => leftAssocBinop(PREC.OR, $.and_expression, $.or_op),
-    and_expression: ($) =>
-      leftAssocBinop(PREC.AND, $.compare_expression, $.and_op),
+    and_expression: ($) => leftAssocBinop(PREC.AND, $.compare_expression, $.and_op),
     compare_expression: ($) =>
       leftAssocBinop(
         PREC.COMPARE,
@@ -559,28 +541,15 @@ module.exports = grammar({
         ),
         $.match_expression,
       ),
+    // `application_expression` is gone — calls are a postfix suffix now.
     match_expression: ($) =>
       prec(
         PREC.MATCH,
         choice(
           seq(
-            field("subject", $.application_expression),
+            field("subject", $.postfix_expression),
             $.kw_to,
             field("body", bracedSemiBlock($, $.match_arm)),
-          ),
-          $.application_expression,
-        ),
-      ),
-    application_expression: ($) =>
-      prec(
-        PREC.POSTFIX,
-        choice(
-          seq(
-            field("callee", $.postfix_expression),
-            $.kw_with,
-            field("arg", $.call_argument),
-            many(seq($.comma, field("arg", $.call_argument))),
-            opt($.comma),
           ),
           $.postfix_expression,
         ),
@@ -615,7 +584,15 @@ module.exports = grammar({
         $.parenthesized_expression,
       ),
 
-    call_suffix: ($) => seq($.lparen, $.rparen),
+    // Calls now take arguments. `foo()`, `foo(x)`, `foo(x, y)`. Chaining is
+    // automatic via the postfix loop: `f(x)(y).z?@m`.
+    call_suffix: ($) =>
+      seq(
+        $.lparen,
+        opt(separated1($, field("arg", $.call_argument), $.comma)),
+        $.rparen,
+      ),
+    call_argument: ($) => $.expression,
     index_suffix: ($) =>
       seq($.lbracket, field("index", $.expression), $.rbracket),
     field_suffix: ($) => seq($.dot, field("field", $.field_name)),
@@ -710,15 +687,15 @@ module.exports = grammar({
         $.record_pattern,
         seq($.lparen, $.pattern, $.rparen),
       ),
+    // Constructor patterns: `Some(x)`, `Pair(a, b)`, or bare `None`.
     path_pattern: ($) =>
-      choice(
-        withPayloads($, field("constructor", $.path), $.tag_payload_pattern),
+      seq(
         field("constructor", $.path),
+        opt(parenPayloadList($, $.tag_payload_pattern)),
       ),
     wildcard_pattern: ($) => $.wildcard,
     unit_pattern: ($) => seq($.lparen, $.rparen),
 
-    // === Pattern collections (improvement #5) ===
     binding_list_pattern: ($) =>
       bracketedWithRest(
         $,
@@ -740,11 +717,12 @@ module.exports = grammar({
       ),
     binding_record_pattern_field: ($) =>
       fieldPattern($.field_name, $.colon, $.binding_pattern),
+    // Tag payload patterns appear inside `Foo(...)` constructor patterns.
     tag_payload_pattern: ($) =>
       choice(
         $.literal,
         $.wildcard_pattern,
-        $.path,
+        $.path_pattern,
         $.list_pattern,
         $.tuple_pattern,
         $.record_pattern,
