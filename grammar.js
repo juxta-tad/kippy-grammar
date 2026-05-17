@@ -54,6 +54,9 @@ const INT_SUFFIX = "(?:U8|U16|U32|U64|I8|I16|I32|I64)?";
 const FLOAT_SUFFIX = "(?:F32|F64)?";
 const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
+// CHAR_ESCAPE now accepts the same `\u(...)` form as strings so users can
+// write `'\u(1F600)'` for any Unicode scalar. The fixed-width `\u####` /
+// `\U########` forms remain for parity with the prior surface.
 const CHAR_ESCAPE =
 	`(?:[nrt0\\\\'"bfv]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\)|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
 const LINE_SPLICE = "\\r?\\n[ \\t]*";
@@ -62,6 +65,7 @@ const STRING_ESCAPE =
 
 const opt = optional;
 const many = repeat;
+const many1 = repeat1;
 
 function sep1(rule, separator) {
 	return seq(rule, many(seq(separator, rule)));
@@ -105,6 +109,12 @@ function fieldPattern(fieldName, colon, valueRule) {
 	return choice(seq(fieldName, colon, valueRule), fieldName);
 }
 
+// Two-or-more items, always requiring an explicit separator between adjacent
+// elements. The trailing separator is optional. The `optional_separator`
+// flag is retained for symmetry with `separated1` but is now a no-op here:
+// permitting an implicit (missing) separator between the first two elements
+// would let `#(a b)` parse as a 2-tuple just because newlines are in
+// `extras`, which is not what we want.
 function looseSeparated2Plus(
 	$,
 	rule,
@@ -229,6 +239,10 @@ module.exports = grammar({
 	rules: {
 		source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 
+		// === Top-level items ===
+		// Attributes are hoisted to the module_item wrapper. Visibility is
+		// hoisted to the declaration wrapper (use_statement and test_declaration
+		// don't take visibility, so they branch above the visibility hoist).
 		module_item: ($) =>
 			seq(
 				attributePrefix($),
