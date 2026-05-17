@@ -195,7 +195,12 @@ function namedTypeDecl($, keyword, extras = {}) {
   return seq(...parts);
 }
 
-function leftAssocBinop(precedence, operandRule, opRule, { single = false } = {}) {
+function leftAssocBinop(
+  precedence,
+  operandRule,
+  opRule,
+  { single = false } = {},
+) {
   if (single) {
     // For compare_expression: at most one operator.
     return prec.left(
@@ -402,8 +407,7 @@ module.exports = grammar({
       ),
     attribute_list_value: ($) =>
       collection($, $.lbracket, $.rbracket, $.attribute_value, $.semicolon),
-    attribute_record_value: ($) =>
-      bracedSemiBlock($, $.attribute_record_field),
+    attribute_record_value: ($) => bracedSemiBlock($, $.attribute_record_field),
     attribute_record_field: ($) =>
       seq(
         field("name", $.field_name),
@@ -527,7 +531,8 @@ module.exports = grammar({
     // === Expression ladder (improvement #4) ===
     pipe_expression: ($) => leftAssocBinop(PREC.PIPE, $.or_expression, $.pipe),
     or_expression: ($) => leftAssocBinop(PREC.OR, $.and_expression, $.or_op),
-    and_expression: ($) => leftAssocBinop(PREC.AND, $.compare_expression, $.and_op),
+    and_expression: ($) =>
+      leftAssocBinop(PREC.AND, $.compare_expression, $.and_op),
     compare_expression: ($) =>
       leftAssocBinop(
         PREC.COMPARE,
