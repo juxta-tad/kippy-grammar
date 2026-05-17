@@ -123,9 +123,6 @@ function collection(
     separated1($, item, separator, { optional_separator }),
   );
 }
-
-// IMPROVEMENT #6: Tuple helper now takes only the element rule + separator.
-// All call sites used #( ... ) with optional_separator: false.
 function tuple($, item, separator) {
   return delimited(
     $,
@@ -154,9 +151,6 @@ function flexCollection(
 function bracedCollection($, rule, separator) {
   return flexCollection($, $.lbrace, $.rbrace, rule, separator);
 }
-
-// IMPROVEMENT #8: Specialize the most common bracedCollection case —
-// braces + semicolon separator.
 function bracedSemiBlock($, rule) {
   return bracedCollection($, rule, $.semicolon);
 }
@@ -187,14 +181,10 @@ function bareBinding($, nameRule) {
   );
 }
 
-// IMPROVEMENT #1: Single helper for the attribute prefix.
-// Wraps the many() of attribute fields so call sites just spread it.
 function withAttributes($, ...rest) {
   return seq(many(field("attribute", $.attribute)), ...rest);
 }
 
-// IMPROVEMENT #3: Unified "named type-like declaration with optional type params".
-// Covers alias/distinct/tag/record/choice/shape headers.
 function namedTypeDecl($, keyword, extras = {}) {
   const { typeParams = true, body = null } = extras;
   const parts = [keyword, field("name", $.binding_name)];
@@ -205,7 +195,6 @@ function namedTypeDecl($, keyword, extras = {}) {
   return seq(...parts);
 }
 
-// IMPROVEMENT #4: Single helper for the left-associative binary-operator ladder.
 function leftAssocBinop(precedence, operandRule, opRule, { single = false } = {}) {
   if (single) {
     // For compare_expression: at most one operator.
