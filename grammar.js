@@ -67,11 +67,12 @@ function sep1(rule, separator) {
   return seq(rule, many(seq(separator, rule)));
 }
 
+// IMPROVEMENT #2: Flip default — optional_separator: false is the common case.
 function separated1(
   $,
   rule,
   separator,
-  { optional_separator = true } = {},
+  { optional_separator = false } = {},
 ) {
   if (optional_separator) {
     return seq(rule, many(seq(opt(separator), rule)), opt(separator));
@@ -101,7 +102,7 @@ function looseSeparated2Plus(
   $,
   rule,
   separator,
-  { optional_separator = true } = {},
+  { optional_separator = false } = {},
 ) {
   void optional_separator;
   return seq(rule, separator, rule, many(seq(separator, rule)), opt(separator));
@@ -113,7 +114,7 @@ function collection(
   close,
   item,
   separator,
-  { optional_separator = true } = {},
+  { optional_separator = false } = {},
 ) {
   return delimited(
     $,
@@ -123,21 +124,14 @@ function collection(
   );
 }
 
-function tuple(
-  $,
-  open,
-  close,
-  item,
-  separator,
-  { optional_separator = true } = {},
-) {
+// IMPROVEMENT #6: Tuple helper now takes only the element rule + separator.
+// All call sites used #( ... ) with optional_separator: false.
+function tuple($, item, separator) {
   return delimited(
     $,
-    open,
-    close,
-    looseSeparated2Plus($, field("element", item), separator, {
-      optional_separator,
-    }),
+    $.lparen_hash,
+    $.rparen,
+    looseSeparated2Plus($, field("element", item), separator),
   );
 }
 
@@ -147,7 +141,7 @@ function flexCollection(
   close,
   rule,
   separator,
-  { optional_separator = true } = {},
+  { optional_separator = false } = {},
 ) {
   const body = seq(
     rule,
@@ -159,6 +153,12 @@ function flexCollection(
 
 function bracedCollection($, rule, separator) {
   return flexCollection($, $.lbrace, $.rbrace, rule, separator);
+}
+
+// IMPROVEMENT #8: Specialize the most common bracedCollection case —
+// braces + semicolon separator.
+function bracedSemiBlock($, rule) {
+  return bracedCollection($, rule, $.semicolon);
 }
 
 function withPayloads($, nameRule, payloadRule) {
@@ -187,8 +187,57 @@ function bareBinding($, nameRule) {
   );
 }
 
-function attributePrefix($) {
-  return many(field("attribute", $.attribute));
+// IMPROVEMENT #1: Single helper for the attribute prefix.
+// Wraps the many() of attribute fields so call sites just spread it.
+function withAttributes($, ...rest) {
+  return seq(many(field("attribute", $.attribute)), ...rest);
+}
+
+// IMPROVEMENT #3: Unified "named type-like declaration with optional type params".
+// Covers alias/distinct/tag/record/choice/shape headers.
+function namedTypeDecl($, keyword, extras = {}) {
+  const { typeParams = true, body = null } = extras;
+  const parts = [keyword, field("name", $.binding_name)];
+  if (typeParams) {
+    parts.push(opt(field("type_params", $.type_parameter_list)));
+  }
+  if (body) parts.push(body);
+  return seq(...parts);
+}
+
+// IMPROVEMENT #4: Single helper for the left-associative binary-operator ladder.
+function leftAssocBinop(precedence, operandRule, opRule, { single = false } = {}) {
+  if (single) {
+    // For compare_expression: at most one operator.
+    return prec.left(
+      precedence,
+      seq(
+        field("lhs", operandRule),
+        opt(seq(field("op", opRule), field("rhs", operandRule))),
+      ),
+    );
+  }
+  return prec.left(
+    precedence,
+    seq(
+      field("lhs", operandRule),
+      many(seq(field("op", opRule), field("rhs", operandRule))),
+    ),
+  );
+}
+
+// IMPROVEMENT #5: Single helper for "[ ... ] or { ... } with rest binding".
+function bracketedWithRest($, open, close, item, separator, rest) {
+  return seq(
+    open,
+    separatedWithOptionalRest(item, separator, rest),
+    close,
+  );
+}
+
+// IMPROVEMENT #7: Optional type-parameter-list field appears on six rules.
+function optTypeParams($) {
+  return opt(field("type_params", $.type_parameter_list));
 }
 
 module.exports = grammar({
@@ -222,11 +271,7 @@ module.exports = grammar({
     source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 
     // === Top-level items ===
-    module_item: ($) =>
-      seq(
-        attributePrefix($),
-        $._top_level_item,
-      ),
+    module_item: ($) => withAttributes($, $._top_level_item),
     _top_level_item: ($) => choice($.use_statement, $.declaration),
 
     declaration: ($) =>
@@ -260,11 +305,7 @@ module.exports = grammar({
     import_set: ($) =>
       seq(
         $.lbrace,
-        opt(
-          separated1($, $.import_item, $.comma, {
-            optional_separator: false,
-          }),
-        ),
+        opt(separated1($, $.import_item, $.comma)),
         $.rbrace,
       ),
     import_item: ($) =>
@@ -274,44 +315,42 @@ module.exports = grammar({
       ),
     module_declaration: ($) => seq($.kw_module, field("name", $.path)),
 
-    // === Type/value declarations (attributes + visibility hoisted out) ===
+    // === Type/value declarations (improvement #3 + #7) ===
     alias_declaration: ($) =>
-      seq(
-        $.kw_alias,
-        field("name", $.binding_name),
-        $.equals,
-        field("body", $.type_expression),
-      ),
+      namedTypeDecl($, $.kw_alias, {
+        typeParams: false,
+        body: seq($.equals, field("body", $.type_expression)),
+      }),
     distinct_declaration: ($) =>
       seq(
         $.kw_distinct,
         field("name", $.binding_name),
-        opt(field("type_params", $.type_parameter_list)),
+        optTypeParams($),
         opt(seq($.equals, field("body", $.type_expression))),
       ),
     tag_declaration: ($) =>
       seq(
         $.kw_tag,
         field("name", $.binding_name),
-        opt(field("type_params", $.type_parameter_list)),
+        optTypeParams($),
       ),
     record_declaration: ($) =>
       seq(
         $.kw_record,
         field("name", $.binding_name),
-        opt(field("type_params", $.type_parameter_list)),
+        optTypeParams($),
         field("body", $.record_type),
       ),
     choice_declaration: ($) =>
       seq(
         $.kw_choice,
         field("name", $.binding_name),
-        opt(field("type_params", $.type_parameter_list)),
-        field("body", bracedCollection($, $.choice_variant, $.semicolon)),
+        optTypeParams($),
+        field("body", bracedSemiBlock($, $.choice_variant)),
       ),
     choice_variant: ($) =>
-      seq(
-        attributePrefix($),
+      withAttributes(
+        $,
         field("name", $.identifier),
         opt(
           choice(
@@ -326,12 +365,10 @@ module.exports = grammar({
       ),
 
     type_parameter_list: ($) =>
-      collection($, $.lbracket, $.rbracket, $.identifier, $.comma, {
-        optional_separator: false,
-      }),
+      collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
     shape_method: ($) =>
-      seq(
-        attributePrefix($),
+      withAttributes(
+        $,
         field("name", $.binding_name),
         $.colon,
         field("type_ann", $.type_expression),
@@ -361,9 +398,7 @@ module.exports = grammar({
         opt(field("args", $.attribute_arguments_inline)),
       ),
     attribute_arguments_inline: ($) =>
-      collection($, $.lparen, $.rparen, $.attribute_argument, $.comma, {
-        optional_separator: false,
-      }),
+      collection($, $.lparen, $.rparen, $.attribute_argument, $.comma),
     attribute_value: ($) =>
       choice(
         $.percent_literal,
@@ -379,7 +414,7 @@ module.exports = grammar({
     attribute_list_value: ($) =>
       collection($, $.lbracket, $.rbracket, $.attribute_value, $.semicolon),
     attribute_record_value: ($) =>
-      bracedCollection($, $.attribute_record_field, $.semicolon),
+      bracedSemiBlock($, $.attribute_record_field),
     attribute_record_field: ($) =>
       seq(
         field("name", $.field_name),
@@ -399,17 +434,17 @@ module.exports = grammar({
     implementation: ($) =>
       seq(
         $.kw_fit,
-        opt(field("type_params", $.type_parameter_list)),
+        optTypeParams($),
         field("type", $.impl_type_head),
         $.colon,
         field("shape", $.path),
         opt(field("constraints", $.constraint_clause)),
-        field("members", bracedCollection($, $.fit_member, $.semicolon)),
+        field("members", bracedSemiBlock($, $.fit_member)),
       ),
     derive_declaration: ($) =>
       seq(
         $.kw_derive,
-        opt(field("type_params", $.type_parameter_list)),
+        optTypeParams($),
         field("type", $.impl_type_head),
         $.colon,
         field("shape", $.path),
@@ -427,16 +462,16 @@ module.exports = grammar({
     impl_type_head: ($) => $._concrete_type_head,
     fit_member: ($) => choice($.fit_type_def, $.fit_method),
     fit_type_def: ($) =>
-      seq(
-        attributePrefix($),
+      withAttributes(
+        $,
         $.kw_type,
         field("name", $.type_member_name),
         $.equals,
         field("value", $.type_expression),
       ),
     fit_method: ($) =>
-      seq(
-        attributePrefix($),
+      withAttributes(
+        $,
         field("name", $.identifier),
         opt(field("parameters", $.method_parameter_list)),
         $.fat_arrow,
@@ -448,13 +483,13 @@ module.exports = grammar({
       seq(
         $.kw_shape,
         field("name", $.binding_name),
-        opt(field("type_params", $.type_parameter_list)),
+        optTypeParams($),
         opt(field("parents", $.shape_parents)),
-        field("members", bracedCollection($, $.shape_member, $.semicolon)),
+        field("members", bracedSemiBlock($, $.shape_member)),
       ),
     shape_member: ($) => choice($.shape_type_decl, $.shape_method),
     shape_type_decl: ($) =>
-      seq(attributePrefix($), $.kw_type, field("name", $.type_member_name)),
+      withAttributes($, $.kw_type, field("name", $.type_member_name)),
     shape_parents: ($) =>
       seq(
         $.colon,
@@ -466,7 +501,7 @@ module.exports = grammar({
       seq(
         $.kw_test,
         field("name", $.static_text),
-        field("body", bracedCollection($, $.test_statement, $.semicolon)),
+        field("body", bracedSemiBlock($, $.test_statement)),
       ),
     test_statement: ($) =>
       choice($.test_binding, $.test_value_declaration, $.expect_statement),
@@ -500,72 +535,24 @@ module.exports = grammar({
     method_body: ($) => field("body", $.expression),
     match_arm_value: ($) => field("value", $.expression),
 
-    // === Expression ladder ===
-    pipe_expression: ($) =>
-      prec.left(
-        PREC.PIPE,
-        seq(
-          field("lhs", $.or_expression),
-          many(seq($.pipe, field("rhs", $.or_expression))),
-        ),
-      ),
-    or_expression: ($) =>
-      prec.left(
-        PREC.OR,
-        seq(
-          field("lhs", $.and_expression),
-          many(seq($.or_op, field("rhs", $.and_expression))),
-        ),
-      ),
-    and_expression: ($) =>
-      prec.left(
-        PREC.AND,
-        seq(
-          field("lhs", $.compare_expression),
-          many(seq($.and_op, field("rhs", $.compare_expression))),
-        ),
-      ),
+    // === Expression ladder (improvement #4) ===
+    pipe_expression: ($) => leftAssocBinop(PREC.PIPE, $.or_expression, $.pipe),
+    or_expression: ($) => leftAssocBinop(PREC.OR, $.and_expression, $.or_op),
+    and_expression: ($) => leftAssocBinop(PREC.AND, $.compare_expression, $.and_op),
     compare_expression: ($) =>
-      prec.left(
+      leftAssocBinop(
         PREC.COMPARE,
-        seq(
-          field("lhs", $.add_expression),
-          opt(
-            seq(
-              field(
-                "op",
-                choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
-              ),
-              field("rhs", $.add_expression),
-            ),
-          ),
-        ),
+        $.add_expression,
+        choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
+        { single: true },
       ),
     add_expression: ($) =>
-      prec.left(
-        PREC.ADD,
-        seq(
-          field("lhs", $.mul_expression),
-          many(
-            seq(
-              field("op", choice($.plus_op, $.minus_op)),
-              field("rhs", $.mul_expression),
-            ),
-          ),
-        ),
-      ),
+      leftAssocBinop(PREC.ADD, $.mul_expression, choice($.plus_op, $.minus_op)),
     mul_expression: ($) =>
-      prec.left(
+      leftAssocBinop(
         PREC.MUL,
-        seq(
-          field("lhs", $.unary_expression),
-          many(
-            seq(
-              field("op", choice($.star_op, $.slash_op, $.kw_mod)),
-              field("rhs", $.unary_expression),
-            ),
-          ),
-        ),
+        $.unary_expression,
+        choice($.star_op, $.slash_op, $.kw_mod),
       ),
     unary_expression: ($) =>
       choice(
@@ -585,7 +572,7 @@ module.exports = grammar({
           seq(
             field("subject", $.application_expression),
             $.kw_to,
-            field("body", bracedCollection($, $.match_arm, $.semicolon)),
+            field("body", bracedSemiBlock($, $.match_arm)),
           ),
           $.application_expression,
         ),
@@ -656,8 +643,8 @@ module.exports = grammar({
       seq(field("key", $.expression), $.fat_arrow, $.value_slot),
     record_builder: ($) =>
       seq($.kw_build, field("builder", $.path), $.builder_body),
-    record_body: ($) => bracedCollection($, $.record_field, $.semicolon),
-    builder_body: ($) => bracedCollection($, $.builder_field, $.semicolon),
+    record_body: ($) => bracedSemiBlock($, $.record_field),
+    builder_body: ($) => bracedSemiBlock($, $.builder_field),
     record_field: ($) =>
       choice(
         seq(field("name", $.field_name), $.equals, $.value_slot),
@@ -666,10 +653,7 @@ module.exports = grammar({
     builder_field: ($) =>
       seq(field("name", $.field_name), $.left_arrow, $.value_slot),
     field_name: ($) => reserved("global", $.identifier),
-    tuple_expression: ($) =>
-      tuple($, $.lparen_hash, $.rparen, $.expression, $.semicolon, {
-        optional_separator: false,
-      }),
+    tuple_expression: ($) => tuple($, $.expression, $.semicolon),
     parenthesized_expression: ($) =>
       seq($.lparen, field("value", $.expression), $.rparen),
 
@@ -677,7 +661,9 @@ module.exports = grammar({
       prec.right(
         seq(
           $.kw_let,
-          separated1($, $.binding_core, $.semicolon),
+          separated1($, $.binding_core, $.semicolon, {
+            optional_separator: true,
+          }),
           $.kw_in,
           $.let_body,
         ),
@@ -737,29 +723,26 @@ module.exports = grammar({
       ),
     wildcard_pattern: ($) => $.wildcard,
     unit_pattern: ($) => seq($.lparen, $.rparen),
+
+    // === Pattern collections (improvement #5) ===
     binding_list_pattern: ($) =>
-      seq(
+      bracketedWithRest(
+        $,
         $.lbracket,
-        separatedWithOptionalRest(
-          $.binding_pattern,
-          $.semicolon,
-          $.rest_pattern,
-        ),
         $.rbracket,
+        $.binding_pattern,
+        $.semicolon,
+        $.rest_pattern,
       ),
-    binding_tuple_pattern: ($) =>
-      tuple($, $.lparen_hash, $.rparen, $.binding_pattern, $.semicolon, {
-        optional_separator: false,
-      }),
+    binding_tuple_pattern: ($) => tuple($, $.binding_pattern, $.semicolon),
     binding_record_pattern: ($) =>
-      seq(
+      bracketedWithRest(
+        $,
         $.lbrace,
-        separatedWithOptionalRest(
-          $.binding_record_pattern_field,
-          $.semicolon,
-          $.rest_op,
-        ),
         $.rbrace,
+        $.binding_record_pattern_field,
+        $.semicolon,
+        $.rest_op,
       ),
     binding_record_pattern_field: ($) =>
       fieldPattern($.field_name, $.colon, $.binding_pattern),
@@ -774,25 +757,24 @@ module.exports = grammar({
         seq($.lparen, $.pattern, $.rparen),
       ),
     list_pattern: ($) =>
-      seq(
+      bracketedWithRest(
+        $,
         $.lbracket,
-        separatedWithOptionalRest($.pattern, $.semicolon, $.rest_pattern),
         $.rbracket,
+        $.pattern,
+        $.semicolon,
+        $.rest_pattern,
       ),
     rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
-    tuple_pattern: ($) =>
-      tuple($, $.lparen_hash, $.rparen, $.pattern, $.semicolon, {
-        optional_separator: false,
-      }),
+    tuple_pattern: ($) => tuple($, $.pattern, $.semicolon),
     record_pattern: ($) =>
-      seq(
+      bracketedWithRest(
+        $,
         $.lbrace,
-        separatedWithOptionalRest(
-          $.record_pattern_field,
-          $.semicolon,
-          $.rest_op,
-        ),
         $.rbrace,
+        $.record_pattern_field,
+        $.semicolon,
+        $.rest_op,
       ),
     record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
 
@@ -817,9 +799,7 @@ module.exports = grammar({
         $.kw_where,
         choice(
           $.constraint_entry,
-          flexCollection($, $.lparen, $.rparen, $.constraint_entry, $.comma, {
-            optional_separator: false,
-          }),
+          flexCollection($, $.lparen, $.rparen, $.constraint_entry, $.comma),
         ),
       ),
     constraint_entry: ($) =>
@@ -844,31 +824,23 @@ module.exports = grammar({
           $.rparen,
           field("param", $.type_expression),
           $.comma,
-          { optional_separator: false },
         ),
         opt(seq($.arrow, field("result", $.type_expression))),
       ),
     self_type: ($) => $.kw_Self,
     type_argument_list: ($) =>
-      collection($, $.lbracket, $.rbracket, $.type_expression, $.comma, {
-        optional_separator: false,
-      }),
+      collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
     unit_type: ($) => seq($.lparen, $.rparen),
     record_type_field: ($) =>
-      seq(
-        attributePrefix($),
+      withAttributes(
+        $,
         field("name", $.field_name),
         $.colon,
         field("type_ann", $.type_expression),
       ),
     record_type: ($) =>
-      flexCollection($, $.lbrace, $.rbrace, $.record_type_field, $.comma, {
-        optional_separator: false,
-      }),
-    tuple_type: ($) =>
-      tuple($, $.lparen_hash, $.rparen, $.type_expression, $.comma, {
-        optional_separator: false,
-      }),
+      flexCollection($, $.lbrace, $.rbrace, $.record_type_field, $.comma),
+    tuple_type: ($) => tuple($, $.type_expression, $.comma),
     wildcard_type: ($) => $.wildcard,
     parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 

@@ -115,6 +115,16 @@
           }
         ]
       },
+      "op": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "and_op",
+            "named": true
+          }
+        ]
+      },
       "rhs": {
         "multiple": true,
         "required": false,
@@ -125,16 +135,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "and_op",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -2415,6 +2415,16 @@
           }
         ]
       },
+      "op": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "or_op",
+            "named": true
+          }
+        ]
+      },
       "rhs": {
         "multiple": true,
         "required": false,
@@ -2425,16 +2435,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "or_op",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -2676,6 +2676,16 @@
           }
         ]
       },
+      "op": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "pipe",
+            "named": true
+          }
+        ]
+      },
       "rhs": {
         "multiple": true,
         "required": false,
@@ -2686,16 +2696,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "pipe",
-          "named": true
-        }
-      ]
     }
   },
   {
