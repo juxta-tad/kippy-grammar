@@ -3948,10 +3948,6 @@
       "required": true,
       "types": [
         {
-          "type": "dot",
-          "named": true
-        },
-        {
           "type": "kw_as",
           "named": true
         },

@@ -121,21 +121,12 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "dot"
-                },
-                {
-                  "type": "FIELD",
-                  "name": "imports",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "import_set"
-                  }
-                }
-              ]
+              "type": "FIELD",
+              "name": "imports",
+              "content": {
+                "type": "SYMBOL",
+                "name": "import_set"
+              }
             },
             {
               "type": "BLANK"

@@ -236,7 +236,7 @@ module.exports = grammar({
         $.kw_use,
         field("module", $.path),
         opt(seq($.kw_as, field("alias", $.identifier))),
-        opt(seq($.dot, field("imports", $.import_set))),
+        opt(field("imports", $.import_set)),      // was: opt(seq($.dot, ...))
       ),
     import_set: ($) =>
       seq($.lbrace, opt(separated1($, $.import_item, $.comma)), $.rbrace),
