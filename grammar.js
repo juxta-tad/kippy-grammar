@@ -14,6 +14,11 @@
 //   - Semicolons separate items in a block.
 //   - Function-shaped things use parenthesized parameter lists.
 //   - `=>` is "function-like body follows". `->` is the function return arrow.
+//   - `->!` is the *effectful* return arrow: the function may cross the
+//     `external` boundary. Bare `->` denotes a pure function (for first-order
+//     types) or an effect-polymorphic function (for higher-order types whose
+//     effect is inferred from their function-typed parameters). `->!` is the
+//     explicitly-pinned effectful case.
 // =============================================================================
 
 
@@ -647,8 +652,18 @@ module.exports = grammar({
         $.if_else_value,
       )),
 
+    // A match arm is either a normal `pattern => value` arm or an explicit
+    // `else => value` catch-all. The `else` arm is deliberately distinct
+    // from a bare wildcard pattern: the totality checker treats it as
+    // *explicit incompleteness*. Under a strict build it warns, naming the
+    // variants the `else` absorbs, so that adding a variant to a `choice`
+    // surfaces every place that will silently default — an audit a bare `_`
+    // pattern cannot provide. Under a lenient build the warning is silenced.
     match_arm: ($) =>
-      seq(field("pattern", $.pattern), $.fat_arrow, $.match_arm_value),
+      choice(
+        seq(field("pattern", $.pattern), $.fat_arrow, $.match_arm_value),
+        seq($.kw_else, $.fat_arrow, $.match_arm_value),
+      ),
 
     lambda_parameters: ($) => parenParamList($),
     lambda_expression: ($) =>
@@ -749,11 +764,21 @@ module.exports = grammar({
     type_argument_list: ($) =>
       collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
 
+    // A function type carries an effect on its arrow. `arrow` (`->`) is the
+    // pure / effect-polymorphic case; `effect_arrow` (`->!`) pins the
+    // function as effectful — it may cross the `external` boundary. The two
+    // arrows are surfaced as distinct nodes so tooling and the effect checker
+    // can branch on which was written. A bare `->` on a higher-order function
+    // is treated as effect-polymorphic (effect inferred from its function-
+    // typed parameters); on a first-order function it denotes purity.
     function_type: ($) =>
       seq(
         $.kw_fn,
         collection($, $.lparen, $.rparen, field("param", $.type_expression), $.comma),
-        opt(seq($.arrow, field("result", $.type_expression))),
+        opt(seq(
+          field("arrow", choice($.arrow, $.effect_arrow)),
+          field("result", $.type_expression),
+        )),
       ),
 
     record_type: ($) =>
@@ -857,8 +882,16 @@ module.exports = grammar({
     // -------------------------------------------------------------------------
     // 18. Identifiers, paths, special operators
     // -------------------------------------------------------------------------
+    // The trailing `!` suffix on identifiers has been removed. In a total,
+    // pure-functional language the `!`-means-impure/destructive convention
+    // (Scheme `set!`, Ruby `map!`) has no referent — mutation does not exist,
+    // partiality is modeled with `choice`, and effects are carried by the
+    // `external` boundary and the `->!` effect arrow. Reserving `!` for the
+    // effect arrow alone gives the language a single, coherent meaning for the
+    // glyph: "crosses the effect boundary". Identifiers are now strictly
+    // `ID_Start ID_Continue*` with no suffix.
     identifier: ($) =>
-      token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*!?")),
+      token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*")),
     path_head: ($) => choice($.identifier, $.kw_self),
     path:      ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
     placeholder: ($) => token("__"),
@@ -907,9 +940,13 @@ module.exports = grammar({
     lt_op:     () => "<",
     gt_op:     () => ">",
 
-    arrow:      () => "->",
-    left_arrow: () => "<-",
-    fat_arrow:  () => "=>",
-    try_op:     () => "?",
+    // `->` is the pure / effect-polymorphic arrow; `->!` pins the function as
+    // effectful. `effect_arrow` is a single token so the `!` binds tightly to
+    // the arrow and cannot be split as `-> !=`.
+    arrow:        () => "->",
+    effect_arrow: () => token("->!"),
+    left_arrow:   () => "<-",
+    fat_arrow:    () => "=>",
+    try_op:       () => "?",
   },
 });

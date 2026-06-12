@@ -1476,6 +1476,20 @@
     "type": "function_type",
     "named": true,
     "fields": {
+      "arrow": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "arrow",
+            "named": true
+          },
+          {
+            "type": "effect_arrow",
+            "named": true
+          }
+        ]
+      },
       "param": {
         "multiple": true,
         "required": false,
@@ -1501,10 +1515,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "arrow",
-          "named": true
-        },
         {
           "type": "comma",
           "named": true
@@ -2163,7 +2173,7 @@
     "fields": {
       "pattern": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "pattern",
@@ -2183,11 +2193,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "fat_arrow",
+          "named": true
+        },
+        {
+          "type": "kw_else",
           "named": true
         }
       ]
@@ -4019,6 +4033,10 @@
   },
   {
     "type": "dot",
+    "named": true
+  },
+  {
+    "type": "effect_arrow",
     "named": true
   },
   {

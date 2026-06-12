@@ -3173,23 +3173,45 @@
       }
     },
     "match_arm": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "FIELD",
-          "name": "pattern",
-          "content": {
-            "type": "SYMBOL",
-            "name": "pattern"
-          }
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "pattern",
+              "content": {
+                "type": "SYMBOL",
+                "name": "pattern"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "fat_arrow"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "match_arm_value"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "fat_arrow"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "match_arm_value"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "kw_else"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "fat_arrow"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "match_arm_value"
+            }
+          ]
         }
       ]
     },
@@ -4390,8 +4412,21 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "arrow"
+                  "type": "FIELD",
+                  "name": "arrow",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "arrow"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "effect_arrow"
+                      }
+                    ]
+                  }
                 },
                 {
                   "type": "FIELD",
@@ -5009,7 +5044,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[_\\p{ID_Start}][\\p{ID_Continue}]*!?"
+        "value": "[_\\p{ID_Start}][\\p{ID_Continue}]*"
       }
     },
     "path_head": {
@@ -5345,6 +5380,13 @@
     "arrow": {
       "type": "STRING",
       "value": "->"
+    },
+    "effect_arrow": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "->!"
+      }
     },
     "left_arrow": {
       "type": "STRING",
