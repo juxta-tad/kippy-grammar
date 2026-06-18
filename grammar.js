@@ -1,30 +1,18 @@
-// =============================================================================
-// Kippy tree-sitter grammar — Sketch B
-// =============================================================================
-// Surface syntax rules:
-//   - Every top-level declaration is `[pub] name [generics] [: Type] [= value]`.
-//     The kind of declaration is determined by what's on the right side.
-//   - Type-namespace declarations use a constructor keyword after `:`:
-//        record, choice, shape, distinct, alias, tag.
-//   - Value-namespace declarations have any other type, and may have `=`:
-//        name : fn(Int) -> Text          // forward declaration
-//        name = fn(x) => ...             // definition with inferred type
-//        name : fn(Int) -> Text = ...    // both
-//   - Commas separate items in a value or type.
-//   - Semicolons separate items in a block.
-//   - Function-shaped things use parenthesized parameter lists.
-//   - `=>` is "function-like body follows". `->` is the function return arrow.
-//   - `->!` is the *effectful* return arrow: the function may cross the
-//     `external` boundary. Bare `->` denotes a pure function (for first-order
-//     types) or an effect-polymorphic function (for higher-order types whose
-//     effect is inferred from their function-typed parameters). `->!` is the
-//     explicitly-pinned effectful case.
-// =============================================================================
+// Kippy grammar (Sketch B). See notes/syntax.md for the long version.
+//
+// The one rule that makes everything else fall out:
+//   top-level decl = [pub] name [generics] [: type] [= value]
+// What kind of decl it is depends on the RHS, not a leading keyword.
+//   - RHS starts with record/choice/shape/distinct/alias/tag/intrinsic -> it's a type
+//   - anything else -> it's a value (and may or may not have an = body)
+//
+// Separators: comma in values/types, semicolon in blocks. Don't mix them up
+// again, it cost me an afternoon.
+//
+// Arrows: => is "body follows", -> is the return arrow. ->! is the effectful
+// one (function may cross `external`). Bare -> is pure for first-order types,
+// effect-polymorphic for higher-order ones (effect comes from the fn params).
 
-
-// -----------------------------------------------------------------------------
-// Precedence levels
-// -----------------------------------------------------------------------------
 const PREC = {
   MATCH:   1,
   PIPE:    2,
@@ -37,17 +25,9 @@ const PREC = {
   POSTFIX: 9,
 };
 
-
-// -----------------------------------------------------------------------------
-// Reserved keywords
-// -----------------------------------------------------------------------------
-// Removed from prior grammar: `sig`. Its role (forward declaration of a
-// value with a type but no body) is now taken by the bare `name : Type`
-// form of `binding`.
-//
-// `let` is kept, but its top-level role is gone — it now serves *only*
-// as the introducer for `let ... in ...` expressions. At the top level,
-// what used to be `let name = value` is now bare `name = value`.
+// `sig` is gone — `name : Type` with no body does that job now.
+// `let` survives only as the let..in introducer; top-level used to be
+// `let name = value`, now it's just `name = value`.
 const KEYWORDS = [
   "pub", "let", "rec",
   "alias", "distinct", "tag", "record", "choice", "shape", "intrinsic",
@@ -59,10 +39,8 @@ const KEYWORDS = [
   "self", "Self",
 ];
 
-
-// -----------------------------------------------------------------------------
-// Lexical building blocks
-// -----------------------------------------------------------------------------
+// Number lexing. The [0-9][0-9_]*[0-9] dance is so a literal can't start or
+// end with an underscore but can have them in the middle (1_000_000).
 const DEC_DIGITS  = "(?:[0-9]|[0-9][0-9_]*[0-9])";
 const HEX_DIGITS  = "(?:[0-9a-fA-F]|[0-9a-fA-F][0-9a-fA-F_]*[0-9a-fA-F])";
 const OCT_DIGITS  = "(?:[0-7]|[0-7][0-7_]*[0-7])";
@@ -75,9 +53,7 @@ const ESCAPE_BODY  =
   `(?:[ntrbfv0'"\\\\]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\)|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
 
 
-// =============================================================================
-// Generic helpers
-// =============================================================================
+// --- helpers -----------------------------------------------------------------
 const opt   = optional;
 const many  = repeat;
 const many1 = repeat1;
@@ -86,6 +62,8 @@ function sep1(rule, separator) {
   return seq(rule, many(seq(separator, rule)));
 }
 
+// trailing separator allowed; optional_separator makes the separator itself
+// optional between items (used by let bindings where the ; can be dropped)
 function separated1($, rule, separator, { optional_separator = false } = {}) {
   if (optional_separator) {
     return seq(rule, many(seq(opt(separator), rule)), opt(separator));
@@ -97,6 +75,7 @@ function delimited($, open, close, interior) {
   return seq(open, opt(interior), close);
 }
 
+// 2+ items, for tuples — a 1-tuple is just a parenthesized expr
 function looseSeparated2Plus($, rule, separator) {
   return seq(rule, separator, rule, many(seq(separator, rule)), opt(separator));
 }
@@ -137,6 +116,7 @@ function parameterList($, paramRule) {
 }
 
 function leftAssocBinop(precedence, operandRule, opRule, { single = false } = {}) {
+  // single = non-associative (comparisons: a < b < c shouldn't parse)
   if (single) {
     return prec.left(precedence, seq(
       field("lhs", operandRule),
@@ -150,9 +130,7 @@ function leftAssocBinop(precedence, operandRule, opRule, { single = false } = {}
 }
 
 
-// =============================================================================
-// Kippy-specific helpers
-// =============================================================================
+// --- kippy-specific helpers --------------------------------------------------
 function bracedCollection($, rule, separator) {
   return flexCollection($, $.lbrace, $.rbrace, rule, separator);
 }
@@ -194,9 +172,6 @@ function optTypeParams($) {
 }
 
 
-// =============================================================================
-// Grammar
-// =============================================================================
 module.exports = grammar({
   name: "kippy",
   word: ($) => $.identifier,
@@ -226,9 +201,7 @@ module.exports = grammar({
 
   rules: {
 
-    // -------------------------------------------------------------------------
-    // 1. Source structure
-    // -------------------------------------------------------------------------
+    // --- source structure ---
     source_file: ($) => fileBody($, $.module_declaration, $.module_item),
 
     module_declaration: ($) => seq($.kw_module, field("name", $.path)),
@@ -241,7 +214,7 @@ module.exports = grammar({
         $.kw_use,
         field("module", $.path),
         opt(seq($.kw_as, field("alias", $.identifier))),
-        opt(field("imports", $.import_set)),      // was: opt(seq($.dot, ...))
+        opt(field("imports", $.import_set)),   // `use foo { a, b }` — no dot before the brace anymore
       ),
     import_set: ($) =>
       seq($.lbrace, opt(separated1($, $.import_item, $.comma)), $.rbrace),
@@ -251,14 +224,8 @@ module.exports = grammar({
         opt(seq($.kw_as, field("alias", $.identifier))),
       ),
 
-    // -------------------------------------------------------------------------
-    // 2. Declarations
-    // -------------------------------------------------------------------------
-    // All declarations share the unified shape:
-    //   [pub] name [generics] [: Type-or-Constructor] [= value]
-    //
-    // Test, fit, derive, and implementation are still keyword-led because
-    // they're actions, not "this is a named thing" declarations.
+    // --- declarations ---
+    // fit/derive/test stay keyword-led — they're actions, not "here is a named thing".
     declaration: ($) =>
       seq(field("visibility", opt($.kw_pub)), $._declaration_inner),
 
@@ -270,33 +237,25 @@ module.exports = grammar({
         $.implementation,
       ),
 
-    // The unified binding form. Either the right side starts with a type
-    // constructor (`record`/`choice`/`shape`/`distinct`/`alias`/`tag`),
-    // in which case this is a type-namespace declaration, or it's any
-    // other type and possibly a value, in which case it's a value-namespace
-    // declaration. Both are produced by the same rule; tooling can branch
-    // at the AST level on which constructor (if any) appears.
+    // The one unified binding rule. Type-vs-value is decided by what's after
+    // the colon — a type constructor keyword, or a plain type. Same node either
+    // way; let the resolver branch on the constructor.
     binding: ($) =>
       seq(
         opt($.kw_rec),
         field("name", $.binding_name),
         optTypeParams($),
         choice(
-          // `Name : type-or-constructor [= value]`
-          seq(
+          seq(  // name : annotation [= value]
             $.colon,
             field("annotation", $.binding_annotation),
             opt(seq($.equals, $.value_slot)),
           ),
-          // `name = value`  (no type ascription)
-          seq($.equals, $.value_slot),
+          seq($.equals, $.value_slot),  // name = value
         ),
         opt(field("constraints", $.constraint_clause)),
       ),
 
-    // Right-hand side of `:`. Either a type-constructor form (which makes
-    // this a type-namespace declaration) or a plain type expression (which
-    // makes it a value-namespace declaration).
     binding_annotation: ($) =>
       choice(
         $._type_constructor,
@@ -314,26 +273,20 @@ module.exports = grammar({
         $.shape_constructor,
       ),
 
-    // -------------------------------------------------------------------------
-    // 3. Type constructors (appear after `:` in a binding)
-    // -------------------------------------------------------------------------
+    // --- type constructors (RHS of a binding's colon) ---
     alias_constructor: ($) =>
       seq($.kw_alias, field("body", $.type_expression)),
 
-    // `distinct` always wraps a base type — `UserId : distinct Int`. For
-    // a marker with no payload, use `tag` instead.
+    // distinct always wraps something: UserId : distinct Int.
+    // payload-less marker? use tag instead.
     distinct_constructor: ($) =>
       seq($.kw_distinct, field("body", $.type_expression)),
 
-    // `tag` is a marker with no body (atoms / phantom types / unit-like
-    // distinct names).
+    // bare marker, no body — atoms / phantoms / unit-likes
     tag_constructor: ($) => $.kw_tag,
 
-    // `intrinsic` is a type whose representation is supplied by the
-    // compiler rather than declared in Kippy source. Paired with a
-    // `#lang("...")` attribute that binds the name to a compiler-known
-    // layout. Used for primitives (I8, F64, Text, List) where there
-    // is no Kippy-level base type to wrap.
+    // intrinsic = compiler supplies the representation. Goes with a #lang(...)
+    // attr. For the primitives we can't write in Kippy (I8, F64, Text, List).
     intrinsic_constructor: ($) => $.kw_intrinsic,
 
     record_constructor: ($) =>
@@ -362,11 +315,8 @@ module.exports = grammar({
     type_parameter_list: ($) =>
       collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
 
-    // -------------------------------------------------------------------------
-    // 4. Shapes and fits
-    // -------------------------------------------------------------------------
-    // Shape members keep the same `name : Type [= default]` form as
-    // top-level value declarations. The shape body is a block of these.
+    // --- shapes & fits ---
+    // shape members are the same `name : Type [= default]` shape as top-level.
     shape_parents: ($) =>
       seq($.colon, sep1(field("parent", $.path_or_applied), $.comma)),
     shape_member: ($) => choice($.shape_type_decl, $.shape_method),
@@ -422,9 +372,7 @@ module.exports = grammar({
       ),
     method_parameter_list: ($) => parenParamList($),
 
-    // -------------------------------------------------------------------------
-    // 5. Attributes
-    // -------------------------------------------------------------------------
+    // --- attributes ---
     attribute: ($) =>
       seq(
         $.hash_sign,
@@ -465,9 +413,7 @@ module.exports = grammar({
         field("value", $.attribute_value),
       ),
 
-    // -------------------------------------------------------------------------
-    // 6. Tests
-    // -------------------------------------------------------------------------
+    // --- tests ---
     test_declaration: ($) =>
       seq(
         $.kw_test,
@@ -476,20 +422,17 @@ module.exports = grammar({
       ),
     test_statement: ($) =>
       choice($.test_binding, $.expect_statement),
-    // Test bindings reuse the top-level binding form.
-    test_binding: ($) => $.binding,
+    test_binding: ($) => $.binding,   // reuse the top-level binding form
     expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
 
-    // -------------------------------------------------------------------------
-    // 7. Names
-    // -------------------------------------------------------------------------
+    // --- names ---
+    // all three are just identifiers; separate rules so highlighting/outline
+    // can tell a field from a binding from a type member.
     binding_name:     ($) => reserved("global", $.identifier),
     type_member_name: ($) => reserved("global", $.identifier),
     field_name:       ($) => reserved("global", $.identifier),
 
-    // -------------------------------------------------------------------------
-    // 8. Expressions — top-level dispatch
-    // -------------------------------------------------------------------------
+    // --- expressions ---
     expression: ($) =>
       choice(
         $.lambda_expression,
@@ -508,13 +451,11 @@ module.exports = grammar({
 
     spread_element: ($) => seq($.rest_op, field("base", $.expression)),
 
-    // -------------------------------------------------------------------------
-    // 9. Expression operator ladder
-    // -------------------------------------------------------------------------
+    // --- operator ladder (loosest to tightest) ---
     pipe_expression:    ($) => leftAssocBinop(PREC.PIPE, $.or_expression,      $.pipe),
     or_expression:      ($) => leftAssocBinop(PREC.OR,   $.and_expression,     $.or_op),
     and_expression:     ($) => leftAssocBinop(PREC.AND,  $.compare_expression, $.and_op),
-    compare_expression: ($) => leftAssocBinop(
+    compare_expression: ($) => leftAssocBinop(  // non-assoc: no a < b < c
       PREC.COMPARE,
       $.add_expression,
       choice($.le_op, $.ge_op, $.eq_op, $.ne_op, $.lt_op, $.gt_op),
@@ -542,9 +483,7 @@ module.exports = grammar({
         $.postfix_expression,
       )),
 
-    // -------------------------------------------------------------------------
-    // 10. Postfix chain
-    // -------------------------------------------------------------------------
+    // --- postfix chain ---
     postfix_expression: ($) =>
       prec.left(PREC.POSTFIX, seq(
         field("base", $.primary_expression),
@@ -566,8 +505,8 @@ module.exports = grammar({
       ),
     call_argument: ($) => $.expression,
     index_suffix:  ($) => seq($.lbracket, field("index", $.expression), $.rbracket),
-    field_suffix:  ($) => seq($.dot, field("field", $.field_name)),
-    method_suffix: ($) =>
+    field_suffix:  ($) => seq($.dot, field("field", $.field_name)),   // . = field access
+    method_suffix: ($) =>                                             // @ = shape dispatch
       seq(
         $.at_sign,
         field("method", $.identifier),
@@ -575,9 +514,7 @@ module.exports = grammar({
       ),
     record_suffix: ($) => field("body", $.record_body),
 
-    // -------------------------------------------------------------------------
-    // 11. Primary expressions
-    // -------------------------------------------------------------------------
+    // --- primary ---
     primary_expression: ($) =>
       choice(
         $.record_builder,
@@ -617,12 +554,8 @@ module.exports = grammar({
     builder_field: ($) =>
       seq(field("name", $.field_name), $.left_arrow, $.value_slot),
 
-    // -------------------------------------------------------------------------
-    // 12. Control flow
-    // -------------------------------------------------------------------------
-    // `let-in` is the only place the `let` keyword appears in Sketch B.
-    // Top-level value definitions use bare `name = value`; `let` is only
-    // for introducing a sequence of bindings inside an expression.
+    // --- control flow ---
+    // only place `let` shows up. prec.right so the body grabs as much as it can.
     let_expression: ($) =>
       prec.right(seq(
         $.kw_let,
@@ -631,8 +564,7 @@ module.exports = grammar({
         $.let_body,
       )),
 
-    // A local binding inside `let-in` is the same shape as a top-level
-    // value-namespace binding (no type constructors allowed locally).
+    // local binding = value-namespace binding, no type constructors locally
     local_binding: ($) =>
       seq(
         opt($.kw_rec),
@@ -652,13 +584,10 @@ module.exports = grammar({
         $.if_else_value,
       )),
 
-    // A match arm is either a normal `pattern => value` arm or an explicit
-    // `else => value` catch-all. The `else` arm is deliberately distinct
-    // from a bare wildcard pattern: the totality checker treats it as
-    // *explicit incompleteness*. Under a strict build it warns, naming the
-    // variants the `else` absorbs, so that adding a variant to a `choice`
-    // surfaces every place that will silently default — an audit a bare `_`
-    // pattern cannot provide. Under a lenient build the warning is silenced.
+    // `else =>` is NOT the same as `_ =>`. The totality checker treats else as
+    // *deliberate* incompleteness: strict build warns and names the variants it
+    // swallows, so adding a choice variant points you at every silent default.
+    // A bare _ can't give you that audit. Lenient build shuts the warning up.
     match_arm: ($) =>
       choice(
         seq(field("pattern", $.pattern), $.fat_arrow, $.match_arm_value),
@@ -669,9 +598,7 @@ module.exports = grammar({
     lambda_expression: ($) =>
       prec.right(seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body)),
 
-    // -------------------------------------------------------------------------
-    // 13. Patterns
-    // -------------------------------------------------------------------------
+    // --- patterns ---
     pattern: ($) =>
       seq($.unguarded_pattern, opt(seq($.kw_if, field("guard", $.expression)))),
     unguarded_pattern: ($) => $.or_pattern,
@@ -699,6 +626,7 @@ module.exports = grammar({
         field("constructor", $.path),
         opt(parenPayloadList($, $.tag_payload_pattern)),
       ),
+    // same as atomic_pattern. kept separate in case payload patterns ever diverge.
     tag_payload_pattern: ($) =>
       choice(
         $.literal,
@@ -721,6 +649,8 @@ module.exports = grammar({
     record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
     rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
 
+    // binding_pattern = the irrefutable subset (params, let bindings). No
+    // literals / constructors, because you can't fail to match a fn param.
     binding_pattern: ($) =>
       choice(
         $.unit_pattern,
@@ -738,9 +668,7 @@ module.exports = grammar({
     binding_record_pattern_field: ($) =>
       fieldPattern($.field_name, $.colon, $.binding_pattern),
 
-    // -------------------------------------------------------------------------
-    // 14. Type expressions
-    // -------------------------------------------------------------------------
+    // --- types ---
     type_expression: ($) =>
       choice($.base_type, seq($.ellipsis, field("item", $.base_type))),
     base_type: ($) =>
@@ -759,18 +687,13 @@ module.exports = grammar({
     path_or_applied: ($) =>
       seq(
         field("constructor", $.path),
-        opt(field("args", $.type_argument_list)),
+        opt(field("args", $.type_argument_list)),   // List[T], Map[K,V]
       ),
     type_argument_list: ($) =>
       collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
 
-    // A function type carries an effect on its arrow. `arrow` (`->`) is the
-    // pure / effect-polymorphic case; `effect_arrow` (`->!`) pins the
-    // function as effectful — it may cross the `external` boundary. The two
-    // arrows are surfaced as distinct nodes so tooling and the effect checker
-    // can branch on which was written. A bare `->` on a higher-order function
-    // is treated as effect-polymorphic (effect inferred from its function-
-    // typed parameters); on a first-order function it denotes purity.
+    // -> vs ->! surfaced as different tokens so the effect checker can branch
+    // on which was actually written. bare -> on higher-order = effect-poly.
     function_type: ($) =>
       seq(
         $.kw_fn,
@@ -796,9 +719,7 @@ module.exports = grammar({
     wildcard_type:      ($) => $.wildcard,
     parenthesized_type: ($) => seq($.lparen, $.type_expression, $.rparen),
 
-    // -------------------------------------------------------------------------
-    // 15. Constraint clauses
-    // -------------------------------------------------------------------------
+    // --- constraints ---
     constraint_clause: ($) =>
       seq(
         $.kw_where,
@@ -813,15 +734,13 @@ module.exports = grammar({
         $.colon,
         field("constraint", $.constraint_sum),
       ),
-    constraint_sum: ($) =>
+    constraint_sum: ($) =>   // T : ShapeA + ShapeB
       prec.left(seq(
         field("shape", $.path),
         many(seq($.plus_op, field("shape", $.path))),
       )),
 
-    // -------------------------------------------------------------------------
-    // 16. Literals
-    // -------------------------------------------------------------------------
+    // --- literals ---
     literal: ($) =>
       choice(
         $.percent_literal,
@@ -831,6 +750,8 @@ module.exports = grammar({
         $.text,
       ),
 
+    // percent before float before int — longest match wins, and 1.5% / 1.5 / 1
+    // all share a prefix, so order matters here.
     percent_literal: ($) =>
       token(choice(
         new RustRegex(`${DEC_DIGITS}\\.${DEC_DIGITS}${EXPONENT}?${PERCENT}`),
@@ -843,7 +764,7 @@ module.exports = grammar({
         new RustRegex(`${DEC_DIGITS}\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`),
         new RustRegex(`${DEC_DIGITS}\\.${EXPONENT}?${FLOAT_SUFFIX}`),
         new RustRegex(`\\.${DEC_DIGITS}${EXPONENT}?${FLOAT_SUFFIX}`),
-        new RustRegex(`${DEC_DIGITS}${EXPONENT}${FLOAT_SUFFIX}`),
+        new RustRegex(`${DEC_DIGITS}${EXPONENT}${FLOAT_SUFFIX}`),  // 1e9 — needs exponent or it's an int
       )),
     int_literal: ($) =>
       token(choice(
@@ -859,6 +780,8 @@ module.exports = grammar({
         new RustRegex(`'\\\\${ESCAPE_BODY}'`),
       )),
 
+    // interpolating string. static_text is the same minus interpolation —
+    // used where a compile-time constant string is required (test names, attrs).
     text: ($) =>
       seq(
         $.quote,
@@ -870,26 +793,19 @@ module.exports = grammar({
       seq($.quote, many(choice($.static_text_content, $.escape_sequence)), $.quote),
     static_text_content: ($) => token(new RustRegex('[^"\\\\\\r\\n]+')),
     interpolation:       ($) => seq($.interpolation_start, $.expression, $.rparen),
-    interpolation_start: ($) => token(new RustRegex("\\\\\\(")),
+    interpolation_start: ($) => token(new RustRegex("\\\\\\(")),  // \(
     escape_sequence:     ($) => token(new RustRegex(`\\\\${ESCAPE_BODY}`)),
 
-    // -------------------------------------------------------------------------
-    // 17. Comments
-    // -------------------------------------------------------------------------
+    // --- comments ---
+    // block comments are /> ... </ so they don't collide with the / divide op
+    // or // line comments. yes it looks like XML. live with it.
     line_comment:  (_) => token(new RustRegex("//[^\\n]*")),
     block_comment: (_) => token(seq("/>", /([^<]|<[^/])*/, "</")),
 
-    // -------------------------------------------------------------------------
-    // 18. Identifiers, paths, special operators
-    // -------------------------------------------------------------------------
-    // The trailing `!` suffix on identifiers has been removed. In a total,
-    // pure-functional language the `!`-means-impure/destructive convention
-    // (Scheme `set!`, Ruby `map!`) has no referent — mutation does not exist,
-    // partiality is modeled with `choice`, and effects are carried by the
-    // `external` boundary and the `->!` effect arrow. Reserving `!` for the
-    // effect arrow alone gives the language a single, coherent meaning for the
-    // glyph: "crosses the effect boundary". Identifiers are now strictly
-    // `ID_Start ID_Continue*` with no suffix.
+    // --- identifiers, paths, operators ---
+    // No trailing ! on identifiers. In a total/pure language the set!/map!
+    // convention means nothing — there's no mutation to mark. ! belongs to the
+    // effect arrow and nothing else.
     identifier: ($) =>
       token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*")),
     path_head: ($) => choice($.identifier, $.kw_self),
@@ -899,28 +815,24 @@ module.exports = grammar({
     ellipsis:    ($) => "...",
     rest_op:     ($) => "..",
 
-    // -------------------------------------------------------------------------
-    // 19. Keyword tokens
-    // -------------------------------------------------------------------------
+    // --- keyword tokens ---
     ...Object.fromEntries(KEYWORDS.map((k) => [`kw_${k}`, () => k])),
 
-    // -------------------------------------------------------------------------
-    // 20. Punctuation and operator tokens
-    // -------------------------------------------------------------------------
+    // --- punctuation / operators ---
     lparen:       () => "(",
     rparen:       () => ")",
     lbracket:     () => "[",
     rbracket:     () => "]",
     lbrace:       () => "{",
     rbrace:       () => "}",
-    lparen_hash:  () => token("#("),
-    lbracket_map: () => token("#["),
+    lparen_hash:  () => token("#("),   // tuple open — disambiguates from a paren'd expr
+    lbracket_map: () => token("#["),   // map open — vs list [
     quote:        () => '"',
     comma:        () => ",",
     colon:        () => ":",
     equals:       () => "=",
     semicolon:    () => ";",
-    dot:          () => token.immediate("."),
+    dot:          () => token.immediate("."),   // immediate: no space before, so it's a suffix not a float
     module_sep:   () => token.immediate("::"),
     at_sign:      () => token.immediate("@"),
     hash_sign:    () => "#",
@@ -940,9 +852,7 @@ module.exports = grammar({
     lt_op:     () => "<",
     gt_op:     () => ">",
 
-    // `->` is the pure / effect-polymorphic arrow; `->!` pins the function as
-    // effectful. `effect_arrow` is a single token so the `!` binds tightly to
-    // the arrow and cannot be split as `-> !=`.
+    // single token so ->! can't get lexed as -> followed by !=
     arrow:        () => "->",
     effect_arrow: () => token("->!"),
     left_arrow:   () => "<-",
