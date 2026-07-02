@@ -79,7 +79,6 @@ const ESCAPE_BODY =
 // --- helpers -----------------------------------------------------------------
 const opt = optional;
 const many = repeat;
-const many1 = repeat1;
 
 function sep1(rule, separator) {
   return seq(rule, many(seq(separator, rule)));
@@ -94,17 +93,13 @@ function separated1($, rule, separator, { optional_separator = false } = {}) {
   return seq(rule, many(seq(separator, rule)), opt(separator));
 }
 
-function delimited($, open, close, interior) {
-  return seq(open, opt(interior), close);
-}
-
 // 2+ items, for tuples — a 1-tuple is just a parenthesized expr
 function looseSeparated2Plus($, rule, separator) {
   return seq(rule, separator, rule, many(seq(separator, rule)), opt(separator));
 }
 
 function collection($, open, close, item, separator, opts = {}) {
-  return delimited($, open, close, separated1($, item, separator, opts));
+  return seq(open, opt(separated1($, item, separator, opts)), close);
 }
 
 function flexCollection(
@@ -191,11 +186,10 @@ function parenPayloadList($, payloadRule) {
 }
 
 function tuple($, item, separator) {
-  return delimited(
-    $,
+  return seq(
     $.lparen_hash,
-    $.rparen,
     looseSeparated2Plus($, field("element", item), separator),
+    $.rparen,
   );
 }
 
@@ -223,7 +217,10 @@ module.exports = grammar({
     $.block_comment,
   ],
 
-  supertypes: ($) => [$.expression],
+  // type_constructor is now a real supertype instead of an inlined choice, so
+  // it shows up in node-types.json and the resolver can branch on a stable
+  // node kind rather than sniffing raw keyword children.
+  supertypes: ($) => [$.expression, $.type_constructor],
 
   inline: ($) => [
     $.value_slot,
@@ -235,7 +232,6 @@ module.exports = grammar({
     $.if_else_value,
     $._declaration_inner,
     $._top_level_item,
-    $._type_constructor,
   ],
 
   rules: {
@@ -296,11 +292,13 @@ module.exports = grammar({
 
     binding_annotation: ($) =>
       choice(
-        $._type_constructor,
+        field("constructor", $.type_constructor),
         field("type", $.type_expression),
       ),
 
-    _type_constructor: ($) =>
+    // Real supertype now (see `supertypes` above), so it gets a node-types.json
+    // entry and the seven constructors are reachable as a discriminated union.
+    type_constructor: ($) =>
       choice(
         $.alias_constructor,
         $.distinct_constructor,
@@ -462,10 +460,11 @@ module.exports = grammar({
 
     // --- names ---
     // all three are just identifiers; separate rules so highlighting/outline
-    // can tell a field from a binding from a type member.
-    binding_name: ($) => reserved("global", $.identifier),
-    type_member_name: ($) => reserved("global", $.identifier),
-    field_name: ($) => reserved("global", $.identifier),
+    // can tell a field from a binding from a type member. Keyword exclusion is
+    // already handled by `word` + global reserved, so no reserved() wrap needed.
+    binding_name: ($) => $.identifier,
+    type_member_name: ($) => $.identifier,
+    field_name: ($) => $.identifier,
 
     // --- expressions ---
     expression: ($) =>
@@ -685,17 +684,9 @@ module.exports = grammar({
         field("constructor", $.path),
         opt(parenPayloadList($, $.tag_payload_pattern)),
       ),
-    // same as atomic_pattern. kept separate in case payload patterns ever diverge.
-    tag_payload_pattern: ($) =>
-      choice(
-        $.literal,
-        $.wildcard_pattern,
-        $.path_pattern,
-        $.list_pattern,
-        $.tuple_pattern,
-        $.record_pattern,
-        seq($.lparen, $.pattern, $.rparen),
-      ),
+    // identical to atomic_pattern; aliased rather than duplicated. Split it back
+    // out only if payload patterns ever need to diverge.
+    tag_payload_pattern: ($) => $.atomic_pattern,
 
     wildcard_pattern: ($) => $.wildcard,
     unit_pattern: ($) => seq($.lparen, $.rparen),
@@ -910,7 +901,7 @@ module.exports = grammar({
       token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*")),
     path_head: ($) => choice($.identifier, $.kw_self),
     path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
-    placeholder: ($) => token("__"),
+    placeholder: ($) => token("$"),
     wildcard: ($) => "_",
     ellipsis: ($) => "...",
     rest_op: ($) => "..",

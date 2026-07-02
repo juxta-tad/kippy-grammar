@@ -22,6 +22,40 @@
     ]
   },
   {
+    "type": "type_constructor",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "alias_constructor",
+        "named": true
+      },
+      {
+        "type": "choice_constructor",
+        "named": true
+      },
+      {
+        "type": "distinct_constructor",
+        "named": true
+      },
+      {
+        "type": "intrinsic_constructor",
+        "named": true
+      },
+      {
+        "type": "record_constructor",
+        "named": true
+      },
+      {
+        "type": "shape_constructor",
+        "named": true
+      },
+      {
+        "type": "tag_constructor",
+        "named": true
+      }
+    ]
+  },
+  {
     "type": "add_expression",
     "named": true,
     "fields": {
@@ -584,6 +618,16 @@
     "type": "binding_annotation",
     "named": true,
     "fields": {
+      "constructor": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_constructor",
+            "named": true
+          }
+        ]
+      },
       "type": {
         "multiple": false,
         "required": false,
@@ -594,40 +638,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "alias_constructor",
-          "named": true
-        },
-        {
-          "type": "choice_constructor",
-          "named": true
-        },
-        {
-          "type": "distinct_constructor",
-          "named": true
-        },
-        {
-          "type": "intrinsic_constructor",
-          "named": true
-        },
-        {
-          "type": "record_constructor",
-          "named": true
-        },
-        {
-          "type": "shape_constructor",
-          "named": true
-        },
-        {
-          "type": "tag_constructor",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -771,7 +781,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "binding_pattern",
@@ -3453,43 +3463,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "list_pattern",
-          "named": true
-        },
-        {
-          "type": "literal",
-          "named": true
-        },
-        {
-          "type": "lparen",
-          "named": true
-        },
-        {
-          "type": "path_pattern",
-          "named": true
-        },
-        {
-          "type": "pattern",
-          "named": true
-        },
-        {
-          "type": "record_pattern",
-          "named": true
-        },
-        {
-          "type": "rparen",
-          "named": true
-        },
-        {
-          "type": "tuple_pattern",
-          "named": true
-        },
-        {
-          "type": "wildcard_pattern",
+          "type": "atomic_pattern",
           "named": true
         }
       ]
@@ -3615,7 +3593,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "expression",
@@ -3649,7 +3627,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "pattern",
@@ -3683,7 +3661,7 @@
     "fields": {
       "element": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "type_expression",
