@@ -1,10 +1,59 @@
-// Kippy grammar (Sketch B). See notes/syntax.md for the long version.
+// Kippy grammar (Sketch C). See notes/syntax.md for the long version.
 //
 // The one rule that makes everything else fall out:
 //   top-level decl = [pub] name [generics] [: type] [= value]
 // What kind of decl it is depends on the RHS, not a leading keyword.
 //   - RHS starts with record/choice/shape/distinct/alias/tag/intrinsic -> it's a type
 //   - anything else -> it's a value (and may or may not have an = body)
+//
+// CHANGES FROM SKETCH B
+//
+// 1. The fit form is gone. `Task : Display { show(self) => ... }` no longer
+//    parses. A shape is a record type, so an implementation is a record value:
+//        Task : Display = { show = fn(t) => t.name }
+//    Deleted: fit_member, fit_method, fit_type_def, method_parameter_list,
+//    method_body, shape_type_decl, kw_fit, kw_type, and the middle branch of
+//    binding_annotation.
+//
+//    Bonus: that branch was the only place a path could be followed by braces
+//    in annotation position, so it was ambiguous with record_suffix until the
+//    resolver knew whether the path named a shape or a type. Now `P { ... }`
+//    is a record literal, always.
+//
+// 2. Associated types are gone with it. Use a normal type parameter:
+//        Iterator : shape[Item] { next : fn(Self) -> Option[Item] }
+//        TaskList : Iterator[Task] = { next = fn(l) => head(l.0) }
+//    We considered a `given` marker (functional dependency) so the checker
+//    could infer Item from Self. Not shipping it. It buys inference, not
+//    expressiveness, and it's where GHC's error messages went bad. Add it
+//    later with evidence from real code.
+//
+// 3. Lambdas take optional parameter types and an optional return arrow:
+//        fn (a: Int, b: Int) -> Int => a + b
+//    Without this there was no way to annotate an inline lambda at all, so
+//    inference had to win every time. It won't.
+//
+// 4. Constraints may come before the body as well as after. A long body used
+//    to push `where` many lines below the signature.
+//
+// 5. derive takes a constraint_sum, not a single path:
+//        derive UserId : Eq + Ord + Hash
+//
+// NOT IN THE GRAMMAR, but decided:
+//   - `$` is a one-argument lambda hole. Its scope is the whole RHS of the
+//     binding it appears in — the `=` is the boundary. That's a resolver rule;
+//     the token and `$.field` already parse via placeholder + field_suffix.
+//     No `key` keyword. It was carrying a Key[A,B] type that no longer exists.
+//   - Shapes are coherent: one implementation per (type, shape) pair. Nothing
+//     in the syntax says so. Resolver enforces it. Document it loudly.
+//   - Ordering variety comes from the key TYPE, not from picking an
+//     implementation: Task::by_name = $.name, sort(tasks, Task::by_name),
+//     Tree[Text, Task]. Desc[K] : distinct K flips direction.
+//
+// STILL UNAUDITED: `build P { f <- v }`. It has its own rules and its own
+// arrow and nothing in the last redesign needed it. Same smell `key` had —
+// survived because it was written, not because it was re-derived. Either
+// write down what it does that `P { f = v }` can't, or delete it.
 //
 // Separators: comma in values/types, semicolon in blocks. Don't mix them up
 // again, it cost me an afternoon.
@@ -26,11 +75,12 @@ const PREC = {
 };
 
 // `sig` is gone — `name : Type` with no body does that job now.
-// `let` survives only as the let..in introducer; top-level used to be
-// `let name = value`, now it's just `name = value`.
+// `let` is gone — block expressions with braces replace let..in.
+// Top-level used to be `let name = value`, now it's just `name = value`.
+// `fit` was never a keyword (the form was `path + braces`); the form is gone.
+// `type` is gone with associated types.
 const KEYWORDS = [
   "pub",
-  "let",
   "rec",
   "alias",
   "distinct",
@@ -44,13 +94,10 @@ const KEYWORDS = [
   "then",
   "else",
   "to",
-  "in",
   "where",
   "module",
   "use",
   "build",
-  "type",
-  "fit",
   "derive",
   "fn",
   "test",
@@ -61,6 +108,7 @@ const KEYWORDS = [
   "as",
   "self",
   "Self",
+  "out",
 ];
 
 // Number lexing. The [0-9][0-9_]*[0-9] dance is so a literal can't start or
@@ -85,7 +133,7 @@ function sep1(rule, separator) {
 }
 
 // trailing separator allowed; optional_separator makes the separator itself
-// optional between items (used by let bindings where the ; can be dropped)
+// optional between items
 function separated1($, rule, separator, { optional_separator = false } = {}) {
   if (optional_separator) {
     return seq(rule, many(seq(opt(separator), rule)), opt(separator));
@@ -173,10 +221,6 @@ function bracedSemiBlock($, rule) {
   return bracedCollection($, rule, $.semicolon);
 }
 
-function parenParamList($) {
-  return seq($.lparen, opt(parameterList($, $.binding_pattern)), $.rparen);
-}
-
 function parenPayloadList($, payloadRule) {
   return seq(
     $.lparen,
@@ -217,17 +261,15 @@ module.exports = grammar({
     $.block_comment,
   ],
 
-  // type_constructor is now a real supertype instead of an inlined choice, so
-  // it shows up in node-types.json and the resolver can branch on a stable
-  // node kind rather than sniffing raw keyword children.
+  // type_constructor is a real supertype instead of an inlined choice, so it
+  // shows up in node-types.json and the resolver can branch on a stable node
+  // kind rather than sniffing raw keyword children.
   supertypes: ($) => [$.expression, $.type_constructor],
 
   inline: ($) => [
     $.value_slot,
     $.match_arm_value,
-    $.method_body,
     $.lambda_body,
-    $.let_body,
     $.if_then_value,
     $.if_else_value,
     $._declaration_inner,
@@ -248,7 +290,7 @@ module.exports = grammar({
         $.kw_use,
         field("module", $.path),
         opt(seq($.kw_as, field("alias", $.identifier))),
-        opt(field("imports", $.import_set)), // `use foo { a, b }` — no dot before the brace anymore
+        opt(field("imports", $.import_set)), // `use foo { a, b }` — no dot before the brace
       ),
     import_set: ($) =>
       seq($.lbrace, opt(separated1($, $.import_item, $.comma)), $.rbrace),
@@ -259,7 +301,7 @@ module.exports = grammar({
       ),
 
     // --- declarations ---
-    // fit/derive/test stay keyword-led — they're actions, not "here is a named thing".
+    // derive/test stay keyword-led — they're actions, not "here is a named thing".
     declaration: ($) =>
       seq(field("visibility", opt($.kw_pub)), $._declaration_inner),
 
@@ -268,21 +310,24 @@ module.exports = grammar({
         $.binding,
         $.derive_declaration,
         $.test_declaration,
-        $.implementation,
       ),
 
-    // The one unified binding rule. Type-vs-value is decided by what's after
-    // the colon — a type constructor keyword, or a plain type. Same node either
-    // way; let the resolver branch on the constructor.
+    // The one unified binding rule. Covers values, types, and now shape
+    // implementations too — `Task : Display = { show = ... }` is just a
+    // binding whose annotation is a path and whose value is a record.
+    //
+    // Constraints can sit before the body or after it. Both are the same
+    // field; the resolver should reject a binding that uses both.
     binding: ($) =>
       seq(
         opt($.kw_rec),
         field("name", $.binding_name),
         optTypeParams($),
         choice(
-          seq( // name : annotation [= value]
+          seq( // name : annotation [where ...] [= value]
             $.colon,
             field("annotation", $.binding_annotation),
+            opt(field("constraints", $.constraint_clause)),
             opt(seq($.equals, $.value_slot)),
           ),
           seq($.equals, $.value_slot), // name = value
@@ -290,13 +335,15 @@ module.exports = grammar({
         opt(field("constraints", $.constraint_clause)),
       ),
 
+    // Two branches now, not three. The fit branch (path + member block) is
+    // gone — see the header note.
     binding_annotation: ($) =>
       choice(
         field("constructor", $.type_constructor),
         field("type", $.type_expression),
       ),
 
-    // Real supertype now (see `supertypes` above), so it gets a node-types.json
+    // Real supertype (see `supertypes` above), so it gets a node-types.json
     // entry and the seven constructors are reachable as a discriminated union.
     type_constructor: ($) =>
       choice(
@@ -314,6 +361,8 @@ module.exports = grammar({
 
     // distinct always wraps something: UserId : distinct Int.
     // payload-less marker? use tag instead.
+    // This is also how Desc[K] works — the one wrapper the ordering design
+    // still needs, and it wraps a key, not an element.
     distinct_constructor: ($) =>
       seq($.kw_distinct, field("body", $.type_expression)),
 
@@ -329,11 +378,17 @@ module.exports = grammar({
     choice_constructor: ($) =>
       seq($.kw_choice, field("body", bracedSemiBlock($, $.choice_variant))),
 
+    // A shape is a record type of operations. Members are `name : Type` with
+    // an optional default body. No `type` members any more — put the varying
+    // type in the parameter list: shape[Item] { ... }.
+    //
+    // House rule, not a grammar rule: one required member, everything else a
+    // default. That's what keeps implementations to one line.
     shape_constructor: ($) =>
       seq(
         $.kw_shape,
         opt(field("parents", $.shape_parents)),
-        field("members", bracedSemiBlock($, $.shape_member)),
+        field("members", bracedSemiBlock($, $.shape_method)),
       ),
 
     choice_variant: ($) =>
@@ -349,13 +404,10 @@ module.exports = grammar({
     type_parameter_list: ($) =>
       collection($, $.lbracket, $.rbracket, $.identifier, $.comma),
 
-    // --- shapes & fits ---
+    // --- shapes ---
     // shape members are the same `name : Type [= default]` shape as top-level.
     shape_parents: ($) =>
       seq($.colon, sep1(field("parent", $.path_or_applied), $.comma)),
-    shape_member: ($) => choice($.shape_type_decl, $.shape_method),
-    shape_type_decl: ($) =>
-      withAttributes($, $.kw_type, field("name", $.type_member_name)),
     shape_method: ($) =>
       withAttributes(
         $,
@@ -367,44 +419,16 @@ module.exports = grammar({
       ),
     method_default: ($) => seq($.equals, $.value_slot),
 
-    implementation: ($) =>
-      seq(
-        $.kw_fit,
-        optTypeParams($),
-        field("type", $.impl_type_head),
-        $.colon,
-        field("shape", $.path),
-        opt(field("constraints", $.constraint_clause)),
-        field("members", bracedSemiBlock($, $.fit_member)),
-      ),
+    // `derive UserId : Eq + Ord + Hash` — one line, several shapes.
     derive_declaration: ($) =>
       seq(
         $.kw_derive,
         optTypeParams($),
-        field("type", $.impl_type_head),
+        field("type", $._concrete_type_head),
         $.colon,
-        field("shape", $.path),
+        field("shape", $.constraint_sum),
         opt(field("constraints", $.constraint_clause)),
       ),
-    impl_type_head: ($) => $._concrete_type_head,
-    fit_member: ($) => choice($.fit_type_def, $.fit_method),
-    fit_type_def: ($) =>
-      withAttributes(
-        $,
-        $.kw_type,
-        field("name", $.type_member_name),
-        $.equals,
-        field("value", $.type_expression),
-      ),
-    fit_method: ($) =>
-      withAttributes(
-        $,
-        field("name", $.identifier),
-        field("parameters", $.method_parameter_list),
-        $.fat_arrow,
-        $.method_body,
-      ),
-    method_parameter_list: ($) => parenParamList($),
 
     // --- attributes ---
     attribute: ($) =>
@@ -459,11 +483,10 @@ module.exports = grammar({
     expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
 
     // --- names ---
-    // all three are just identifiers; separate rules so highlighting/outline
-    // can tell a field from a binding from a type member. Keyword exclusion is
-    // already handled by `word` + global reserved, so no reserved() wrap needed.
+    // both are just identifiers; separate rules so highlighting/outline can
+    // tell a field from a binding. Keyword exclusion is already handled by
+    // `word` + global reserved, so no reserved() wrap needed.
     binding_name: ($) => $.identifier,
-    type_member_name: ($) => $.identifier,
     field_name: ($) => $.identifier,
 
     // --- expressions ---
@@ -471,16 +494,13 @@ module.exports = grammar({
       choice(
         $.lambda_expression,
         $.if_expression,
-        $.let_expression,
         $.pipe_expression,
       ),
 
     value_slot: ($) => field("value", $.expression),
     if_then_value: ($) => field("then_value", $.expression),
     if_else_value: ($) => field("else_value", $.expression),
-    let_body: ($) => field("body", $.expression),
     lambda_body: ($) => field("body", $.expression),
-    method_body: ($) => field("body", $.expression),
     match_arm_value: ($) => field("value", $.expression),
 
     spread_element: ($) => seq($.rest_op, field("base", $.expression)),
@@ -557,9 +577,11 @@ module.exports = grammar({
     call_argument: ($) => $.expression,
     index_suffix: ($) =>
       seq($.lbracket, field("index", $.expression), $.rbracket),
-    field_suffix: ($) => seq($.dot, field("field", $.field_name)), // . = field access
+    field_suffix: ($) => seq($.dot, field("field", $.field_name)), // . = reach into a value
+    // @ = search for the implementation by type. The optional `:Shape` is now
+    // only for a method name declared by two different shapes — implementations
+    // are coherent, so there's never a choice between two of them.
     method_suffix: ($) =>
-      // @ = shape dispatch
       seq(
         $.at_sign,
         field("method", $.identifier),
@@ -570,6 +592,7 @@ module.exports = grammar({
     // --- primary ---
     primary_expression: ($) =>
       choice(
+        $.block_expression,
         $.record_builder,
         $.literal,
         $.path,
@@ -595,6 +618,8 @@ module.exports = grammar({
     parenthesized_expression: ($) =>
       seq($.lparen, field("value", $.expression), $.rparen),
 
+    // record_body doubles as an implementation body now:
+    //   Task : Display = { show = fn(t) => t.name }
     record_builder: ($) =>
       seq($.kw_build, field("builder", $.path), $.builder_body),
     record_body: ($) => bracedCollection($, $.record_field, $.comma),
@@ -608,16 +633,18 @@ module.exports = grammar({
       seq(field("name", $.field_name), $.left_arrow, $.value_slot),
 
     // --- control flow ---
-    // only place `let` shows up. prec.right so the body grabs as much as it can.
-    let_expression: ($) =>
-      prec.right(seq(
-        $.kw_let,
-        separated1($, $.local_binding, $.semicolon, {
-          optional_separator: true,
-        }),
-        $.kw_in,
-        $.let_body,
-      )),
+    // block_expression: braces + semicolons + out + result. Replaces let..in.
+    // `out` marks the value that exits the block (braces already mark scope).
+    // This is now the only meaning of `out` — the type-parameter marker we
+    // considered would have collided semantically, not syntactically.
+    block_expression: ($) =>
+      seq(
+        $.lbrace,
+        many(seq($.local_binding, $.semicolon)),
+        $.kw_out,
+        field("result", $.expression),
+        $.rbrace,
+      ),
 
     // local binding = value-namespace binding, no type constructors locally
     local_binding: ($) =>
@@ -649,9 +676,33 @@ module.exports = grammar({
         seq($.kw_else, $.fat_arrow, $.match_arm_value),
       ),
 
-    lambda_parameters: ($) => parenParamList($),
+    // Lambdas can now carry types:  fn (a: Int, b: Int) -> Int => a + b
+    // Both parts optional, so `fn(a, b) => a + b` still parses. Without this
+    // an inline lambda passed to a higher-order function had no annotation
+    // site at all and inference had to win every time.
+    //
+    // NB: `fn(` also opens function_type. They live in disjoint positions
+    // (expression vs type) so context separates them, but if tree-sitter
+    // reports a conflict this pair is where to look — the `=>` is the only
+    // thing that distinguishes them.
+    lambda_parameter: ($) =>
+      seq(
+        field("pattern", $.binding_pattern),
+        opt(seq($.colon, field("type_ann", $.type_expression))),
+      ),
+    lambda_parameters: ($) =>
+      seq($.lparen, opt(parameterList($, $.lambda_parameter)), $.rparen),
     lambda_expression: ($) =>
-      prec.right(seq($.kw_fn, $.lambda_parameters, $.fat_arrow, $.lambda_body)),
+      prec.right(seq(
+        $.kw_fn,
+        $.lambda_parameters,
+        opt(seq(
+          field("arrow", choice($.arrow, $.effect_arrow)),
+          field("return_type", $.type_expression),
+        )),
+        $.fat_arrow,
+        $.lambda_body,
+      )),
 
     // --- patterns ---
     pattern: ($) =>
@@ -682,11 +733,18 @@ module.exports = grammar({
     path_pattern: ($) =>
       seq(
         field("constructor", $.path),
-        opt(parenPayloadList($, $.tag_payload_pattern)),
+        opt(bracketedWithRest(
+          $,
+          $.lparen,
+          $.rparen,
+          field("payload", $.tag_payload_pattern),
+          $.comma,
+          $.rest_pattern,
+        )),
       ),
     // identical to atomic_pattern; aliased rather than duplicated. Split it back
     // out only if payload patterns ever need to diverge.
-    tag_payload_pattern: ($) => $.atomic_pattern,
+    tag_payload_pattern: ($) => $.pattern,
 
     wildcard_pattern: ($) => $.wildcard,
     unit_pattern: ($) => seq($.lparen, $.rparen),
@@ -762,10 +820,14 @@ module.exports = grammar({
         $.parenthesized_type,
       ),
 
+    // List[T], Map[K,V], Iterator[Task], Tree[Text, Task].
+    // A keyed container names its key type here. That's data, not an
+    // implementation name — nothing about which impl was chosen ever appears
+    // in a public type.
     path_or_applied: ($) =>
       seq(
         field("constructor", $.path),
-        opt(field("args", $.type_argument_list)), // List[T], Map[K,V]
+        opt(field("args", $.type_argument_list)),
       ),
     type_argument_list: ($) =>
       collection($, $.lbracket, $.rbracket, $.type_expression, $.comma),
@@ -818,8 +880,8 @@ module.exports = grammar({
         $.colon,
         field("constraint", $.constraint_sum),
       ),
+    // T : ShapeA + ShapeB. Also the RHS of derive.
     constraint_sum: ($) =>
-      // T : ShapeA + ShapeB
       prec.left(seq(
         field("shape", $.path),
         many(seq($.plus_op, field("shape", $.path))),
@@ -901,6 +963,9 @@ module.exports = grammar({
       token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*")),
     path_head: ($) => choice($.identifier, $.kw_self),
     path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
+    // `$` is the one-argument lambda hole. Scope is the whole RHS of the
+    // enclosing binding — resolver rule, not a grammar rule. `$.field` parses
+    // as placeholder + field_suffix and needs nothing extra here.
     placeholder: ($) => token("$"),
     wildcard: ($) => "_",
     ellipsis: ($) => "...",
