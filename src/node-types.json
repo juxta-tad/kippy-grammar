@@ -825,7 +825,7 @@
       "required": true,
       "types": [
         {
-          "type": "kw_out",
+          "type": "caret",
           "named": true
         },
         {
@@ -3736,6 +3736,10 @@
     "extra": true
   },
   {
+    "type": "caret",
+    "named": true
+  },
+  {
     "type": "char_literal",
     "named": true
   },
@@ -3869,10 +3873,6 @@
   },
   {
     "type": "kw_or",
-    "named": true
-  },
-  {
-    "type": "kw_out",
     "named": true
   },
   {

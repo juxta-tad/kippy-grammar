@@ -39,6 +39,10 @@
 // 5. derive takes a constraint_sum, not a single path:
 //        derive UserId : Eq + Ord + Hash
 //
+// 6. The block result marker is `^`, not the `out` keyword:
+//        { mid = w / 2; ^ GameState { ... } }
+//    `out` is no longer reserved and can be used as an identifier.
+//
 // NOT IN THE GRAMMAR, but decided:
 //   - `$` is a one-argument lambda hole. Its scope is the whole RHS of the
 //     binding it appears in — the `=` is the boundary. That's a resolver rule;
@@ -79,6 +83,7 @@ const PREC = {
 // Top-level used to be `let name = value`, now it's just `name = value`.
 // `fit` was never a keyword (the form was `path + braces`); the form is gone.
 // `type` is gone with associated types.
+// `out` is gone — the block result marker is the `^` token.
 const KEYWORDS = [
   "pub",
   "rec",
@@ -108,7 +113,6 @@ const KEYWORDS = [
   "as",
   "self",
   "Self",
-  "out",
 ];
 
 // Number lexing. The [0-9][0-9_]*[0-9] dance is so a literal can't start or
@@ -633,15 +637,25 @@ module.exports = grammar({
       seq(field("name", $.field_name), $.left_arrow, $.value_slot),
 
     // --- control flow ---
-    // block_expression: braces + semicolons + out + result. Replaces let..in.
-    // `out` marks the value that exits the block (braces already mark scope).
-    // This is now the only meaning of `out` — the type-parameter marker we
-    // considered would have collided semantically, not syntactically.
+    // block_expression: braces + semicolons + ^ + result. Replaces let..in.
+    // `^` marks the value that exits the block (braces already mark scope).
+    //
+    // The marker is not optional and cannot be. Without it the last item in a
+    // block is an expression and every earlier one is a binding, and both
+    // start the same way — `{ a` is either a binding_pattern about to meet `=`
+    // or a path_head that is the result. Dropping it costs six declared
+    // conflicts (binding_pattern/path_head, field_name/path_head,
+    // field_name/binding_pattern, rest_pattern/path_head,
+    // unit_expression/unit_pattern, list_expression/binding_list_pattern),
+    // all in the most common position in the language. Measured, not guessed.
+    //
+    // `^` is unused elsewhere: no xor, no exponent operator. `out` is now a
+    // free identifier again.
     block_expression: ($) =>
       seq(
         $.lbrace,
         many(seq($.local_binding, $.semicolon)),
-        $.kw_out,
+        $.caret,
         field("result", $.expression),
         $.rbrace,
       ),
@@ -992,6 +1006,8 @@ module.exports = grammar({
     module_sep: () => token.immediate("::"),
     at_sign: () => token.immediate("@"),
     hash_sign: () => "#",
+    caret: () => "^",  // block result marker
+
 
     pipe: () => token("|>"),
     bar: () => token("|"),

@@ -2685,7 +2685,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "kw_out"
+          "name": "caret"
         },
         {
           "type": "FIELD",
@@ -4881,10 +4881,6 @@
       "type": "STRING",
       "value": "Self"
     },
-    "kw_out": {
-      "type": "STRING",
-      "value": "out"
-    },
     "lparen": {
       "type": "STRING",
       "value": "("
@@ -4967,6 +4963,10 @@
     "hash_sign": {
       "type": "STRING",
       "value": "#"
+    },
+    "caret": {
+      "type": "STRING",
+      "value": "^"
     },
     "pipe": {
       "type": "TOKEN",
@@ -5201,10 +5201,6 @@
       {
         "type": "SYMBOL",
         "name": "kw_Self"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_out"
       }
     ]
   }
