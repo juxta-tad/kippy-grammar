@@ -47,7 +47,7 @@ enum ts_symbol_identifiers {
   sym_kw_if = 25,
   sym_kw_then = 26,
   sym_kw_else = 27,
-  sym_kw_to = 28,
+  sym_kw_case = 28,
   sym_kw_where = 29,
   sym_kw_module = 30,
   sym_kw_use = 31,
@@ -290,7 +290,7 @@ static const char * const ts_symbol_names[] = {
   [sym_kw_if] = "kw_if",
   [sym_kw_then] = "kw_then",
   [sym_kw_else] = "kw_else",
-  [sym_kw_to] = "kw_to",
+  [sym_kw_case] = "kw_case",
   [sym_kw_where] = "kw_where",
   [sym_kw_module] = "kw_module",
   [sym_kw_use] = "kw_use",
@@ -533,7 +533,7 @@ static const TSSymbol ts_symbol_map[] = {
   [sym_kw_if] = sym_kw_if,
   [sym_kw_then] = sym_kw_then,
   [sym_kw_else] = sym_kw_else,
-  [sym_kw_to] = sym_kw_to,
+  [sym_kw_case] = sym_kw_case,
   [sym_kw_where] = sym_kw_where,
   [sym_kw_module] = sym_kw_module,
   [sym_kw_use] = sym_kw_use,
@@ -860,7 +860,7 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = true,
     .named = true,
   },
-  [sym_kw_to] = {
+  [sym_kw_case] = {
     .visible = true,
     .named = true,
   },
@@ -4716,47 +4716,47 @@ static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
       if (lookahead == 'u') ADVANCE(23);
       END_STATE();
     case 5:
-      if (lookahead == 'h') ADVANCE(24);
+      if (lookahead == 'a') ADVANCE(24);
+      if (lookahead == 'h') ADVANCE(25);
       END_STATE();
     case 6:
-      if (lookahead == 'e') ADVANCE(25);
-      if (lookahead == 'i') ADVANCE(26);
+      if (lookahead == 'e') ADVANCE(26);
+      if (lookahead == 'i') ADVANCE(27);
       END_STATE();
     case 7:
-      if (lookahead == 'l') ADVANCE(27);
-      if (lookahead == 'x') ADVANCE(28);
+      if (lookahead == 'l') ADVANCE(28);
+      if (lookahead == 'x') ADVANCE(29);
       END_STATE();
     case 8:
-      if (lookahead == 'n') ADVANCE(29);
+      if (lookahead == 'n') ADVANCE(30);
       END_STATE();
     case 9:
-      if (lookahead == 'f') ADVANCE(30);
-      if (lookahead == 'n') ADVANCE(31);
+      if (lookahead == 'f') ADVANCE(31);
+      if (lookahead == 'n') ADVANCE(32);
       END_STATE();
     case 10:
-      if (lookahead == 'o') ADVANCE(32);
-      END_STATE();
-    case 11:
       if (lookahead == 'o') ADVANCE(33);
       END_STATE();
+    case 11:
+      if (lookahead == 'o') ADVANCE(34);
+      END_STATE();
     case 12:
-      if (lookahead == 'r') ADVANCE(34);
+      if (lookahead == 'r') ADVANCE(35);
       END_STATE();
     case 13:
-      if (lookahead == 'u') ADVANCE(35);
+      if (lookahead == 'u') ADVANCE(36);
       END_STATE();
     case 14:
-      if (lookahead == 'e') ADVANCE(36);
+      if (lookahead == 'e') ADVANCE(37);
       END_STATE();
     case 15:
-      if (lookahead == 'e') ADVANCE(37);
-      if (lookahead == 'h') ADVANCE(38);
+      if (lookahead == 'e') ADVANCE(38);
+      if (lookahead == 'h') ADVANCE(39);
       END_STATE();
     case 16:
-      if (lookahead == 'a') ADVANCE(39);
-      if (lookahead == 'e') ADVANCE(40);
-      if (lookahead == 'h') ADVANCE(41);
-      if (lookahead == 'o') ADVANCE(42);
+      if (lookahead == 'a') ADVANCE(40);
+      if (lookahead == 'e') ADVANCE(41);
+      if (lookahead == 'h') ADVANCE(42);
       END_STATE();
     case 17:
       if (lookahead == 's') ADVANCE(43);
@@ -4780,248 +4780,254 @@ static bool ts_lex_keywords(TSLexer *lexer, TSStateId state) {
       if (lookahead == 'i') ADVANCE(48);
       END_STATE();
     case 24:
-      if (lookahead == 'o') ADVANCE(49);
+      if (lookahead == 's') ADVANCE(49);
       END_STATE();
     case 25:
-      if (lookahead == 'r') ADVANCE(50);
+      if (lookahead == 'o') ADVANCE(50);
       END_STATE();
     case 26:
-      if (lookahead == 's') ADVANCE(51);
+      if (lookahead == 'r') ADVANCE(51);
       END_STATE();
     case 27:
       if (lookahead == 's') ADVANCE(52);
       END_STATE();
     case 28:
-      if (lookahead == 'p') ADVANCE(53);
+      if (lookahead == 's') ADVANCE(53);
       END_STATE();
     case 29:
-      ACCEPT_TOKEN(sym_kw_fn);
+      if (lookahead == 'p') ADVANCE(54);
       END_STATE();
     case 30:
-      ACCEPT_TOKEN(sym_kw_if);
+      ACCEPT_TOKEN(sym_kw_fn);
       END_STATE();
     case 31:
-      if (lookahead == 't') ADVANCE(54);
+      ACCEPT_TOKEN(sym_kw_if);
       END_STATE();
     case 32:
-      if (lookahead == 'd') ADVANCE(55);
+      if (lookahead == 't') ADVANCE(55);
       END_STATE();
     case 33:
-      if (lookahead == 't') ADVANCE(56);
+      if (lookahead == 'd') ADVANCE(56);
       END_STATE();
     case 34:
-      ACCEPT_TOKEN(sym_kw_or);
+      if (lookahead == 't') ADVANCE(57);
       END_STATE();
     case 35:
-      if (lookahead == 'b') ADVANCE(57);
+      ACCEPT_TOKEN(sym_kw_or);
       END_STATE();
     case 36:
-      if (lookahead == 'c') ADVANCE(58);
+      if (lookahead == 'b') ADVANCE(58);
       END_STATE();
     case 37:
-      if (lookahead == 'l') ADVANCE(59);
+      if (lookahead == 'c') ADVANCE(59);
       END_STATE();
     case 38:
-      if (lookahead == 'a') ADVANCE(60);
+      if (lookahead == 'l') ADVANCE(60);
       END_STATE();
     case 39:
-      if (lookahead == 'g') ADVANCE(61);
+      if (lookahead == 'a') ADVANCE(61);
       END_STATE();
     case 40:
-      if (lookahead == 's') ADVANCE(62);
+      if (lookahead == 'g') ADVANCE(62);
       END_STATE();
     case 41:
-      if (lookahead == 'e') ADVANCE(63);
+      if (lookahead == 's') ADVANCE(63);
       END_STATE();
     case 42:
-      ACCEPT_TOKEN(sym_kw_to);
-      END_STATE();
-    case 43:
       if (lookahead == 'e') ADVANCE(64);
       END_STATE();
-    case 44:
+    case 43:
       if (lookahead == 'e') ADVANCE(65);
       END_STATE();
+    case 44:
+      if (lookahead == 'e') ADVANCE(66);
+      END_STATE();
     case 45:
-      if (lookahead == 'f') ADVANCE(66);
+      if (lookahead == 'f') ADVANCE(67);
       END_STATE();
     case 46:
-      if (lookahead == 'a') ADVANCE(67);
+      if (lookahead == 'a') ADVANCE(68);
       END_STATE();
     case 47:
       ACCEPT_TOKEN(sym_kw_and);
       END_STATE();
     case 48:
-      if (lookahead == 'l') ADVANCE(68);
+      if (lookahead == 'l') ADVANCE(69);
       END_STATE();
     case 49:
-      if (lookahead == 'i') ADVANCE(69);
+      if (lookahead == 'e') ADVANCE(70);
       END_STATE();
     case 50:
-      if (lookahead == 'i') ADVANCE(70);
+      if (lookahead == 'i') ADVANCE(71);
       END_STATE();
     case 51:
-      if (lookahead == 't') ADVANCE(71);
+      if (lookahead == 'i') ADVANCE(72);
       END_STATE();
     case 52:
-      if (lookahead == 'e') ADVANCE(72);
+      if (lookahead == 't') ADVANCE(73);
       END_STATE();
     case 53:
-      if (lookahead == 'e') ADVANCE(73);
+      if (lookahead == 'e') ADVANCE(74);
       END_STATE();
     case 54:
-      if (lookahead == 'r') ADVANCE(74);
+      if (lookahead == 'e') ADVANCE(75);
       END_STATE();
     case 55:
-      ACCEPT_TOKEN(sym_kw_mod);
-      if (lookahead == 'u') ADVANCE(75);
+      if (lookahead == 'r') ADVANCE(76);
       END_STATE();
     case 56:
-      ACCEPT_TOKEN(sym_kw_not);
+      ACCEPT_TOKEN(sym_kw_mod);
+      if (lookahead == 'u') ADVANCE(77);
       END_STATE();
     case 57:
-      ACCEPT_TOKEN(sym_kw_pub);
+      ACCEPT_TOKEN(sym_kw_not);
       END_STATE();
     case 58:
-      ACCEPT_TOKEN(sym_kw_rec);
-      if (lookahead == 'o') ADVANCE(76);
+      ACCEPT_TOKEN(sym_kw_pub);
       END_STATE();
     case 59:
-      if (lookahead == 'f') ADVANCE(77);
+      ACCEPT_TOKEN(sym_kw_rec);
+      if (lookahead == 'o') ADVANCE(78);
       END_STATE();
     case 60:
-      if (lookahead == 'p') ADVANCE(78);
+      if (lookahead == 'f') ADVANCE(79);
       END_STATE();
     case 61:
-      ACCEPT_TOKEN(sym_kw_tag);
+      if (lookahead == 'p') ADVANCE(80);
       END_STATE();
     case 62:
-      if (lookahead == 't') ADVANCE(79);
+      ACCEPT_TOKEN(sym_kw_tag);
       END_STATE();
     case 63:
-      if (lookahead == 'n') ADVANCE(80);
+      if (lookahead == 't') ADVANCE(81);
       END_STATE();
     case 64:
-      ACCEPT_TOKEN(sym_kw_use);
+      if (lookahead == 'n') ADVANCE(82);
       END_STATE();
     case 65:
-      if (lookahead == 'r') ADVANCE(81);
+      ACCEPT_TOKEN(sym_kw_use);
       END_STATE();
     case 66:
-      ACCEPT_TOKEN(sym_kw_Self);
+      if (lookahead == 'r') ADVANCE(83);
       END_STATE();
     case 67:
-      if (lookahead == 's') ADVANCE(82);
+      ACCEPT_TOKEN(sym_kw_Self);
       END_STATE();
     case 68:
-      if (lookahead == 'd') ADVANCE(83);
+      if (lookahead == 's') ADVANCE(84);
       END_STATE();
     case 69:
-      if (lookahead == 'c') ADVANCE(84);
+      if (lookahead == 'd') ADVANCE(85);
       END_STATE();
     case 70:
-      if (lookahead == 'v') ADVANCE(85);
+      ACCEPT_TOKEN(sym_kw_case);
       END_STATE();
     case 71:
-      if (lookahead == 'i') ADVANCE(86);
+      if (lookahead == 'c') ADVANCE(86);
       END_STATE();
     case 72:
-      ACCEPT_TOKEN(sym_kw_else);
+      if (lookahead == 'v') ADVANCE(87);
       END_STATE();
     case 73:
-      if (lookahead == 'c') ADVANCE(87);
-      END_STATE();
-    case 74:
       if (lookahead == 'i') ADVANCE(88);
       END_STATE();
+    case 74:
+      ACCEPT_TOKEN(sym_kw_else);
+      END_STATE();
     case 75:
-      if (lookahead == 'l') ADVANCE(89);
+      if (lookahead == 'c') ADVANCE(89);
       END_STATE();
     case 76:
-      if (lookahead == 'r') ADVANCE(90);
+      if (lookahead == 'i') ADVANCE(90);
       END_STATE();
     case 77:
-      ACCEPT_TOKEN(sym_kw_self);
+      if (lookahead == 'l') ADVANCE(91);
       END_STATE();
     case 78:
-      if (lookahead == 'e') ADVANCE(91);
+      if (lookahead == 'r') ADVANCE(92);
       END_STATE();
     case 79:
-      ACCEPT_TOKEN(sym_kw_test);
+      ACCEPT_TOKEN(sym_kw_self);
       END_STATE();
     case 80:
-      ACCEPT_TOKEN(sym_kw_then);
-      END_STATE();
-    case 81:
-      if (lookahead == 'e') ADVANCE(92);
-      END_STATE();
-    case 82:
-      ACCEPT_TOKEN(sym_kw_alias);
-      END_STATE();
-    case 83:
-      ACCEPT_TOKEN(sym_kw_build);
-      END_STATE();
-    case 84:
       if (lookahead == 'e') ADVANCE(93);
       END_STATE();
-    case 85:
+    case 81:
+      ACCEPT_TOKEN(sym_kw_test);
+      END_STATE();
+    case 82:
+      ACCEPT_TOKEN(sym_kw_then);
+      END_STATE();
+    case 83:
       if (lookahead == 'e') ADVANCE(94);
       END_STATE();
+    case 84:
+      ACCEPT_TOKEN(sym_kw_alias);
+      END_STATE();
+    case 85:
+      ACCEPT_TOKEN(sym_kw_build);
+      END_STATE();
     case 86:
-      if (lookahead == 'n') ADVANCE(95);
+      if (lookahead == 'e') ADVANCE(95);
       END_STATE();
     case 87:
-      if (lookahead == 't') ADVANCE(96);
+      if (lookahead == 'e') ADVANCE(96);
       END_STATE();
     case 88:
       if (lookahead == 'n') ADVANCE(97);
       END_STATE();
     case 89:
-      if (lookahead == 'e') ADVANCE(98);
+      if (lookahead == 't') ADVANCE(98);
       END_STATE();
     case 90:
-      if (lookahead == 'd') ADVANCE(99);
+      if (lookahead == 'n') ADVANCE(99);
       END_STATE();
     case 91:
-      ACCEPT_TOKEN(sym_kw_shape);
+      if (lookahead == 'e') ADVANCE(100);
       END_STATE();
     case 92:
-      ACCEPT_TOKEN(sym_kw_where);
+      if (lookahead == 'd') ADVANCE(101);
       END_STATE();
     case 93:
-      ACCEPT_TOKEN(sym_kw_choice);
+      ACCEPT_TOKEN(sym_kw_shape);
       END_STATE();
     case 94:
-      ACCEPT_TOKEN(sym_kw_derive);
+      ACCEPT_TOKEN(sym_kw_where);
       END_STATE();
     case 95:
-      if (lookahead == 'c') ADVANCE(100);
+      ACCEPT_TOKEN(sym_kw_choice);
       END_STATE();
     case 96:
-      ACCEPT_TOKEN(sym_kw_expect);
+      ACCEPT_TOKEN(sym_kw_derive);
       END_STATE();
     case 97:
-      if (lookahead == 's') ADVANCE(101);
+      if (lookahead == 'c') ADVANCE(102);
       END_STATE();
     case 98:
-      ACCEPT_TOKEN(sym_kw_module);
+      ACCEPT_TOKEN(sym_kw_expect);
       END_STATE();
     case 99:
-      ACCEPT_TOKEN(sym_kw_record);
+      if (lookahead == 's') ADVANCE(103);
       END_STATE();
     case 100:
-      if (lookahead == 't') ADVANCE(102);
+      ACCEPT_TOKEN(sym_kw_module);
       END_STATE();
     case 101:
-      if (lookahead == 'i') ADVANCE(103);
+      ACCEPT_TOKEN(sym_kw_record);
       END_STATE();
     case 102:
-      ACCEPT_TOKEN(sym_kw_distinct);
+      if (lookahead == 't') ADVANCE(104);
       END_STATE();
     case 103:
-      if (lookahead == 'c') ADVANCE(104);
+      if (lookahead == 'i') ADVANCE(105);
       END_STATE();
     case 104:
+      ACCEPT_TOKEN(sym_kw_distinct);
+      END_STATE();
+    case 105:
+      if (lookahead == 'c') ADVANCE(106);
+      END_STATE();
+    case 106:
       ACCEPT_TOKEN(sym_kw_intrinsic);
       END_STATE();
     default:
@@ -5818,7 +5824,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -5847,7 +5853,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_expect,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -5900,7 +5906,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -5927,7 +5933,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -5950,7 +5956,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_intrinsic,
     sym_kw_expect,
     sym_kw_if,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_module,
     sym_kw_build,
     sym_kw_fn,
@@ -5973,7 +5979,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -6001,7 +6007,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_expect,
     sym_kw_if,
     sym_kw_then,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -6026,7 +6032,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_intrinsic,
     sym_kw_expect,
     sym_kw_if,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_module,
     sym_kw_build,
     sym_kw_fn,
@@ -6050,7 +6056,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -6073,7 +6079,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_intrinsic,
     sym_kw_expect,
     sym_kw_if,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_module,
     sym_kw_build,
     sym_kw_fn,
@@ -6096,7 +6102,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_module,
     sym_kw_build,
     sym_kw_fn,
@@ -6118,7 +6124,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_intrinsic,
     sym_kw_expect,
     sym_kw_if,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_module,
     sym_kw_build,
     sym_kw_fn,
@@ -6141,7 +6147,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_expect,
     sym_kw_if,
     sym_kw_then,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_module,
     sym_kw_build,
     sym_kw_fn,
@@ -6166,7 +6172,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -6194,7 +6200,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_build,
@@ -6221,7 +6227,7 @@ static const TSSymbol ts_reserved_words[19][MAX_RESERVED_WORD_SET_SIZE] = {
     sym_kw_if,
     sym_kw_then,
     sym_kw_else,
-    sym_kw_to,
+    sym_kw_case,
     sym_kw_where,
     sym_kw_module,
     sym_kw_use,
@@ -6265,7 +6271,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_kw_if] = ACTIONS(1),
     [sym_kw_then] = ACTIONS(1),
     [sym_kw_else] = ACTIONS(1),
-    [sym_kw_to] = ACTIONS(1),
+    [sym_kw_case] = ACTIONS(1),
     [sym_kw_where] = ACTIONS(1),
     [sym_kw_module] = ACTIONS(1),
     [sym_kw_use] = ACTIONS(1),
@@ -6604,7 +6610,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -6657,7 +6663,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -6743,7 +6749,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -6769,7 +6775,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -6855,7 +6861,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -6994,7 +7000,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -7016,7 +7022,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -7540,7 +7546,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10675,7 +10681,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10722,7 +10728,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10769,7 +10775,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_if,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10815,7 +10821,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10863,7 +10869,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10907,7 +10913,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10951,7 +10957,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -10995,7 +11001,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11039,7 +11045,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11083,7 +11089,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11127,7 +11133,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11171,7 +11177,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11215,7 +11221,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11259,7 +11265,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11303,7 +11309,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11347,7 +11353,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11456,7 +11462,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11565,7 +11571,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11739,7 +11745,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11783,7 +11789,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11827,7 +11833,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11871,7 +11877,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11915,7 +11921,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -11959,7 +11965,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12003,7 +12009,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12047,7 +12053,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12091,7 +12097,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12135,7 +12141,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12179,7 +12185,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12223,7 +12229,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12267,7 +12273,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12311,7 +12317,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12355,7 +12361,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12399,7 +12405,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12443,7 +12449,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12487,7 +12493,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12531,7 +12537,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12575,7 +12581,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12619,7 +12625,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -12663,7 +12669,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_kw_rec,
       sym_kw_then,
       sym_kw_else,
-      sym_kw_to,
+      sym_kw_case,
       sym_kw_where,
       sym_kw_use,
       sym_kw_derive,
@@ -13112,7 +13118,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_path,
   [8749] = 4,
     ACTIONS(346), 1,
-      sym_kw_to,
+      sym_kw_case,
     ACTIONS(3), 2,
       sym_line_comment,
       sym_block_comment,

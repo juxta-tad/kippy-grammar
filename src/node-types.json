@@ -2093,7 +2093,7 @@
       "required": true,
       "types": [
         {
-          "type": "kw_to",
+          "type": "kw_case",
           "named": true
         },
         {
@@ -3828,6 +3828,10 @@
     "named": true
   },
   {
+    "type": "kw_case",
+    "named": true
+  },
+  {
     "type": "kw_choice",
     "named": true
   },
@@ -3905,10 +3909,6 @@
   },
   {
     "type": "kw_then",
-    "named": true
-  },
-  {
-    "type": "kw_to",
     "named": true
   },
   {

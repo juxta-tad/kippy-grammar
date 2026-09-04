@@ -1893,7 +1893,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "kw_to"
+                "name": "kw_case"
               },
               {
                 "type": "FIELD",
@@ -4821,9 +4821,9 @@
       "type": "STRING",
       "value": "else"
     },
-    "kw_to": {
+    "kw_case": {
       "type": "STRING",
-      "value": "to"
+      "value": "case"
     },
     "kw_where": {
       "type": "STRING",
@@ -5144,7 +5144,7 @@
       },
       {
         "type": "SYMBOL",
-        "name": "kw_to"
+        "name": "kw_case"
       },
       {
         "type": "SYMBOL",

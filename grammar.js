@@ -98,7 +98,7 @@ const KEYWORDS = [
   "if",
   "then",
   "else",
-  "to",
+  "case",
   "where",
   "module",
   "use",
@@ -548,7 +548,7 @@ module.exports = grammar({
         choice(
           seq(
             field("subject", $.postfix_expression),
-            $.kw_to,
+            $.kw_case,
             field("body", bracedSemiBlock($, $.match_arm)),
           ),
           $.postfix_expression,
