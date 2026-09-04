@@ -967,7 +967,7 @@ module.exports = grammar({
     // block comments are /> ... </ so they don't collide with the / divide op
     // or // line comments. yes it looks like XML. live with it.
     line_comment: (_) => token(new RustRegex("//[^\\n]*")),
-    block_comment: (_) => token(seq("/>", /([^<]|<[^/])*/, "</")),
+		block_comment: (_) => token(new RustRegex("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/")),
 
     // --- identifiers, paths, operators ---
     // No trailing ! on identifiers. In a total/pure language the set!/map!
