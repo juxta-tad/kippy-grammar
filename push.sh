@@ -20,4 +20,4 @@ git commit -m "$COMMIT_MESSAGE" --quiet
 
 git push --quiet
 
-echo "✅ Parser regenerated and pushed."
+echo "Parser regenerated and pushed."
