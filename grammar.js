@@ -98,7 +98,7 @@ const KEYWORDS = [
   "if",
   "then",
   "else",
-  "case",
+  "to",
   "where",
   "module",
   "use",
@@ -548,7 +548,7 @@ module.exports = grammar({
         choice(
           seq(
             field("subject", $.postfix_expression),
-            $.kw_case,
+            $.kw_to,
             field("body", bracedSemiBlock($, $.match_arm)),
           ),
           $.postfix_expression,
@@ -967,7 +967,7 @@ module.exports = grammar({
     // block comments are /> ... </ so they don't collide with the / divide op
     // or // line comments. yes it looks like XML. live with it.
     line_comment: (_) => token(new RustRegex("//[^\\n]*")),
-		block_comment: (_) => token(new RustRegex("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/")),
+    block_comment: (_) => token(seq("/>", /([^<]|<[^/])*/, "</")),
 
     // --- identifiers, paths, operators ---
     // No trailing ! on identifiers. In a total/pure language the set!/map!
