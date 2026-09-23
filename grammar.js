@@ -22,6 +22,7 @@ const PREC = {
 const KEYWORDS = [
   "pub",
   "rec",
+  "mut",
   "alias",
   "distinct",
   "tag",
@@ -45,6 +46,7 @@ const KEYWORDS = [
   "not",
   "mod",
   "as",
+  "in",
   "self",
   "Self",
 ];
@@ -472,8 +474,7 @@ module.exports = grammar({
     method_suffix: ($) =>
       seq(
         $.at_sign,
-        field("method", $.identifier),
-        opt(seq($.colon, field("shape", $.path))),
+        field("method", $.path),
       ),
     record_suffix: ($) => field("body", $.record_body),
 
@@ -519,23 +520,74 @@ module.exports = grammar({
     // Replaces let..in. `^` marks the value that exits the block, and is not
     // optional: without it `{ a` is ambiguous between a binding and a result,
     // costing six declared conflicts. Measured, not guessed.
+    //
+    // Was: many(seq($.local_binding, $.semicolon)). A block statement is now
+    // one of three forms (binding, assignment, loop) instead of only bindings.
     block_expression: ($) =>
       seq(
         $.lbrace,
-        many(seq($.local_binding, $.semicolon)),
+        many(seq($.local_statement, $.semicolon)),
         $.caret,
         field("result", $.expression),
         $.rbrace,
       ),
 
     // value namespace only — no type constructors locally
+    //
+    // `mut` sits where `rec` does; the choice makes `rec mut` a parse error
+    // for free. `mut` means "this name may take successive values", never
+    // "shared mutable storage" — see the resolver rules in notes/syntax.md.
     local_binding: ($) =>
       seq(
-        opt($.kw_rec),
+        opt(choice($.kw_rec, $.kw_mut)),
         field("pattern", $.binding_pattern),
         opt(seq($.colon, field("type_ann", $.type_expression))),
         $.equals,
         $.value_slot,
+      ),
+
+    // A block statement starts with a pattern. The token right after it
+    // decides which form it is: `=` -> local_binding, `in` -> loop_statement.
+    // One token of lookahead, so no restricted copy of the expression ladder
+    // is needed anywhere, and the iterable below can be any expression.
+    local_statement: ($) =>
+      choice($.local_binding, $.assignment, $.loop_statement),
+
+    // x in values => { ... };
+    // (k, v) in pairs |> filter(p) => { ... };
+    // {name, ..} in users => { ... };
+    //
+    // The `=>` is load-bearing for error recovery, not decoration: without
+    // it, the body's `{` is a legal continuation of a broken iterable (a
+    // block expression or a record suffix), so a truncated iterable eats the
+    // body and cascades into the rest of the enclosing block. With `=>` as a
+    // hard resync point, damage stays local to the loop statement. Measured,
+    // not guessed — same discipline as `^` above.
+    loop_statement: ($) =>
+      seq(
+        field("pattern", $.binding_pattern),
+        $.kw_in,
+        field("iterable", $.expression),
+        $.fat_arrow,
+        field("body", $.loop_body),
+      ),
+
+    // No `^`: the body produces no value. Loop-carried state is `mut` in the
+    // enclosing block; the loop lowers to a collapse (fold) over `iterable`
+    // with those `mut` locals as the accumulator.
+    loop_body: ($) =>
+      seq($.lbrace, many(seq($.local_statement, $.semicolon)), $.rbrace),
+
+    // u.score = e, xs[0] = e, u.tags[0].name = e.
+    // Bare `x = e` (no suffix) is always a local_binding, never this rule —
+    // the resolver decides bind-vs-rebind by scope, so there is no overlap
+    // and no declared conflict.
+    assignment: ($) =>
+      seq(field("target", $.lvalue), $.equals, $.value_slot),
+    lvalue: ($) =>
+      seq(
+        field("base", $.identifier),
+        repeat1(choice($.field_suffix, $.index_suffix, $.tuple_index_suffix)),
       ),
 
     if_expression: ($) =>

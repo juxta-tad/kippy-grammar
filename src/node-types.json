@@ -199,6 +199,42 @@
     }
   },
   {
+    "type": "assignment",
+    "named": true,
+    "fields": {
+      "target": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "lvalue",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "equals",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "atomic_pattern",
     "named": true,
     "fields": {},
@@ -833,7 +869,7 @@
           "named": true
         },
         {
-          "type": "local_binding",
+          "type": "local_statement",
           "named": true
         },
         {
@@ -1879,7 +1915,145 @@
           "named": true
         },
         {
+          "type": "kw_mut",
+          "named": true
+        },
+        {
           "type": "kw_rec",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "local_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "assignment",
+          "named": true
+        },
+        {
+          "type": "local_binding",
+          "named": true
+        },
+        {
+          "type": "loop_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "loop_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "lbrace",
+          "named": true
+        },
+        {
+          "type": "local_statement",
+          "named": true
+        },
+        {
+          "type": "rbrace",
+          "named": true
+        },
+        {
+          "type": "semicolon",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "loop_statement",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "loop_body",
+            "named": true
+          }
+        ]
+      },
+      "iterable": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "pattern": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "fat_arrow",
+          "named": true
+        },
+        {
+          "type": "kw_in",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "lvalue",
+    "named": true,
+    "fields": {
+      "base": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "field_suffix",
+          "named": true
+        },
+        {
+          "type": "index_suffix",
+          "named": true
+        },
+        {
+          "type": "tuple_index_suffix",
           "named": true
         }
       ]
@@ -2075,16 +2249,6 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "shape": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
             "type": "path",
             "named": true
           }
@@ -2092,15 +2256,11 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "at_sign",
-          "named": true
-        },
-        {
-          "type": "colon",
           "named": true
         }
       ]
@@ -3846,6 +4006,10 @@
     "named": true
   },
   {
+    "type": "kw_in",
+    "named": true
+  },
+  {
     "type": "kw_intrinsic",
     "named": true
   },
@@ -3855,6 +4019,10 @@
   },
   {
     "type": "kw_module",
+    "named": true
+  },
+  {
+    "type": "kw_mut",
     "named": true
   },
   {
