@@ -2717,31 +2717,40 @@
       ]
     },
     "loop_body": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "lbrace"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "local_statement"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "semicolon"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "lbrace"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "local_statement"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "semicolon"
+                  }
+                ]
               }
-            ]
-          }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "rbrace"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
-          "name": "rbrace"
+          "name": "local_statement"
         }
       ]
     },

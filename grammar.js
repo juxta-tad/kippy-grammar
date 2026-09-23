@@ -578,7 +578,7 @@ module.exports = grammar({
     loop_body: ($) =>
       choice(
         seq($.lbrace, many(seq($.local_statement, $.semicolon)), $.rbrace),
-        $.unbraced_statement,
+        $.local_statement,
       ),
 
     // u.score = e, xs[0] = e, u.tags[0].name = e.
