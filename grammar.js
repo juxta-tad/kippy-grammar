@@ -576,7 +576,10 @@ module.exports = grammar({
     // enclosing block; the loop lowers to a collapse (fold) over `iterable`
     // with those `mut` locals as the accumulator.
     loop_body: ($) =>
-      seq($.lbrace, many(seq($.local_statement, $.semicolon)), $.rbrace),
+      choice(
+        seq($.lbrace, many(seq($.local_statement, $.semicolon)), $.rbrace),
+        $.unbraced_statement,
+      ),
 
     // u.score = e, xs[0] = e, u.tags[0].name = e.
     // Bare `x = e` (no suffix) is always a local_binding, never this rule —
