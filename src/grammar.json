@@ -1472,38 +1472,9 @@
         },
         {
           "type": "SYMBOL",
-          "name": "assignment_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "case_expression"
         }
       ]
-    },
-    "assignment_expression": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "target",
-            "content": {
-              "type": "SYMBOL",
-              "name": "postfix_expression"
-            }
-          },
-          {
-            "type": "SYMBOL",
-            "name": "equals"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "value_slot"
-          }
-        ]
-      }
     },
     "case_expression": {
       "type": "SEQ",
@@ -2226,6 +2197,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "wildcard"
+        },
+        {
+          "type": "SYMBOL",
           "name": "unit_expression"
         },
         {
@@ -2628,7 +2603,7 @@
         }
       ]
     },
-    "typed_binding": {
+    "local_binding": {
       "type": "SEQ",
       "members": [
         {
@@ -2654,68 +2629,10 @@
         },
         {
           "type": "FIELD",
-          "name": "name",
+          "name": "target",
           "content": {
             "type": "SYMBOL",
-            "name": "identifier"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "colon"
-        },
-        {
-          "type": "FIELD",
-          "name": "type_ann",
-          "content": {
-            "type": "SYMBOL",
-            "name": "type_expression"
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "equals"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "value_slot"
-        }
-      ]
-    },
-    "let_binding": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "kw_let"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "kw_rec"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "kw_mut"
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "FIELD",
-          "name": "pattern",
-          "content": {
-            "type": "SYMBOL",
-            "name": "binding_pattern"
+            "name": "postfix_expression"
           }
         },
         {
@@ -2753,16 +2670,41 @@
         }
       ]
     },
+    "update_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "caret"
+        },
+        {
+          "type": "FIELD",
+          "name": "target",
+          "content": {
+            "type": "SYMBOL",
+            "name": "postfix_expression"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "equals"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "value_slot"
+        }
+      ]
+    },
     "local_statement": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "typed_binding"
+          "name": "local_binding"
         },
         {
           "type": "SYMBOL",
-          "name": "let_binding"
+          "name": "update_statement"
         },
         {
           "type": "SYMBOL",
@@ -4901,10 +4843,6 @@
       "type": "STRING",
       "value": "for"
     },
-    "kw_let": {
-      "type": "STRING",
-      "value": "let"
-    },
     "kw_self": {
       "type": "STRING",
       "value": "self"
@@ -4988,6 +4926,10 @@
     "hash_sign": {
       "type": "STRING",
       "value": "#"
+    },
+    "caret": {
+      "type": "STRING",
+      "value": "^"
     },
     "pipe": {
       "type": "TOKEN",
@@ -5218,10 +5160,6 @@
       {
         "type": "SYMBOL",
         "name": "kw_for"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_let"
       },
       {
         "type": "SYMBOL",

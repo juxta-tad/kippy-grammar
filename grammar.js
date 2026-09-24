@@ -6,10 +6,9 @@
 //
 // Separators: comma in values/types, semicolon in blocks.
 // Arrows: => body follows, -> return, ->! effectful return.
+// Locals: x = e introduces, ^x = e updates a mut.
 
 const PREC = {
-  ASSIGN: 0,
-  MATCH: 1,
   PIPE: 2,
   OR: 3,
   AND: 4,
@@ -49,7 +48,6 @@ const KEYWORDS = [
   "as",
   "in",
   "for",
-  "let",
   "self",
   "Self",
 ];
@@ -380,18 +378,8 @@ module.exports = grammar({
       choice(
         $.lambda_expression,
         $.if_expression,
-        $.assignment_expression,
         $.case_expression,
       ),
-
-    // x = 10;  x.field = e;  xs[0] = e;  a = b = c;
-
-    assignment_expression: ($) =>
-      prec.right(PREC.ASSIGN, seq(
-        field("target", $.postfix_expression),
-        $.equals,
-        $.value_slot,
-      )),
 
     // case binds loosely, above pipe. subject matches the full result
     // of the piped expression chain: score > 10 case { ... } matches
@@ -496,6 +484,7 @@ module.exports = grammar({
         $.literal,
         $.path,
         $.placeholder,
+        $.wildcard,
         $.unit_expression,
         $.list_expression,
         $.map_expression,
@@ -539,44 +528,35 @@ module.exports = grammar({
     // `:` right after the name is a token no expression production can
     // consume there, so this never competes with assignment_expression.
     //
-    // `mut` sits where `rec` does; the choice makes `rec mut` a parse error
-    // for free. `mut` means "this name may take successive values", never
-    // "shared mutable storage" — see the resolver rules in notes/syntax.md.
-    typed_binding: ($) =>
+    // x = 10;  mut total : Int = 0;  (a, b) = pair;  [h, ..t] = xs;
+    // Cover grammar: the target parses as an expression and the resolver
+    // checks it's a valid binding pattern. Pattern and tail expression share
+    // one nonterminal, so the parser never guesses — which was all `let`
+    // bought.
+    //
+    // `mut` means "this name may take successive values", never "shared
+    // mutable storage" — see the resolver rules in notes/syntax.md.
+    local_binding: ($) =>
       seq(
         opt(choice($.kw_rec, $.kw_mut)),
-        field("name", $.identifier),
-        $.colon,
-        field("type_ann", $.type_expression),
-        $.equals,
-        $.value_slot,
-      ),
-
-    // let (a, b) = pair;  let {name, age} = user;  let [x, ..rest] = xs;
-    // let x = 10;
-    // Accepts any binding_pattern, including a bare identifier — `let x =
-    // 10` is a legal, more explicit spelling of `x = 10`, not an error.
-    // What `let` actually buys you is only needed for tuple/list/paren
-    // patterns: a leading `let` commits the parser to "pattern incoming"
-    // before any pattern content is read, so those never have to be told
-    // apart from a block's tail expression — the ambiguity `^` used to
-    // paper over for every pattern shape, not just assignment's.
-    let_binding: ($) =>
-      seq(
-        $.kw_let,
-        opt(choice($.kw_rec, $.kw_mut)),
-        field("pattern", $.binding_pattern),
+        field("target", $.postfix_expression),
         opt(seq($.colon, field("type_ann", $.type_expression))),
         $.equals,
         $.value_slot,
       ),
 
-    // A block statement's leading token decides the form outright: `let` ->
-    // let_binding, `for` -> loop_statement, an identifier followed by `:` ->
-    // typed_binding, and everything else -> expression (which covers plain
-    // bindings and assignment via assignment_expression).
+    // ^total = total + x;  ^state.tick = state.tick + 1;  ^xs[i] = v;
+    // No expression starts with `^`, so the first token decides.
+    update_statement: ($) =>
+      seq(
+        $.caret,
+        field("target", $.postfix_expression),
+        $.equals,
+        $.value_slot,
+      ),
+
     local_statement: ($) =>
-      choice($.typed_binding, $.let_binding, $.loop_statement, $.expression),
+      choice($.local_binding, $.update_statement, $.loop_statement, $.expression),
 
 
     loop_statement: ($) =>
@@ -895,6 +875,7 @@ module.exports = grammar({
     module_sep: () => token.immediate("::"),
     at_sign: () => token.immediate("@"),
     hash_sign: () => "#",
+    caret: () => "^",
 
     pipe: () => token("|>"),
     bar: () => token("|"),
