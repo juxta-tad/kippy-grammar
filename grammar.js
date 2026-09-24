@@ -395,6 +395,16 @@ module.exports = grammar({
     // and whether bare `x = 10` is a fresh binding or a rebind are both
     // resolver decisions, not grammar ones — same principle the old
     // local_binding used for bind-vs-rebind.
+    //
+    // Being part of `expression` means assignment can appear anywhere an
+    // expression can — `foo(x = 10)`, `if x = 10 then a else b`, list
+    // items, etc. — not just at statement position. RESOLVER RULE TO
+    // ENFORCE: a bare name on the left introduces a new binding only when
+    // the assignment_expression occurs directly as a local_statement;
+    // anywhere else in expression position, the target must already exist
+    // and be `mut`, or it's an error. This keeps `x = 10` inside a call
+    // argument or condition from silently introducing `x` into an
+    // enclosing scope.
     assignment_expression: ($) =>
       prec.right(PREC.ASSIGN, seq(
         field("target", $.postfix_expression),
@@ -541,8 +551,12 @@ module.exports = grammar({
     // --- control flow ---
     // No `^`. A block is Rust-shaped: statements end in `;`, and the
     // optional trailing expression with no `;` is the block's value. A
-    // block ending in `;` (or an empty block) has no result — the resolver
-    // enforces "must end in a bare expression" wherever a value is required.
+    // block with no trailing expression (ends in `;`, or is empty) has no
+    // `result` field in the tree. RESOLVER RULE TO ENFORCE: treat an
+    // absent `result` as the value `()`, not as a distinct "no value"
+    // state — `{}` and `{ print(x); }` both evaluate to `()`, exactly as
+    // if `()` had been written as the trailing expression. That keeps
+    // `fn (x) ->! () => { print(x); }` well-typed with no special-casing.
     //
     // Disambiguating the tail from the last statement needs only one token
     // of lookahead (does `;` or `}` follow the expression just parsed?),
@@ -577,9 +591,12 @@ module.exports = grammar({
       ),
 
     // let (a, b) = pair;  let {name, age} = user;  let [x, ..rest] = xs;
-    // Destructuring only. A leading `let` commits the parser to "pattern
-    // incoming" before any pattern content is read, so tuple/list patterns
-    // (which overlap with tuple/list *expressions*) never have to be told
+    // let x = 10;
+    // Accepts any binding_pattern, including a bare identifier — `let x =
+    // 10` is a legal, more explicit spelling of `x = 10`, not an error.
+    // What `let` actually buys you is only needed for tuple/list/paren
+    // patterns: a leading `let` commits the parser to "pattern incoming"
+    // before any pattern content is read, so those never have to be told
     // apart from a block's tail expression — the ambiguity `^` used to
     // paper over for every pattern shape, not just assignment's.
     let_binding: ($) =>
@@ -940,7 +957,6 @@ module.exports = grammar({
     module_sep: () => token.immediate("::"),
     at_sign: () => token.immediate("@"),
     hash_sign: () => "#",
-    caret: () => "^", // block result marker
 
     pipe: () => token("|>"),
     bar: () => token("|"),

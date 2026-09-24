@@ -4989,10 +4989,6 @@
       "type": "STRING",
       "value": "#"
     },
-    "caret": {
-      "type": "STRING",
-      "value": "^"
-    },
     "pipe": {
       "type": "TOKEN",
       "content": {
