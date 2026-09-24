@@ -2778,6 +2778,10 @@
       "type": "SEQ",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "kw_for"
+        },
+        {
           "type": "FIELD",
           "name": "pattern",
           "content": {
@@ -4944,6 +4948,10 @@
       "type": "STRING",
       "value": "in"
     },
+    "kw_for": {
+      "type": "STRING",
+      "value": "for"
+    },
     "kw_do": {
       "type": "STRING",
       "value": "do"
@@ -5265,6 +5273,10 @@
       {
         "type": "SYMBOL",
         "name": "kw_in"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "kw_for"
       },
       {
         "type": "SYMBOL",

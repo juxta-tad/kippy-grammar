@@ -48,6 +48,7 @@ const KEYWORDS = [
   "mod",
   "as",
   "in",
+  "for",
   "do",
   "let",
   "self",
@@ -593,35 +594,44 @@ module.exports = grammar({
       ),
 
     // A block statement's leading token decides the form outright: `let` ->
-    // let_binding, an identifier followed by `:` -> typed_binding, `in`
-    // after a pattern -> loop_statement (inside loop_statement itself), and
-    // everything else -> expression (which now covers plain bindings and
-    // assignment via assignment_expression, and bare loop patterns via
-    // loop_statement).
+    // let_binding, `for` -> loop_statement, an identifier followed by `:` ->
+    // typed_binding, and everything else -> expression (which covers plain
+    // bindings and assignment via assignment_expression).
     local_statement: ($) =>
       choice($.typed_binding, $.let_binding, $.loop_statement, $.expression),
 
-    // x in values do { ... };
-    // x in values => total = total + x;
-    // (k, v) in pairs |> filter(p) do { ... };
-    // {name, ..} in users => names = [..names, name];
+    // for x in scores(users) do { ... };
+    // for x in scores(users) => total = total + x;
+    // for (k, v) in pairs |> filter(p) do { ... };
+    // for {name, ..} in team.members => names = [..names, name];
+    //
+    // Leading `for` is load-bearing, not decoration. Once plain `expression`
+    // became a legal local_statement (for assignment_expression's sake), a
+    // loop's pattern and an ordinary expression-statement started with the
+    // exact same tokens: `(x)` could be a parenthesized_binding_pattern
+    // (loop) or the start of a parenthesized_expression / assignment target
+    // (statement), and only a token arbitrarily far ahead — `in` vs `=` vs
+    // neither — tells them apart. Same shape of problem `let` solves for
+    // destructuring bindings, same fix: a leading keyword commits the
+    // parser to "pattern incoming" from token one, so there is nothing left
+    // to fork on.
     //
     // Two body forms, each with its own opener:
     //   `=> stmt`   one statement, any form, including `let {a, b} = pair`
     //               or a nested loop_statement
     //   `do { }`    a block of statements with no result value
-    // These no longer collide the way they used to: `{` in statement
-    // position (via unbraced_statement -> expression -> primary_expression)
-    // only ever opens a block_expression, since destructuring now requires
-    // a leading `let` and there is no bare record-literal expression. So
-    // `=>` vs `do` is purely a style choice now, not a disambiguation
-    // requirement — kept anyway because `do { }` bodies produce no value
-    // while `=> { }` would parse as a (discarded) block_expression value.
-    // Both are still hard resync points after the iterable: neither can
-    // continue an expression, so a truncated iterable can't eat the body
-    // and cascade into the rest of the enclosing block.
+    // `=>` vs `do` is a style choice, not a disambiguation requirement:
+    // `{` in statement position only ever opens a block_expression now
+    // (destructuring needs `let`, and there's no bare record-literal
+    // expression), so `=> { }` would parse fine — it's kept separate from
+    // `do { }` only because `do` bodies produce no value while `=> { }`
+    // would parse as a (discarded) block_expression value. Both `=>` and
+    // `do` are hard resync points after the iterable: neither can continue
+    // an expression, so a truncated iterable can't eat the body and
+    // cascade into the rest of the enclosing block.
     loop_statement: ($) =>
       seq(
+        $.kw_for,
         field("pattern", $.binding_pattern),
         $.kw_in,
         field("iterable", $.expression),

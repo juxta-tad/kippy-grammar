@@ -4,6 +4,10 @@
     "named": true,
     "subtypes": [
       {
+        "type": "assignment_expression",
+        "named": true
+      },
+      {
         "type": "if_expression",
         "named": true
       },
@@ -199,7 +203,7 @@
     }
   },
   {
-    "type": "assignment",
+    "type": "assignment_expression",
     "named": true,
     "fields": {
       "target": {
@@ -207,7 +211,7 @@
         "required": true,
         "types": [
           {
-            "type": "lvalue",
+            "type": "postfix_expression",
             "named": true
           }
         ]
@@ -847,7 +851,7 @@
     "fields": {
       "result": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
@@ -860,10 +864,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "caret",
-          "named": true
-        },
         {
           "type": "lbrace",
           "named": true
@@ -1760,6 +1760,68 @@
     }
   },
   {
+    "type": "let_binding",
+    "named": true,
+    "fields": {
+      "pattern": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_pattern",
+            "named": true
+          }
+        ]
+      },
+      "type_ann": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "equals",
+          "named": true
+        },
+        {
+          "type": "kw_let",
+          "named": true
+        },
+        {
+          "type": "kw_mut",
+          "named": true
+        },
+        {
+          "type": "kw_rec",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "list_expression",
     "named": true,
     "fields": {},
@@ -1868,64 +1930,6 @@
     }
   },
   {
-    "type": "local_binding",
-    "named": true,
-    "fields": {
-      "pattern": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "binding_pattern",
-            "named": true
-          }
-        ]
-      },
-      "type_ann": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "type_expression",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "colon",
-          "named": true
-        },
-        {
-          "type": "equals",
-          "named": true
-        },
-        {
-          "type": "kw_mut",
-          "named": true
-        },
-        {
-          "type": "kw_rec",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "local_statement",
     "named": true,
     "fields": {},
@@ -1934,15 +1938,19 @@
       "required": true,
       "types": [
         {
-          "type": "assignment",
+          "type": "expression",
           "named": true
         },
         {
-          "type": "local_binding",
+          "type": "let_binding",
           "named": true
         },
         {
           "type": "loop_statement",
+          "named": true
+        },
+        {
+          "type": "typed_binding",
           "named": true
         }
       ]
@@ -2023,45 +2031,15 @@
       }
     },
     "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_in",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "lvalue",
-    "named": true,
-    "fields": {
-      "base": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
       "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "field_suffix",
+          "type": "kw_for",
           "named": true
         },
         {
-          "type": "index_suffix",
-          "named": true
-        },
-        {
-          "type": "tuple_index_suffix",
+          "type": "kw_in",
           "named": true
         }
       ]
@@ -3685,6 +3663,64 @@
     }
   },
   {
+    "type": "typed_binding",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type_ann": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "colon",
+          "named": true
+        },
+        {
+          "type": "equals",
+          "named": true
+        },
+        {
+          "type": "kw_mut",
+          "named": true
+        },
+        {
+          "type": "kw_rec",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "unary_expression",
     "named": true,
     "fields": {
@@ -3909,10 +3945,6 @@
     "extra": true
   },
   {
-    "type": "caret",
-    "named": true
-  },
-  {
     "type": "char_literal",
     "named": true
   },
@@ -4029,6 +4061,10 @@
     "named": true
   },
   {
+    "type": "kw_for",
+    "named": true
+  },
+  {
     "type": "kw_if",
     "named": true
   },
@@ -4038,6 +4074,10 @@
   },
   {
     "type": "kw_intrinsic",
+    "named": true
+  },
+  {
+    "type": "kw_let",
     "named": true
   },
   {
