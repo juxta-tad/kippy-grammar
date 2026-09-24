@@ -385,26 +385,7 @@ module.exports = grammar({
       ),
 
     // x = 10;  x.field = e;  xs[0] = e;  a = b = c;
-    // Lowest precedence, right-associative. `target` is an ordinary
-    // postfix_expression — the SAME rule primary chains use everywhere
-    // else, not a parallel lvalue rule — so there is exactly one
-    // production for "identifier + suffix chain," never two competing
-    // ones fighting over the same tokens. This is also what makes a bare
-    // `x = 10` legal: a zero-suffix postfix_expression is just `x`.
-    // Whether `target` resolves to something reassignable (a `mut` name)
-    // and whether bare `x = 10` is a fresh binding or a rebind are both
-    // resolver decisions, not grammar ones — same principle the old
-    // local_binding used for bind-vs-rebind.
-    //
-    // Being part of `expression` means assignment can appear anywhere an
-    // expression can — `foo(x = 10)`, `if x = 10 then a else b`, list
-    // items, etc. — not just at statement position. RESOLVER RULE TO
-    // ENFORCE: a bare name on the left introduces a new binding only when
-    // the assignment_expression occurs directly as a local_statement;
-    // anywhere else in expression position, the target must already exist
-    // and be `mut`, or it's an error. This keeps `x = 10` inside a call
-    // argument or condition from silently introducing `x` into an
-    // enclosing scope.
+
     assignment_expression: ($) =>
       prec.right(PREC.ASSIGN, seq(
         field("target", $.postfix_expression),
@@ -549,22 +530,7 @@ module.exports = grammar({
       ),
 
     // --- control flow ---
-    // No `^`. A block is Rust-shaped: statements end in `;`, and the
-    // optional trailing expression with no `;` is the block's value. A
-    // block with no trailing expression (ends in `;`, or is empty) has no
-    // `result` field in the tree. RESOLVER RULE TO ENFORCE: treat an
-    // absent `result` as the value `()`, not as a distinct "no value"
-    // state — `{}` and `{ print(x); }` both evaluate to `()`, exactly as
-    // if `()` had been written as the trailing expression. That keeps
-    // `fn (x) ->! () => { print(x); }` well-typed with no special-casing.
-    //
-    // Disambiguating the tail from the last statement needs only one token
-    // of lookahead (does `;` or `}` follow the expression just parsed?),
-    // not the unbounded lookahead the old pattern-based local_binding had.
-    // That's only true because assignment_expression folded into
-    // `expression` itself (see above) — a plain identifier-plus-suffix-chain
-    // now has exactly one production, so it can't fork between "assignment
-    // statement" and "tail expression".
+
     block_expression: ($) =>
       seq(
         $.lbrace,
@@ -616,31 +582,7 @@ module.exports = grammar({
     local_statement: ($) =>
       choice($.typed_binding, $.let_binding, $.loop_statement, $.expression),
 
-    // for x in scores(users) => total = total + x;
-    // for x in scores(users) => { mut t = total; t = t + x; total = t; };
-    // for (k, v) in pairs |> filter(p) => { ... };
-    // for {name, ..} in team.members => names = [..names, name];
-    //
-    // Leading `for` is load-bearing, not decoration. Once plain `expression`
-    // became a legal local_statement (for assignment_expression's sake), a
-    // loop's pattern and an ordinary expression-statement started with the
-    // exact same tokens: `(x)` could be a parenthesized_binding_pattern
-    // (loop) or the start of a parenthesized_expression / assignment target
-    // (statement), and only a token arbitrarily far ahead — `in` vs `=` vs
-    // neither — tells them apart. Same shape of problem `let` solves for
-    // destructuring bindings, same fix: a leading keyword commits the
-    // parser to "pattern incoming" from token one, so there is nothing left
-    // to fork on.
-    //
-    // One body form: `=> stmt`, same as lambdas and match arms. No separate
-    // braced form is needed — `{` in statement position only ever opens a
-    // block_expression (destructuring needs `let`, and there is no bare
-    // record-literal expression), so `=> { a; b; }` already parses as one
-    // statement that happens to be a block, with its value discarded since
-    // loop_statement never captures a result. `=>` is still a hard resync
-    // point after the iterable: it can't continue an expression, so a
-    // truncated iterable can't eat the body and cascade into the rest of
-    // the enclosing block.
+
     loop_statement: ($) =>
       seq(
         $.kw_for,
