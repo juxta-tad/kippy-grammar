@@ -47,6 +47,7 @@ const KEYWORDS = [
   "mod",
   "as",
   "in",
+  "do",
   "self",
   "Self",
 ];
@@ -550,25 +551,30 @@ module.exports = grammar({
     // decides which form it is: `=` -> local_binding, `in` -> loop_statement.
     // One token of lookahead, so no restricted copy of the expression ladder
     // is needed anywhere, and the iterable below can be any expression.
-    local_statement: ($) =>
-      choice($.local_binding, $.assignment, $.loop_statement),
+    local_statement: ($) => choice($.local_binding, $.assignment, $.loop_statement),
 
-    // x in values => { ... };
-    // (k, v) in pairs |> filter(p) => { ... };
-    // {name, ..} in users => { ... };
+    // x in values do { ... };
+    // x in values => total = total + x;
+    // (k, v) in pairs |> filter(p) do { ... };
+    // {name, ..} in users => names = [..names, name];
     //
-    // The `=>` is load-bearing for error recovery, not decoration: without
-    // it, the body's `{` is a legal continuation of a broken iterable (a
-    // block expression or a record suffix), so a truncated iterable eats the
-    // body and cascades into the rest of the enclosing block. With `=>` as a
-    // hard resync point, damage stays local to the loop statement. Measured,
-    // not guessed — same discipline as `^` above.
+    // Two body forms, each with its own opener:
+    //   `=> stmt`   one statement, any form — including a record destructure,
+    //               `{a, b} = pair`, since `{` here can only ever start a
+    //               pattern
+    //   `do { }`    a block of statements with no result value
+    // A shared `=> { ... }` would need unbounded lookahead to tell a braced
+    // body from an unbraced record-destructure statement (`{ a: ...` could
+    // continue either way), so the two forms get distinct openers instead.
+    // Both `=>` and `do` are hard resync points after the iterable: neither
+    // can continue an expression, so a truncated iterable can't eat the body
+    // and cascade into the rest of the enclosing block. Measured, not
+    // guessed — same discipline as `^` above.
     loop_statement: ($) =>
       seq(
         field("pattern", $.binding_pattern),
         $.kw_in,
         field("iterable", $.expression),
-        $.fat_arrow,
         field("body", $.loop_body),
       ),
 
@@ -577,9 +583,18 @@ module.exports = grammar({
     // with those `mut` locals as the accumulator.
     loop_body: ($) =>
       choice(
-        seq($.lbrace, many(seq($.local_statement, $.semicolon)), $.rbrace),
-        $.local_statement,
+        seq(
+          $.kw_do,
+          $.lbrace,
+          many(seq($.local_statement, $.semicolon)),
+          $.rbrace,
+        ),
+        seq($.fat_arrow, $.unbraced_statement),
       ),
+
+    // Alias of local_statement; split out in case the unbraced form ever
+    // needs to diverge from the braced one (e.g. tighter restrictions).
+    unbraced_statement: ($) => $.local_statement,
 
     // u.score = e, xs[0] = e, u.tags[0].name = e.
     // Bare `x = e` (no suffix) is always a local_binding, never this rule —

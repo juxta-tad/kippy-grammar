@@ -2703,10 +2703,6 @@
           }
         },
         {
-          "type": "SYMBOL",
-          "name": "fat_arrow"
-        },
-        {
           "type": "FIELD",
           "name": "body",
           "content": {
@@ -2722,6 +2718,10 @@
         {
           "type": "SEQ",
           "members": [
+            {
+              "type": "SYMBOL",
+              "name": "kw_do"
+            },
             {
               "type": "SYMBOL",
               "name": "lbrace"
@@ -2749,10 +2749,23 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "local_statement"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "fat_arrow"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "unbraced_statement"
+            }
+          ]
         }
       ]
+    },
+    "unbraced_statement": {
+      "type": "SYMBOL",
+      "name": "local_statement"
     },
     "assignment": {
       "type": "SEQ",
@@ -4890,6 +4903,10 @@
       "type": "STRING",
       "value": "in"
     },
+    "kw_do": {
+      "type": "STRING",
+      "value": "do"
+    },
     "kw_self": {
       "type": "STRING",
       "value": "self"
@@ -5203,6 +5220,10 @@
       {
         "type": "SYMBOL",
         "name": "kw_in"
+      },
+      {
+        "type": "SYMBOL",
+        "name": "kw_do"
       },
       {
         "type": "SYMBOL",
