@@ -49,7 +49,6 @@ const KEYWORDS = [
   "as",
   "in",
   "for",
-  "do",
   "let",
   "self",
   "Self",
@@ -600,9 +599,9 @@ module.exports = grammar({
     local_statement: ($) =>
       choice($.typed_binding, $.let_binding, $.loop_statement, $.expression),
 
-    // for x in scores(users) do { ... };
     // for x in scores(users) => total = total + x;
-    // for (k, v) in pairs |> filter(p) do { ... };
+    // for x in scores(users) => { mut t = total; t = t + x; total = t; };
+    // for (k, v) in pairs |> filter(p) => { ... };
     // for {name, ..} in team.members => names = [..names, name];
     //
     // Leading `for` is load-bearing, not decoration. Once plain `expression`
@@ -616,45 +615,24 @@ module.exports = grammar({
     // parser to "pattern incoming" from token one, so there is nothing left
     // to fork on.
     //
-    // Two body forms, each with its own opener:
-    //   `=> stmt`   one statement, any form, including `let {a, b} = pair`
-    //               or a nested loop_statement
-    //   `do { }`    a block of statements with no result value
-    // `=>` vs `do` is a style choice, not a disambiguation requirement:
-    // `{` in statement position only ever opens a block_expression now
-    // (destructuring needs `let`, and there's no bare record-literal
-    // expression), so `=> { }` would parse fine — it's kept separate from
-    // `do { }` only because `do` bodies produce no value while `=> { }`
-    // would parse as a (discarded) block_expression value. Both `=>` and
-    // `do` are hard resync points after the iterable: neither can continue
-    // an expression, so a truncated iterable can't eat the body and
-    // cascade into the rest of the enclosing block.
+    // One body form: `=> stmt`, same as lambdas and match arms. No separate
+    // braced form is needed — `{` in statement position only ever opens a
+    // block_expression (destructuring needs `let`, and there is no bare
+    // record-literal expression), so `=> { a; b; }` already parses as one
+    // statement that happens to be a block, with its value discarded since
+    // loop_statement never captures a result. `=>` is still a hard resync
+    // point after the iterable: it can't continue an expression, so a
+    // truncated iterable can't eat the body and cascade into the rest of
+    // the enclosing block.
     loop_statement: ($) =>
       seq(
         $.kw_for,
         field("pattern", $.binding_pattern),
         $.kw_in,
         field("iterable", $.expression),
-        field("body", $.loop_body),
+        $.fat_arrow,
+        field("body", $.local_statement),
       ),
-
-    // No `^`: the body produces no value. Loop-carried state is `mut` in the
-    // enclosing block; the loop lowers to a collapse (fold) over `iterable`
-    // with those `mut` locals as the accumulator.
-    loop_body: ($) =>
-      choice(
-        seq(
-          $.kw_do,
-          $.lbrace,
-          many(seq($.local_statement, $.semicolon)),
-          $.rbrace,
-        ),
-        seq($.fat_arrow, $.unbraced_statement),
-      ),
-
-    // Alias of local_statement; split out in case the unbraced form ever
-    // needs to diverge from the braced one (e.g. tighter restrictions).
-    unbraced_statement: ($) => $.local_statement,
 
     if_expression: ($) =>
       prec.right(seq(

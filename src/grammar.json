@@ -2802,69 +2802,18 @@
           }
         },
         {
+          "type": "SYMBOL",
+          "name": "fat_arrow"
+        },
+        {
           "type": "FIELD",
           "name": "body",
           "content": {
             "type": "SYMBOL",
-            "name": "loop_body"
+            "name": "local_statement"
           }
         }
       ]
-    },
-    "loop_body": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "kw_do"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "lbrace"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "local_statement"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "semicolon"
-                  }
-                ]
-              }
-            },
-            {
-              "type": "SYMBOL",
-              "name": "rbrace"
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "fat_arrow"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "unbraced_statement"
-            }
-          ]
-        }
-      ]
-    },
-    "unbraced_statement": {
-      "type": "SYMBOL",
-      "name": "local_statement"
     },
     "if_expression": {
       "type": "PREC_RIGHT",
@@ -4952,10 +4901,6 @@
       "type": "STRING",
       "value": "for"
     },
-    "kw_do": {
-      "type": "STRING",
-      "value": "do"
-    },
     "kw_let": {
       "type": "STRING",
       "value": "let"
@@ -5277,10 +5222,6 @@
       {
         "type": "SYMBOL",
         "name": "kw_for"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "kw_do"
       },
       {
         "type": "SYMBOL",

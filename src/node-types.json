@@ -1957,45 +1957,6 @@
     }
   },
   {
-    "type": "loop_body",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "fat_arrow",
-          "named": true
-        },
-        {
-          "type": "kw_do",
-          "named": true
-        },
-        {
-          "type": "lbrace",
-          "named": true
-        },
-        {
-          "type": "local_statement",
-          "named": true
-        },
-        {
-          "type": "rbrace",
-          "named": true
-        },
-        {
-          "type": "semicolon",
-          "named": true
-        },
-        {
-          "type": "unbraced_statement",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "loop_statement",
     "named": true,
     "fields": {
@@ -2004,7 +1965,7 @@
         "required": true,
         "types": [
           {
-            "type": "loop_body",
+            "type": "local_statement",
             "named": true
           }
         ]
@@ -2034,6 +1995,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "fat_arrow",
+          "named": true
+        },
         {
           "type": "kw_for",
           "named": true
@@ -3761,21 +3726,6 @@
     }
   },
   {
-    "type": "unbraced_statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "local_statement",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "unguarded_pattern",
     "named": true,
     "fields": {},
@@ -4042,10 +3992,6 @@
   },
   {
     "type": "kw_distinct",
-    "named": true
-  },
-  {
-    "type": "kw_do",
     "named": true
   },
   {
