@@ -8,6 +8,7 @@
 // Arrows: => body follows, -> return, ->! effectful return.
 
 const PREC = {
+  ASSIGN: 0,
   MATCH: 1,
   PIPE: 2,
   OR: 3,
@@ -48,6 +49,7 @@ const KEYWORDS = [
   "as",
   "in",
   "do",
+  "let",
   "self",
   "Self",
 ];
@@ -378,8 +380,27 @@ module.exports = grammar({
       choice(
         $.lambda_expression,
         $.if_expression,
+        $.assignment_expression,
         $.pipe_expression,
       ),
+
+    // x = 10;  x.field = e;  xs[0] = e;  a = b = c;
+    // Lowest precedence, right-associative. `target` is an ordinary
+    // postfix_expression — the SAME rule primary chains use everywhere
+    // else, not a parallel lvalue rule — so there is exactly one
+    // production for "identifier + suffix chain," never two competing
+    // ones fighting over the same tokens. This is also what makes a bare
+    // `x = 10` legal: a zero-suffix postfix_expression is just `x`.
+    // Whether `target` resolves to something reassignable (a `mut` name)
+    // and whether bare `x = 10` is a fresh binding or a rebind are both
+    // resolver decisions, not grammar ones — same principle the old
+    // local_binding used for bind-vs-rebind.
+    assignment_expression: ($) =>
+      prec.right(PREC.ASSIGN, seq(
+        field("target", $.postfix_expression),
+        $.equals,
+        $.value_slot,
+      )),
 
     value_slot: ($) => field("value", $.expression),
     if_then_value: ($) => field("then_value", $.expression),
@@ -518,28 +539,52 @@ module.exports = grammar({
       ),
 
     // --- control flow ---
-    // Replaces let..in. `^` marks the value that exits the block, and is not
-    // optional: without it `{ a` is ambiguous between a binding and a result,
-    // costing six declared conflicts. Measured, not guessed.
+    // No `^`. A block is Rust-shaped: statements end in `;`, and the
+    // optional trailing expression with no `;` is the block's value. A
+    // block ending in `;` (or an empty block) has no result — the resolver
+    // enforces "must end in a bare expression" wherever a value is required.
     //
-    // Was: many(seq($.local_binding, $.semicolon)). A block statement is now
-    // one of three forms (binding, assignment, loop) instead of only bindings.
+    // Disambiguating the tail from the last statement needs only one token
+    // of lookahead (does `;` or `}` follow the expression just parsed?),
+    // not the unbounded lookahead the old pattern-based local_binding had.
+    // That's only true because assignment_expression folded into
+    // `expression` itself (see above) — a plain identifier-plus-suffix-chain
+    // now has exactly one production, so it can't fork between "assignment
+    // statement" and "tail expression".
     block_expression: ($) =>
       seq(
         $.lbrace,
         many(seq($.local_statement, $.semicolon)),
-        $.caret,
-        field("result", $.expression),
+        opt(field("result", $.expression)),
         $.rbrace,
       ),
 
-    // value namespace only — no type constructors locally
+    // x : Int = 10;  bonus : Int = score / 10;
+    // `:` right after the name is a token no expression production can
+    // consume there, so this never competes with assignment_expression.
     //
     // `mut` sits where `rec` does; the choice makes `rec mut` a parse error
     // for free. `mut` means "this name may take successive values", never
     // "shared mutable storage" — see the resolver rules in notes/syntax.md.
-    local_binding: ($) =>
+    typed_binding: ($) =>
       seq(
+        opt(choice($.kw_rec, $.kw_mut)),
+        field("name", $.identifier),
+        $.colon,
+        field("type_ann", $.type_expression),
+        $.equals,
+        $.value_slot,
+      ),
+
+    // let (a, b) = pair;  let {name, age} = user;  let [x, ..rest] = xs;
+    // Destructuring only. A leading `let` commits the parser to "pattern
+    // incoming" before any pattern content is read, so tuple/list patterns
+    // (which overlap with tuple/list *expressions*) never have to be told
+    // apart from a block's tail expression — the ambiguity `^` used to
+    // paper over for every pattern shape, not just assignment's.
+    let_binding: ($) =>
+      seq(
+        $.kw_let,
         opt(choice($.kw_rec, $.kw_mut)),
         field("pattern", $.binding_pattern),
         opt(seq($.colon, field("type_ann", $.type_expression))),
@@ -547,11 +592,14 @@ module.exports = grammar({
         $.value_slot,
       ),
 
-    // A block statement starts with a pattern. The token right after it
-    // decides which form it is: `=` -> local_binding, `in` -> loop_statement.
-    // One token of lookahead, so no restricted copy of the expression ladder
-    // is needed anywhere, and the iterable below can be any expression.
-    local_statement: ($) => choice($.local_binding, $.assignment, $.loop_statement),
+    // A block statement's leading token decides the form outright: `let` ->
+    // let_binding, an identifier followed by `:` -> typed_binding, `in`
+    // after a pattern -> loop_statement (inside loop_statement itself), and
+    // everything else -> expression (which now covers plain bindings and
+    // assignment via assignment_expression, and bare loop patterns via
+    // loop_statement).
+    local_statement: ($) =>
+      choice($.typed_binding, $.let_binding, $.loop_statement, $.expression),
 
     // x in values do { ... };
     // x in values => total = total + x;
@@ -559,17 +607,19 @@ module.exports = grammar({
     // {name, ..} in users => names = [..names, name];
     //
     // Two body forms, each with its own opener:
-    //   `=> stmt`   one statement, any form — including a record destructure,
-    //               `{a, b} = pair`, since `{` here can only ever start a
-    //               pattern
+    //   `=> stmt`   one statement, any form, including `let {a, b} = pair`
+    //               or a nested loop_statement
     //   `do { }`    a block of statements with no result value
-    // A shared `=> { ... }` would need unbounded lookahead to tell a braced
-    // body from an unbraced record-destructure statement (`{ a: ...` could
-    // continue either way), so the two forms get distinct openers instead.
-    // Both `=>` and `do` are hard resync points after the iterable: neither
-    // can continue an expression, so a truncated iterable can't eat the body
-    // and cascade into the rest of the enclosing block. Measured, not
-    // guessed — same discipline as `^` above.
+    // These no longer collide the way they used to: `{` in statement
+    // position (via unbraced_statement -> expression -> primary_expression)
+    // only ever opens a block_expression, since destructuring now requires
+    // a leading `let` and there is no bare record-literal expression. So
+    // `=>` vs `do` is purely a style choice now, not a disambiguation
+    // requirement — kept anyway because `do { }` bodies produce no value
+    // while `=> { }` would parse as a (discarded) block_expression value.
+    // Both are still hard resync points after the iterable: neither can
+    // continue an expression, so a truncated iterable can't eat the body
+    // and cascade into the rest of the enclosing block.
     loop_statement: ($) =>
       seq(
         field("pattern", $.binding_pattern),
@@ -595,18 +645,6 @@ module.exports = grammar({
     // Alias of local_statement; split out in case the unbraced form ever
     // needs to diverge from the braced one (e.g. tighter restrictions).
     unbraced_statement: ($) => $.local_statement,
-
-    // u.score = e, xs[0] = e, u.tags[0].name = e.
-    // Bare `x = e` (no suffix) is always a local_binding, never this rule —
-    // the resolver decides bind-vs-rebind by scope, so there is no overlap
-    // and no declared conflict.
-    assignment: ($) =>
-      seq(field("target", $.lvalue), $.equals, $.value_slot),
-    lvalue: ($) =>
-      seq(
-        field("base", $.identifier),
-        repeat1(choice($.field_suffix, $.index_suffix, $.tuple_index_suffix)),
-      ),
 
     if_expression: ($) =>
       prec.right(seq(
