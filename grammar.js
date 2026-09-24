@@ -381,7 +381,7 @@ module.exports = grammar({
         $.lambda_expression,
         $.if_expression,
         $.assignment_expression,
-        $.pipe_expression,
+        $.case_expression,
       ),
 
     // x = 10;  x.field = e;  xs[0] = e;  a = b = c;
@@ -392,6 +392,15 @@ module.exports = grammar({
         $.equals,
         $.value_slot,
       )),
+
+    // case binds loosely, above pipe. subject matches the full result
+    // of the piped expression chain: score > 10 case { ... } matches
+    // the comparison, not the literal 10.
+    case_expression: ($) =>
+      seq(
+        field("subject", $.pipe_expression),
+        opt(seq($.kw_case, field("body", bracedSemiBlock($, $.match_arm)))),
+      ),
 
     value_slot: ($) => field("value", $.expression),
     if_then_value: ($) => field("then_value", $.expression),
@@ -431,20 +440,7 @@ module.exports = grammar({
             field("operand", $.unary_expression),
           ),
         ),
-        $.match_expression,
-      ),
-
-    match_expression: ($) =>
-      prec(
-        PREC.MATCH,
-        choice(
-          seq(
-            field("subject", $.postfix_expression),
-            $.kw_case,
-            field("body", bracedSemiBlock($, $.match_arm)),
-          ),
-          $.postfix_expression,
-        ),
+        $.postfix_expression,
       ),
 
     // --- postfix chain ---

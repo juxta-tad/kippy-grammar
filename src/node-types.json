@@ -8,15 +8,15 @@
         "named": true
       },
       {
+        "type": "case_expression",
+        "named": true
+      },
+      {
         "type": "if_expression",
         "named": true
       },
       {
         "type": "lambda_expression",
-        "named": true
-      },
-      {
-        "type": "pipe_expression",
         "named": true
       }
     ]
@@ -927,6 +927,54 @@
         },
         {
           "type": "rparen",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "case_expression",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "lbrace",
+            "named": true
+          },
+          {
+            "type": "match_arm",
+            "named": true
+          },
+          {
+            "type": "rbrace",
+            "named": true
+          },
+          {
+            "type": "semicolon",
+            "named": true
+          }
+        ]
+      },
+      "subject": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "pipe_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "kw_case",
           "named": true
         }
       ]
@@ -2108,58 +2156,6 @@
         },
         {
           "type": "kw_else",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "match_expression",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "lbrace",
-            "named": true
-          },
-          {
-            "type": "match_arm",
-            "named": true
-          },
-          {
-            "type": "rbrace",
-            "named": true
-          },
-          {
-            "type": "semicolon",
-            "named": true
-          }
-        ]
-      },
-      "subject": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "postfix_expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "kw_case",
-          "named": true
-        },
-        {
-          "type": "postfix_expression",
           "named": true
         }
       ]
@@ -3719,7 +3715,7 @@
       "required": false,
       "types": [
         {
-          "type": "match_expression",
+          "type": "postfix_expression",
           "named": true
         }
       ]
