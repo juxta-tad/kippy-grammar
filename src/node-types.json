@@ -931,6 +931,10 @@
         "required": true,
         "types": [
           {
+            "type": "comma",
+            "named": true
+          },
+          {
             "type": "lbrace",
             "named": true
           },
@@ -940,10 +944,6 @@
           },
           {
             "type": "rbrace",
-            "named": true
-          },
-          {
-            "type": "semicolon",
             "named": true
           }
         ]
@@ -983,15 +983,15 @@
             "named": true
           },
           {
+            "type": "comma",
+            "named": true
+          },
+          {
             "type": "lbrace",
             "named": true
           },
           {
             "type": "rbrace",
-            "named": true
-          },
-          {
-            "type": "semicolon",
             "named": true
           }
         ]
@@ -2586,7 +2586,7 @@
         "required": false,
         "types": [
           {
-            "type": "tag_payload_pattern",
+            "type": "pattern",
             "named": true
           }
         ]
@@ -3072,15 +3072,15 @@
         "required": true,
         "types": [
           {
+            "type": "comma",
+            "named": true
+          },
+          {
             "type": "lbrace",
             "named": true
           },
           {
             "type": "rbrace",
-            "named": true
-          },
-          {
-            "type": "semicolon",
             "named": true
           },
           {
@@ -3286,21 +3286,6 @@
       "types": [
         {
           "type": "kw_tag",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "tag_payload_pattern",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "pattern",
           "named": true
         }
       ]

@@ -7,6 +7,8 @@
 // Separators: comma in values/types, semicolon in blocks.
 // Arrows: => body follows, -> return, ->! effectful return.
 // Locals: x = e introduces, ^x = e updates a mut.
+// Separators: comma lists declarations and case arms (record/choice/shape
+// bodies, match arms); semicolon separates statements in a block.
 // Records are nominal: no anonymous record types or values. Patterns may omit
 // the type name; it comes from the scrutinee.
 
@@ -281,14 +283,14 @@ module.exports = grammar({
     record_constructor: ($) => seq($.kw_record, field("body", $.record_type)),
 
     choice_constructor: ($) =>
-      seq($.kw_choice, field("body", bracedSemiBlock($, $.choice_variant))),
+      seq($.kw_choice, field("body", bracedCollection($, $.choice_variant, $.comma))),
 
     // No `type` members — put the varying type in the parameter list.
     shape_constructor: ($) =>
       seq(
         $.kw_shape,
         opt(field("parents", $.shape_parents)),
-        field("members", bracedSemiBlock($, $.shape_method)),
+        field("members", bracedCollection($, $.shape_method, $.comma)),
       ),
 
     choice_variant: ($) =>
@@ -403,7 +405,7 @@ module.exports = grammar({
       seq(
         field("subject", $.pipe_expression),
         $.kw_case,
-        field("body", bracedSemiBlock($, $.match_arm)),
+        field("body", bracedCollection($, $.match_arm, $.comma)),
       ),
 
     value_slot: ($) => field("value", $.expression),
@@ -437,8 +439,7 @@ module.exports = grammar({
         choice($.star_op, $.slash_op, $.kw_mod),
       ),
 
-    // `not` binds tightly. The resolver rejects `not a == b` (a `not` operand
-    // as the lhs of a comparison) and asks for parens either way.
+    // `not` binds tightly, same as `-`. `not a == b` is `(not a) == b`.
     unary_expression: ($) =>
       choice(
         prec.right(
@@ -669,15 +670,13 @@ module.exports = grammar({
           bracketedWithRest(
             $.lparen,
             $.rparen,
-            field("payload", $.tag_payload_pattern),
+            field("payload", $.pattern),
             $.comma,
             $.rest_pattern,
           ),
           field("fields", $.record_pattern),
         )),
       ),
-    // alias of `pattern`; split it out if payload patterns ever diverge
-    tag_payload_pattern: ($) => $.pattern,
 
     wildcard_pattern: ($) => $.wildcard,
     unit_pattern: ($) => seq($.lparen, $.rparen),

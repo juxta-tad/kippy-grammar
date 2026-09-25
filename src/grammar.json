@@ -549,7 +549,7 @@
                           "members": [
                             {
                               "type": "SYMBOL",
-                              "name": "semicolon"
+                              "name": "comma"
                             },
                             {
                               "type": "SYMBOL",
@@ -563,7 +563,7 @@
                         "members": [
                           {
                             "type": "SYMBOL",
-                            "name": "semicolon"
+                            "name": "comma"
                           },
                           {
                             "type": "BLANK"
@@ -636,7 +636,7 @@
                           "members": [
                             {
                               "type": "SYMBOL",
-                              "name": "semicolon"
+                              "name": "comma"
                             },
                             {
                               "type": "SYMBOL",
@@ -650,7 +650,7 @@
                         "members": [
                           {
                             "type": "SYMBOL",
-                            "name": "semicolon"
+                            "name": "comma"
                           },
                           {
                             "type": "BLANK"
@@ -1518,7 +1518,7 @@
                           "members": [
                             {
                               "type": "SYMBOL",
-                              "name": "semicolon"
+                              "name": "comma"
                             },
                             {
                               "type": "SYMBOL",
@@ -1532,7 +1532,7 @@
                         "members": [
                           {
                             "type": "SYMBOL",
-                            "name": "semicolon"
+                            "name": "comma"
                           },
                           {
                             "type": "BLANK"
@@ -3203,7 +3203,7 @@
                                       "name": "payload",
                                       "content": {
                                         "type": "SYMBOL",
-                                        "name": "tag_payload_pattern"
+                                        "name": "pattern"
                                       }
                                     },
                                     {
@@ -3220,7 +3220,7 @@
                                             "name": "payload",
                                             "content": {
                                               "type": "SYMBOL",
-                                              "name": "tag_payload_pattern"
+                                              "name": "pattern"
                                             }
                                           }
                                         ]
@@ -3284,10 +3284,6 @@
           ]
         }
       ]
-    },
-    "tag_payload_pattern": {
-      "type": "SYMBOL",
-      "name": "pattern"
     },
     "wildcard_pattern": {
       "type": "SYMBOL",
