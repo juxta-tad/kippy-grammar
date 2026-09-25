@@ -7,6 +7,8 @@
 // Separators: comma in values/types, semicolon in blocks.
 // Arrows: => body follows, -> return, ->! effectful return.
 // Locals: x = e introduces, ^x = e updates a mut.
+// Records are nominal: no anonymous record types or values. Patterns may omit
+// the type name; it comes from the scrutinee.
 
 const PREC = {
   PIPE: 2,
@@ -160,7 +162,9 @@ function optTypeParams($) {
 module.exports = grammar({
   name: "kippy",
   word: ($) => $.identifier,
-  reserved: { global: ($) => KEYWORDS.map((k) => $[`kw_${k}`]) },
+  reserved: {
+    global: ($) => [...KEYWORDS.map((k) => $[`kw_${k}`]), $.pipe_hole],
+  },
 
   extras: ($) => [
     new RustRegex("[ \\t\\r\\f]+"),
@@ -179,6 +183,13 @@ module.exports = grammar({
     $.if_else_value,
     $._declaration_inner,
     $._top_level_item,
+  ],
+
+  // `{ name }` at statement start is a block returning `name` or a one-field
+  // destructure until the parser sees what follows the `}`.
+  conflicts: ($) => [
+    [$.block_expression, $.binding_record_pattern],
+    [$.field_name, $.path_head],
   ],
 
   rules: {
@@ -265,6 +276,8 @@ module.exports = grammar({
     // compiler supplies the representation; pairs with a #lang(...) attr
     intrinsic_constructor: ($) => $.kw_intrinsic,
 
+    // The only places record_type appears: here and as a choice variant
+    // payload. Both are named, so there are no anonymous record types.
     record_constructor: ($) => seq($.kw_record, field("body", $.record_type)),
 
     choice_constructor: ($) =>
@@ -334,6 +347,8 @@ module.exports = grammar({
           field("value", $.attribute_value),
         ),
       ),
+    // attribute record values are compile-time metadata, not typed values,
+    // so they stay anonymous
     attribute_value: ($) =>
       choice(
         $.percent_literal,
@@ -364,8 +379,7 @@ module.exports = grammar({
         field("name", $.static_text),
         field("body", bracedSemiBlock($, $.test_statement)),
       ),
-    test_statement: ($) => choice($.test_binding, $.expect_statement),
-    test_binding: ($) => $.binding,
+    test_statement: ($) => choice($.local_statement, $.expect_statement),
     expect_statement: ($) => seq($.kw_expect, field("value", $.expression)),
 
     // --- names ---
@@ -379,15 +393,17 @@ module.exports = grammar({
         $.lambda_expression,
         $.if_expression,
         $.case_expression,
+        $.pipe_expression,
       ),
 
-    // case binds loosely, above pipe. subject matches the full result
-    // of the piped expression chain: score > 10 case { ... } matches
-    // the comparison, not the literal 10.
+    // case binds loosely, above pipe: `score > 10 case { ... }` matches the
+    // comparison, not the literal 10. Only produces a node when `case` is
+    // actually present.
     case_expression: ($) =>
       seq(
         field("subject", $.pipe_expression),
-        opt(seq($.kw_case, field("body", bracedSemiBlock($, $.match_arm)))),
+        $.kw_case,
+        field("body", bracedSemiBlock($, $.match_arm)),
       ),
 
     value_slot: ($) => field("value", $.expression),
@@ -396,7 +412,9 @@ module.exports = grammar({
     lambda_body: ($) => field("body", $.expression),
     match_arm_value: ($) => field("value", $.expression),
 
-    spread_element: ($) => seq($.rest_op, field("base", $.expression)),
+    // `..base` in lists and record bodies. A bare `..` is only accepted by the
+    // resolver in a binding target: `User { name, .. } = user`.
+    spread_element: ($) => seq($.rest_op, opt(field("base", $.expression))),
 
     // --- operator ladder (loosest to tightest) ---
     pipe_expression: ($) => leftAssocBinop(PREC.PIPE, $.or_expression, $.pipe),
@@ -419,6 +437,8 @@ module.exports = grammar({
         choice($.star_op, $.slash_op, $.kw_mod),
       ),
 
+    // `not` binds tightly. The resolver rejects `not a == b` (a `not` operand
+    // as the lhs of a comparison) and asks for parens either way.
     unary_expression: ($) =>
       choice(
         prec.right(
@@ -466,13 +486,16 @@ module.exports = grammar({
     tuple_index_suffix: ($) => seq($.dot, field("index", $.tuple_index)),
     tuple_index: () => token.immediate(new RustRegex("[0-9]+")),
 
-    // @ finds the implementation by type. `:Shape` is only for a method name
-    // declared by two different shapes.
+    // @ finds the implementation by type; @Shape::method disambiguates a
+    // method name declared by two different shapes.
     method_suffix: ($) =>
       seq(
         $.at_sign,
         field("method", $.path),
       ),
+
+    // Type base: construction (all fields). Value base: functional update
+    // (copy, override listed fields). The resolver tells them apart.
     record_suffix: ($) => field("body", $.record_body),
 
     // --- primary ---
@@ -484,7 +507,8 @@ module.exports = grammar({
         $.literal,
         $.path,
         $.placeholder,
-        $.wildcard,
+        $.pipe_hole,
+        $.wildcard, // only valid as a binding target; resolver rejects elsewhere
         $.unit_expression,
         $.list_expression,
         $.map_expression,
@@ -511,6 +535,7 @@ module.exports = grammar({
     record_field: ($) =>
       choice(
         seq(field("name", $.field_name), $.equals, $.value_slot),
+        field("name", $.field_name), // punning: `{ x }` == `{ x = x }`
         $.spread_element,
       ),
 
@@ -524,22 +549,23 @@ module.exports = grammar({
         $.rbrace,
       ),
 
-    // x : Int = 10;  bonus : Int = score / 10;
-    // `:` right after the name is a token no expression production can
-    // consume there, so this never competes with assignment_expression.
-    //
-    // x = 10;  mut total : Int = 0;  (a, b) = pair;  [h, ..t] = xs;
+    // x = 10;  mut total : Int = 0;  (a, b) = pair;  { name, .. } = user;
     // Cover grammar: the target parses as an expression and the resolver
-    // checks it's a valid binding pattern. Pattern and tail expression share
-    // one nonterminal, so the parser never guesses — which was all `let`
-    // bought.
+    // checks it's an irrefutable binding pattern. Pattern and tail expression
+    // share one nonterminal, so the parser never guesses — which was all
+    // `let` bought. The one exception is a leading `{`, which is a block in
+    // expression position, so nameless record destructuring gets its own
+    // alternative (see `conflicts`).
     //
     // `mut` means "this name may take successive values", never "shared
     // mutable storage" — see the resolver rules in notes/syntax.md.
     local_binding: ($) =>
       seq(
         opt(choice($.kw_rec, $.kw_mut)),
-        field("target", $.postfix_expression),
+        field("target", choice(
+          $.postfix_expression,
+          prec.dynamic(1, $.binding_record_pattern), // `{ x } = v` is a destructure, not a block
+        )),
         opt(seq($.colon, field("type_ann", $.type_expression))),
         $.equals,
         $.value_slot,
@@ -557,7 +583,6 @@ module.exports = grammar({
 
     local_statement: ($) =>
       choice($.local_binding, $.update_statement, $.loop_statement, $.expression),
-
 
     loop_statement: ($) =>
       seq(
@@ -636,15 +661,19 @@ module.exports = grammar({
         $.parenthesized_pattern,
       ),
 
+    // Some(x)  Move { dx, dy }  User { name, .. }
     path_pattern: ($) =>
       seq(
         field("constructor", $.path),
-        opt(bracketedWithRest(
-          $.lparen,
-          $.rparen,
-          field("payload", $.tag_payload_pattern),
-          $.comma,
-          $.rest_pattern,
+        opt(choice(
+          bracketedWithRest(
+            $.lparen,
+            $.rparen,
+            field("payload", $.tag_payload_pattern),
+            $.comma,
+            $.rest_pattern,
+          ),
+          field("fields", $.record_pattern),
         )),
       ),
     // alias of `pattern`; split it out if payload patterns ever diverge
@@ -664,6 +693,8 @@ module.exports = grammar({
     tuple_pattern: ($) => tuple($, $.pattern),
     parenthesized_pattern: ($) =>
       seq($.lparen, field("value", $.pattern), $.rparen),
+    // Nameless form: the record type comes from the scrutinee. Not allowed
+    // against a choice — name the variant.
     record_pattern: ($) =>
       bracketedWithRest(
         $.lbrace,
@@ -675,7 +706,8 @@ module.exports = grammar({
     record_pattern_field: ($) => fieldPattern($.field_name, $.colon, $.pattern),
     rest_pattern: ($) => seq($.rest_op, field("binding", $.identifier)),
 
-    // irrefutable subset (params, local bindings): no literals, no constructors
+    // Binding positions (params, `for`, local targets). The resolver also
+    // rejects anything refutable, e.g. a list pattern.
     binding_pattern: ($) =>
       choice(
         $.unit_pattern,
@@ -684,6 +716,7 @@ module.exports = grammar({
         $.binding_list_pattern,
         $.binding_tuple_pattern,
         $.binding_record_pattern,
+        $.binding_named_record_pattern,
         $.parenthesized_binding_pattern,
       ),
     binding_list_pattern: ($) =>
@@ -705,6 +738,9 @@ module.exports = grammar({
         $.comma,
         $.rest_op,
       ),
+    // fn (User { name, .. }) => ...
+    binding_named_record_pattern: ($) =>
+      seq(field("type", $.path), field("fields", $.binding_record_pattern)),
     binding_record_pattern_field: ($) =>
       fieldPattern($.field_name, $.colon, $.binding_pattern),
 
@@ -714,13 +750,13 @@ module.exports = grammar({
     base_type: ($) =>
       choice($.function_type, $.wildcard_type, $._concrete_type_head),
 
+    // no record_type here: records are nominal
     _concrete_type_head: ($) =>
       choice(
         $.path_or_applied,
         $.self_type,
         $.unit_type,
         $.tuple_type,
-        $.record_type,
         $.parenthesized_type,
       ),
 
@@ -837,7 +873,7 @@ module.exports = grammar({
     escape_sequence: ($) => token(new RustRegex(`\\\\${ESCAPE_BODY}`)),
 
     // --- comments ---
-    // NON-NESTING: `/* a /* b */ c */` ends at the first `*​/`. Nesting needs
+    // NON-NESTING: `/* a /* b */ c */` ends at the first `*/`. Nesting needs
     // an external scanner.
     line_comment: (_) => token(new RustRegex("//[^\\n]*")),
     block_comment: (_) =>
@@ -848,9 +884,13 @@ module.exports = grammar({
       token(new RustRegex("[_\\p{ID_Start}][\\p{ID_Continue}]*")),
     path_head: ($) => choice($.identifier, $.kw_self),
     path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
-    // one-argument lambda hole; its scope is the RHS of the enclosing binding
-    // (resolver rule). `$.field` parses as placeholder + field_suffix.
+    // one-argument lambda hole; its scope is the nearest enclosing call
+    // argument (resolver rule), so `zip(map(a, $ + 1), map(b, $ * 2))` is two
+    // lambdas. `$.field` parses as placeholder + field_suffix.
     placeholder: ($) => token("$"),
+    // pipeline hole: `xs |> map(__, $ * 2)`. Every `|>` RHS contains exactly
+    // one. Reserved, so it can't be bound.
+    pipe_hole: ($) => "__",
     wildcard: ($) => "_",
     ellipsis: ($) => "...",
     rest_op: ($) => "..",
@@ -875,7 +915,7 @@ module.exports = grammar({
     module_sep: () => token.immediate("::"),
     at_sign: () => token.immediate("@"),
     hash_sign: () => "#",
-    caret: () => "^",
+    caret: () => "^", // update marker: ^x = e
 
     pipe: () => token("|>"),
     bar: () => token("|"),

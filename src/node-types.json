@@ -14,6 +14,10 @@
       {
         "type": "lambda_expression",
         "named": true
+      },
+      {
+        "type": "pipe_expression",
+        "named": true
       }
     ]
   },
@@ -510,10 +514,6 @@
           "named": true
         },
         {
-          "type": "record_type",
-          "named": true
-        },
-        {
           "type": "self_type",
           "named": true
         },
@@ -679,6 +679,32 @@
     }
   },
   {
+    "type": "binding_named_record_pattern",
+    "named": true,
+    "fields": {
+      "fields": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binding_record_pattern",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "binding_pattern",
     "named": true,
     "fields": {},
@@ -688,6 +714,10 @@
       "types": [
         {
           "type": "binding_list_pattern",
+          "named": true
+        },
+        {
+          "type": "binding_named_record_pattern",
           "named": true
         },
         {
@@ -898,7 +928,7 @@
     "fields": {
       "body": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "lbrace",
@@ -931,7 +961,7 @@
     },
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "kw_case",
@@ -1253,10 +1283,6 @@
           },
           {
             "type": "path_or_applied",
-            "named": true
-          },
-          {
-            "type": "record_type",
             "named": true
           },
           {
@@ -1883,6 +1909,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "binding_record_pattern",
+            "named": true
+          },
           {
             "type": "postfix_expression",
             "named": true
@@ -2541,6 +2571,16 @@
           }
         ]
       },
+      "fields": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "record_pattern",
+            "named": true
+          }
+        ]
+      },
       "payload": {
         "multiple": true,
         "required": false,
@@ -2724,6 +2764,10 @@
           "named": true
         },
         {
+          "type": "pipe_hole",
+          "named": true
+        },
+        {
           "type": "placeholder",
           "named": true
         },
@@ -2822,7 +2866,7 @@
     },
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "equals",
@@ -3189,7 +3233,7 @@
     "fields": {
       "base": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
@@ -3263,21 +3307,6 @@
     }
   },
   {
-    "type": "test_binding",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "binding",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "test_declaration",
     "named": true,
     "fields": {
@@ -3338,7 +3367,7 @@
           "named": true
         },
         {
-          "type": "test_binding",
+          "type": "local_statement",
           "named": true
         }
       ]
@@ -4071,6 +4100,10 @@
   },
   {
     "type": "pipe",
+    "named": true
+  },
+  {
+    "type": "pipe_hole",
     "named": true
   },
   {
