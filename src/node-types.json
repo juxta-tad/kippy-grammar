@@ -2860,6 +2860,16 @@
           }
         ]
       },
+      "member_path": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": false,
@@ -2882,7 +2892,7 @@
       },
       "shape": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "path",

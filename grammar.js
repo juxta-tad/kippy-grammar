@@ -603,18 +603,28 @@ module.exports = grammar({
     type_expression: ($) =>
       choice($.function_type, $.wildcard, $.projection_type, $._concrete_type_head),
 
-    // T@Mul::Output (last segment is the member, like `x@Shape::method`) or,
-    // with shape arguments, T@Mul[F32]::Output
+    // T@Mul::Output   T@std::ops::Mul::Output   T@Mul[F32]::Output
+    // A member is required. Without shape args the last segment is the
+    // member and the rest is the shape path (resolver splits them).
     projection_type: ($) =>
       seq(
         field("self", $.path_or_applied),
         "@",
-        field("shape", $.path),
-        optional(seq(
-          field("args", $.type_argument_list),
-          token.immediate("::"),
-          field("name", $.identifier),
-        )),
+        choice(
+          seq(
+            field("shape", $.path),
+            field("args", $.type_argument_list),
+            token.immediate("::"),
+            field("name", $.identifier),
+          ),
+          field("member_path", alias($._qualified_path, $.path)),
+        ),
+      ),
+    // a path with at least one `::` segment
+    _qualified_path: ($) =>
+      seq(
+        field("head", $.identifier),
+        repeat1(seq(token.immediate("::"), field("segment", $.identifier))),
       ),
     // `...T`: function parameters and type arguments only
     variadic_type: ($) => seq("...", field("item", $.type_expression)),
