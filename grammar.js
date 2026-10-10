@@ -39,7 +39,6 @@ const KEYWORDS = [
   "mod",
   "as",
   "in",
-  "for",
   "self",
   "Self",
 ];
@@ -65,14 +64,14 @@ const HEX_DIGITS = "(?:[0-9a-fA-F]|[0-9a-fA-F][0-9a-fA-F_]*[0-9a-fA-F])";
 const OCT_DIGITS = "(?:[0-7]|[0-7][0-7_]*[0-7])";
 const BIN_DIGITS = "(?:[01]|[01][01_]*[01])";
 const INT_SUFFIX = "(?:U8|U16|U32|U64|I8|I16|I32|I64)?";
-const FLOAT_SUFFIX = "(?:F32|F64)?";
+const FLOAT_SUFFIX = "(?:F32|F64)";
 const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
 // 1.5, .5. No `1.`: it would swallow the dot of `1..<n`.
 const DEC_POINT =
   `(?:${DEC_DIGITS}\\.${DEC_DIGITS}|\\.${DEC_DIGITS})`;
-const ESCAPE_BODY =
-  `(?:[ntrbfv0'"\\\\]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\)|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})`;
+const ESCAPE_BODY = // \u(1F600) is the only unicode form
+  `(?:[ntrbfv0'"\\\\]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\))`;
 
 // --- helpers -----------------------------------------------------------------
 const opt = optional;
@@ -92,8 +91,8 @@ function collection(open, close, item, separator) {
 }
 
 // `name = pattern` or punned `name`
-function fieldPattern(fieldName, equals, valueRule) {
-  return choice(seq(fieldName, equals, valueRule), fieldName);
+function fieldPattern($, equals, valueRule) {
+  return choice(seq($.field_name, equals, valueRule), $.field_name);
 }
 
 function binary(lhs, op, rhs) {
@@ -145,9 +144,10 @@ function optTypeParams($) {
 module.exports = grammar({
   name: "kippy",
   word: ($) => $.identifier,
-  // DECL_KEYWORDS work as names (`a.tag`, `fn (test) => ...`); only `test`,
-  // `use` and `derive` can't name a top-level binding, and the constructor
-  // words can't name a type. Field names reserve nothing: `a.if`.
+  // DECL_KEYWORDS work as locals, params and fields (`a.tag`, `fn (test)`).
+  // The resolver rejects them as top-level declaration names; `expect`
+  // can't start a statement. Field names reserve nothing (`a.if`); the
+  // resolver rejects a reserved word as a pun (`{ in }`), since it's a variable.
   reserved: {
     global: ($) => [
       ...KEYWORDS.filter((k) => !DECL_KEYWORDS.includes(k)).map((k) => $[`kw_${k}`]),
@@ -205,8 +205,7 @@ module.exports = grammar({
       ),
 
     // --- declarations ---
-    declaration: ($) =>
-      seq(field("visibility", opt($.kw_pub)), $._declaration_inner),
+    declaration: ($) => $._declaration_inner,
 
     _declaration_inner: ($) =>
       choice(
@@ -220,6 +219,7 @@ module.exports = grammar({
     // declares a parameter named Int, not an instantiation.
     binding: ($) =>
       seq(
+        field("visibility", opt($.kw_pub)),
         opt($.kw_rec),
         field("name", $.binding_name),
         optTypeParams($),
@@ -491,6 +491,8 @@ module.exports = grammar({
       ),
     // type application if the base has type parameters (`id[Int](x)`, one
     // arg each), otherwise indexing (`xs[i]`, one arg). Resolver decides.
+    // Function and variadic types can't be written here; alias them first:
+    // `IntFn : alias fn(Int) -> Int`, then `id[IntFn](f)`.
     index_suffix: ($) =>
       seq(
         $.lbracket,
@@ -501,7 +503,7 @@ module.exports = grammar({
 
     // `t.0.1`: float_literal isn't valid after `dot`
     tuple_index_suffix: ($) => seq($.dot, field("index", $.tuple_index)),
-    tuple_index: () => token.immediate(new RustRegex("[0-9]+")),
+    tuple_index: () => token.immediate(new RustRegex("0|[1-9][0-9]*")),
 
     // @ finds the implementation by type; @Shape::method disambiguates a
     // method name declared by two different shapes.
@@ -550,7 +552,7 @@ module.exports = grammar({
     record_field: ($) =>
       choice(
         seq(field("name", $.field_name), $.equals, $.value_slot),
-        field("name", $.field_name), // punning: `{ x }` == `{ x = x }`
+        field("name", $.field_name), // pun: `{ x }` == `{ x = x }`
         $.spread_element,
       ),
 
@@ -566,7 +568,8 @@ module.exports = grammar({
 
     // x = 10;  mut total : Int = 0;  (a, b) = pair;  User { name, .. } = u;
     // Cover grammar: the target parses as an expression; the resolver checks
-    // it's an irrefutable pattern. Record destructuring names the type.
+    // it's an irrefutable pattern. Targeted errors: `x.y = e` / `xs[i] = e`
+    // ("did you mean `^x.y`"), `{ x } = p` ("name the record type").
     // `mut`: the name takes successive values, not shared mutable storage.
     local_binding: ($) =>
       seq(
@@ -596,10 +599,10 @@ module.exports = grammar({
         $.expression,
       ),
 
+    // x in xs => body;  (k, v) in pairs => ...;  same cover as local_binding
     loop_statement: ($) =>
       seq(
-        $.kw_for,
-        field("pattern", $.binding_pattern),
+        field("pattern", $._postfix_level),
         $.kw_in,
         field("iterable", $.expression),
         $.fat_arrow,
@@ -679,12 +682,16 @@ module.exports = grammar({
       seq(
         field("constructor", $.path),
         opt(choice(
-          bracketedWithRest(
+          seq(
             $.lparen,
+            choice(
+              seq(
+                sep1(field("payload", $.unguarded_pattern), $.comma),
+                opt(seq($.comma, $.rest_pattern)),
+              ),
+              $.rest_pattern,
+            ),
             $.rparen,
-            field("payload", $.unguarded_pattern),
-            $.comma,
-            $.rest_pattern,
           ),
           field("fields", $.record_pattern),
         )),
@@ -740,7 +747,7 @@ module.exports = grammar({
         $.comma,
         $.rest_op,
       ),
-    record_pattern_field: ($) => fieldPattern($.field_name, $.equals, $.unguarded_pattern),
+    record_pattern_field: ($) => fieldPattern($, $.equals, $.unguarded_pattern),
     // `..rest` or bare `..`, last only
     rest_pattern: ($) => seq($.rest_op, opt(field("binding", $.identifier))),
 
@@ -770,7 +777,7 @@ module.exports = grammar({
     binding_named_record_pattern: ($) =>
       seq(field("type", $.path), field("fields", $.binding_record_pattern)),
     binding_record_pattern_field: ($) =>
-      fieldPattern($.field_name, $.equals, $.binding_pattern),
+      fieldPattern($, $.equals, $.binding_pattern),
 
     // --- types ---
     type_expression: ($) =>
@@ -796,15 +803,14 @@ module.exports = grammar({
       seq($.lbracket, separated1($.type_expression, $.comma), $.rbracket),
 
     // -> and ->! stay distinct tokens so the effect checker sees which was
-    // written. Bare -> on a higher-order type is effect-polymorphic.
+    // written. Bare -> on a higher-order type is effect-polymorphic. The
+    // arrow is required: `fn(Text) ->! ()`, never `fn(Text)`.
     function_type: ($) =>
       seq(
         $.kw_fn,
         collection($.lparen, $.rparen, field("param", $.type_expression), $.comma),
-        opt(seq(
-          field("arrow", choice($.arrow, $.effect_arrow)),
-          field("result", $.type_expression),
-        )),
+        field("arrow", choice($.arrow, $.effect_arrow)),
+        field("result", $.type_expression),
       ),
 
     record_type: ($) => bracedCollection($, $.record_type_field, $.comma),
@@ -862,8 +868,8 @@ module.exports = grammar({
     float_literal: ($) =>
       token(
         new RustRegex(
-          // no point? then an exponent is required: 1e9
-          `(?:${DEC_POINT}${EXPONENT}?|${DEC_DIGITS}${EXPONENT})${FLOAT_SUFFIX}`,
+          // no point? then an exponent or suffix is required: 1e9, 1F32
+          `(?:(?:${DEC_POINT}${EXPONENT}?|${DEC_DIGITS}${EXPONENT})${FLOAT_SUFFIX}?|${DEC_DIGITS}${FLOAT_SUFFIX})`,
         ),
       ),
     int_literal: ($) =>
@@ -916,7 +922,8 @@ module.exports = grammar({
     path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
     // one-argument lambda hole; its scope is the nearest enclosing call
     // argument (resolver rule), so `zip(map(a, $ + 1), map(b, $ * 2))` is two
-    // lambdas. `$.field` parses as placeholder + field_suffix.
+    // lambdas. Every `$` in one scope is the same parameter: `$ * $` is
+    // `fn (a) => a * a`. `$.field` parses as placeholder + field_suffix.
     placeholder: ($) => token("$"),
     // pipeline hole: `xs |> map(__, $ * 2)`. Every `|>` RHS contains exactly
     // one. Reserved, so it can't be bound.
