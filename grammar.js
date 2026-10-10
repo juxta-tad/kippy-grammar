@@ -37,6 +37,7 @@ const KEYWORDS = [
   "and",
   "not",
   "mod",
+  "xor",
   "as",
   "in",
   "self",
@@ -67,9 +68,8 @@ const INT_SUFFIX = "(?:U8|U16|U32|U64|I8|I16|I32|I64)?";
 const FLOAT_SUFFIX = "(?:F32|F64)";
 const PERCENT = "%";
 const EXPONENT = "(?:[eE][+-]?(?:[0-9]|[0-9][0-9_]*[0-9]))";
-// 1.5, .5. No `1.`: it would swallow the dot of `1..<n`.
-const DEC_POINT =
-  `(?:${DEC_DIGITS}\\.${DEC_DIGITS}|\\.${DEC_DIGITS})`;
+// 1.5 only: no `1.` (swallows the dot of `1..<n`), no `.5`
+const DEC_POINT = `${DEC_DIGITS}\\.${DEC_DIGITS}`;
 const ESCAPE_BODY = // \u(1F600) is the only unicode form
   `(?:[ntrbfv0'"\\\\]|x[0-9A-Fa-f]{2}|u\\([0-9A-Fa-f]{1,8}\\))`;
 
@@ -160,6 +160,7 @@ module.exports = grammar({
   extras: ($) => [
     new RustRegex("[ \\t\\r\\f]+"),
     new RustRegex("\\r?\\n"),
+    $.doc_comment,
     $.line_comment,
     $.block_comment,
   ],
@@ -215,8 +216,11 @@ module.exports = grammar({
       ),
 
     // Values, types and shape implementations are all this one rule.
-    // Brackets after the name are always type parameters: `List[Int] : S`
-    // declares a parameter named Int, not an instantiation.
+    // Brackets after the name are always type parameters; one that shadows a
+    // type (`List[Int] : S`) is an error. `x : T` with no value needs #extern
+    // or #lang; an all-defaults impl is `Task : S = _ {}`.
+    // A type constructor takes no `where` and no `=`. Constraints go before
+    // `=`, annotated or not: `max[T] where T : Ord = fn (a, b) => ...`.
     binding: ($) =>
       seq(
         field("visibility", opt($.kw_pub)),
@@ -224,20 +228,19 @@ module.exports = grammar({
         field("name", $.binding_name),
         optTypeParams($),
         choice(
+          seq($.colon, field("constructor", $.type_constructor)),
           seq(
             $.colon,
-            field("annotation", $.binding_annotation),
+            field("type", $.type_expression),
             opt(field("constraints", $.constraint_clause)),
             opt(seq($.equals, $.value_slot)),
           ),
-          seq($.equals, $.value_slot),
+          seq(
+            opt(field("constraints", $.constraint_clause)),
+            $.equals,
+            $.value_slot,
+          ),
         ),
-      ),
-
-    binding_annotation: ($) =>
-      choice(
-        field("constructor", $.type_constructor),
-        field("type", $.type_expression),
       ),
 
     type_constructor: ($) =>
@@ -317,6 +320,9 @@ module.exports = grammar({
       ),
 
     // --- attributes ---
+    // #opaque pub T : ... exports T but not its constructor or fields;
+    // #opaque without pub is an error. #multi on a shape allows several impls
+    // per Self (default: one). Unknown attributes are errors.
     attribute: ($) =>
       seq(
         $.hash_sign,
@@ -344,6 +350,7 @@ module.exports = grammar({
         $.float_literal,
         $.char_literal,
         $.static_text,
+        $.raw_text,
         $.path,
         $.attribute_list_value,
         $.attribute_record_value,
@@ -386,11 +393,15 @@ module.exports = grammar({
         $._pipe_level,
       ),
 
-    // postfix at pipe level: `xs |> f(__) case { ... } |> g(__)`.
-    // `score > 10 case { ... }` matches the comparison, not the 10.
+    // postfix at pipe level: `xs |> f(__) case { ... } |> g(__)`. Operator
+    // subjects need parens: `(total + bonus) case { ... }`.
     case_expression: ($) =>
       seq(
-        field("subject", $._pipe_level),
+        field("subject", choice(
+          alias($.pipe_binary, $.binary_expression),
+          $.case_expression,
+          $._postfix_level,
+        )),
         $.kw_case,
         field("body", bracedCollection($, $.match_arm, $.comma)),
       ),
@@ -435,11 +446,22 @@ module.exports = grammar({
 
     // `a..<b` excludes b, `a..=b` includes it. Non-associative, both ends
     // required, integers or Char. Value is the prelude's Range[T] record.
-    _range_level: ($) => choice($.range_expression, $._add_level),
+    _range_level: ($) => choice($.range_expression, $._bit_level),
     range_expression: ($) =>
       binary(
-        $._add_level,
+        $._bit_level,
         choice($.range_excl_op, $.range_incl_op),
+        $._bit_level,
+      ),
+
+    // & | xor << >>, tighter than comparison: `a & m == 0` is `(a & m) == 0`.
+    // Mixing different bit operators needs parens (resolver).
+    _bit_level: ($) =>
+      choice(alias($.bit_binary, $.binary_expression), $._add_level),
+    bit_binary: ($) =>
+      binary(
+        $._bit_level,
+        choice($.amp_op, $.bar, $.kw_xor, $.shl_op, $.shr_op),
         $._add_level,
       ),
 
@@ -461,7 +483,7 @@ module.exports = grammar({
     _unary_level: ($) => choice($.unary_expression, $._postfix_level),
     unary_expression: ($) =>
       seq(
-        field("op", choice($.minus_op, $.kw_not)),
+        field("op", choice($.minus_op, $.kw_not, $.tilde_op)),
         field("operand", $._unary_level),
       ),
 
@@ -580,13 +602,23 @@ module.exports = grammar({
         $.value_slot,
       ),
 
-    // ^total = total + x;  ^state.tick = state.tick + 1;  ^xs[i] = v;
+    // ^total = total + x;  ^state.tick += 1;  ^xs[i] = v;
     // No expression starts with `^`, so the first token decides.
     update_statement: ($) =>
       seq(
         $.caret,
         field("target", $._postfix_level),
-        $.equals,
+        field("op", choice(
+          $.equals,
+          $.plus_eq,
+          $.minus_eq,
+          $.star_eq,
+          $.slash_eq,
+          $.amp_eq,
+          $.bar_eq,
+          $.shl_eq,
+          $.shr_eq,
+        )),
         $.value_slot,
       ),
 
@@ -705,6 +737,7 @@ module.exports = grammar({
         $.float_literal,
         $.char_literal,
         $.static_text,
+        $.raw_text,
       ),
 
     // -1  -0.5  -10%
@@ -751,7 +784,7 @@ module.exports = grammar({
     // `..rest` or bare `..`, last only
     rest_pattern: ($) => seq($.rest_op, opt(field("binding", $.identifier))),
 
-    // lambda params and `for`; irrefutable shapes only
+    // lambda params; irrefutable shapes only
     binding_pattern: ($) =>
       choice(
         $.unit_pattern,
@@ -781,9 +814,9 @@ module.exports = grammar({
 
     // --- types ---
     type_expression: ($) =>
-      choice($.base_type, seq($.ellipsis, field("item", $.base_type))),
-    base_type: ($) =>
       choice($.function_type, $.wildcard_type, $._concrete_type_head),
+    // `...T`: function parameters and type arguments only
+    variadic_type: ($) => seq($.ellipsis, field("item", $.type_expression)),
 
     // no record_type here: records are nominal
     _concrete_type_head: ($) =>
@@ -800,7 +833,11 @@ module.exports = grammar({
         opt(field("args", $.type_argument_list)),
       ),
     type_argument_list: ($) =>
-      seq($.lbracket, separated1($.type_expression, $.comma), $.rbracket),
+      seq(
+        $.lbracket,
+        separated1(choice($.type_expression, $.variadic_type), $.comma),
+        $.rbracket,
+      ),
 
     // -> and ->! stay distinct tokens so the effect checker sees which was
     // written. Bare -> on a higher-order type is effect-polymorphic. The
@@ -808,7 +845,12 @@ module.exports = grammar({
     function_type: ($) =>
       seq(
         $.kw_fn,
-        collection($.lparen, $.rparen, field("param", $.type_expression), $.comma),
+        collection(
+          $.lparen,
+          $.rparen,
+          field("param", choice($.type_expression, $.variadic_type)),
+          $.comma,
+        ),
         field("arrow", choice($.arrow, $.effect_arrow)),
         field("result", $.type_expression),
       ),
@@ -857,6 +899,8 @@ module.exports = grammar({
         $.float_literal,
         $.char_literal,
         $.text,
+        $.multiline_text,
+        $.raw_text,
       ),
 
     // percent before float before int: 1.5% / 1.5 / 1 share a prefix, so the
@@ -891,7 +935,7 @@ module.exports = grammar({
         alias($.close_quote, $.quote),
       ),
     text_content: ($) =>
-      token.immediate(prec(1, new RustRegex('[^"\\\\\\r\\n]+'))),
+      token.immediate(prec(2, new RustRegex('[^"\\\\\\r\\n]+'))),
     static_text: ($) =>
       seq(
         $.quote,
@@ -901,6 +945,30 @@ module.exports = grammar({
         )),
         alias($.close_quote, $.quote),
       ),
+    // `"""` ends its line; the closing `"""` starts its own (resolver), so
+    // content may end in `"`. The resolver strips the closing indentation.
+    multiline_text: ($) =>
+      seq(
+        $.triple_quote,
+        opt(seq(
+          $.multiline_newline,
+          many(choice(
+            $.multiline_content,
+            $.multiline_newline,
+            $.escape_sequence,
+            $.interpolation,
+          )),
+        )),
+        alias($.close_triple_quote, $.triple_quote),
+      ),
+    multiline_newline: () => token.immediate(new RustRegex('\\r?\\n[ \\t]*')),
+    multiline_content: ($) =>
+      choice(
+        token.immediate(prec(2, new RustRegex('[^"\\\\\\r\\n]+'))),
+        token.immediate(new RustRegex('""?')),
+      ),
+    // #"C:\dir\file"# — no escapes or interpolation; can't contain `"#`
+    raw_text: ($) => token(new RustRegex('#"(?:[^"]|"+[^"#])*"+#')),
     interpolation: ($) => seq($.interpolation_start, $.expression, $.rparen),
     interpolation_start: ($) =>
       token.immediate(new RustRegex("\\\\\\(")), // \(
@@ -910,6 +978,9 @@ module.exports = grammar({
     // --- comments ---
     // NON-NESTING: `/* a /* b */ c */` ends at the first `*/`. Nesting needs
     // an external scanner.
+    // same precedence as line_comment: `////` is longer as a line comment,
+    // `/// x` ties and the earlier rule wins
+    doc_comment: (_) => token(new RustRegex("///(?:[^/\\n][^\\n]*)?")),
     line_comment: (_) => token(new RustRegex("//[^\\n]*")),
     block_comment: (_) =>
       token(seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")),
@@ -920,10 +991,11 @@ module.exports = grammar({
     // `self` is the current module only; `Self` works in types and values
     path_head: ($) => choice($.identifier, $.kw_self, $.kw_Self),
     path: ($) => seq($.path_head, repeat(seq($.module_sep, $.identifier))),
-    // one-argument lambda hole; its scope is the nearest enclosing call
-    // argument (resolver rule), so `zip(map(a, $ + 1), map(b, $ * 2))` is two
-    // lambdas. Every `$` in one scope is the same parameter: `$ * $` is
-    // `fn (a) => a * a`. `$.field` parses as placeholder + field_suffix.
+    // one-argument lambda hole. Type-directed: its scope is the innermost
+    // enclosing call argument whose expected type is a function, so
+    // `map(users, show($.name))` is `map(users, fn (u) => show(u.name))` and
+    // `zip(map(a, $ + 1), map(b, $ * 2))` is two lambdas. A generic expected
+    // type is an error. Every `$` in one scope is the same parameter.
     placeholder: ($) => token("$"),
     // pipeline hole: `xs |> map(__, $ * 2)`. Every `|>` RHS contains exactly
     // one. Reserved, so it can't be bound.
@@ -946,6 +1018,8 @@ module.exports = grammar({
     rbrace: () => "}",
     lbracket_map: () => token("#["), // map open, vs list [
     quote: () => '"',
+    triple_quote: () => token(new RustRegex('"""[ \\t]*')),
+    close_triple_quote: () => token.immediate('"""'),
     close_quote: () => token.immediate('"'),
     comma: () => ",",
     colon: () => ":",
@@ -955,7 +1029,7 @@ module.exports = grammar({
     module_sep: () => token.immediate("::"),
     at_sign: () => "@",
     hash_sign: () => "#",
-    caret: () => "^", // update marker: ^x = e
+    caret: () => "^", // update marker only: ^x = e
 
     pipe: () => token("|>"),
     bar: () => token("|"),
@@ -965,6 +1039,18 @@ module.exports = grammar({
     minus_op: () => "-",
     star_op: () => "*",
     slash_op: () => "/",
+    amp_op: () => "&",
+    tilde_op: () => "~",
+    shl_op: () => token("<<"),
+    shr_op: () => token(">>"),
+    plus_eq: () => token("+="),
+    minus_eq: () => token("-="),
+    star_eq: () => token("*="),
+    slash_eq: () => token("/="),
+    amp_eq: () => token("&="),
+    bar_eq: () => token("|="),
+    shl_eq: () => token("<<="),
+    shr_eq: () => token(">>="),
     eq_op: () => "==",
     ne_op: () => "!=",
     le_op: () => "<=",
