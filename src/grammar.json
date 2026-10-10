@@ -354,6 +354,31 @@
                   "type": "CHOICE",
                   "members": [
                     {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "->"
+                        },
+                        {
+                          "type": "FIELD",
+                          "name": "output",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_output_type"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
                       "type": "FIELD",
                       "name": "constraints",
                       "content": {
@@ -4232,10 +4257,6 @@
                     {
                       "type": "SYMBOL",
                       "name": "variadic_type"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "associated_type_binding"
                     }
                   ]
                 },
@@ -4258,10 +4279,6 @@
                           {
                             "type": "SYMBOL",
                             "name": "variadic_type"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "associated_type_binding"
                           }
                         ]
                       }
@@ -4287,31 +4304,6 @@
         {
           "type": "STRING",
           "value": "]"
-        }
-      ]
-    },
-    "associated_type_binding": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "name",
-          "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "="
-        },
-        {
-          "type": "FIELD",
-          "name": "type",
-          "content": {
-            "type": "SYMBOL",
-            "name": "type_expression"
-          }
         }
       ]
     },
@@ -4727,8 +4719,17 @@
             "type": "FIELD",
             "name": "shape",
             "content": {
-              "type": "SYMBOL",
-              "name": "path_or_applied"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "path_or_applied"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "shape_output"
+                }
+              ]
             }
           },
           {
@@ -4744,8 +4745,17 @@
                   "type": "FIELD",
                   "name": "shape",
                   "content": {
-                    "type": "SYMBOL",
-                    "name": "path_or_applied"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "path_or_applied"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "shape_output"
+                      }
+                    ]
                   }
                 }
               ]
@@ -4753,6 +4763,44 @@
           }
         ]
       }
+    },
+    "shape_output": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "shape",
+          "content": {
+            "type": "SYMBOL",
+            "name": "path_or_applied"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "->"
+        },
+        {
+          "type": "FIELD",
+          "name": "output",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_output_type"
+          }
+        }
+      ]
+    },
+    "_output_type": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "wildcard"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_concrete_type_head"
+        }
+      ]
     },
     "_literal": {
       "type": "CHOICE",

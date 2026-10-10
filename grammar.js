@@ -127,6 +127,8 @@ module.exports = grammar({
           seq(
             ":",
             field("type", $.type_expression),
+            // impl header output: `Vec2 : Mul[Vec2] -> F32 = _ { ... }`
+            optional(seq("->", field("output", $._output_type))),
             optional(field("constraints", $.constraint_clause)),
             optional(seq("=", field("value", $.expression))),
           ),
@@ -168,8 +170,8 @@ module.exports = grammar({
       seq("choice", field("body", braced($.choice_variant))),
 
     // Impls are keyed by Self plus the shape's parameters, so a type can
-    // implement Mul[F32] and Mul[Vec2]. Associated types are decided by that
-    // key: one impl per key, so each key has exactly one Output.
+    // implement Mul[F32] and Mul[Vec2]. A shape declares at most one
+    // associated type (resolver), decided by that key and bound with `->`.
     shape_constructor: ($) =>
       seq(
         "shape",
@@ -203,7 +205,8 @@ module.exports = grammar({
       ),
 
     // type Output   type Item : Eq   type Output = Self
-    // Bound in an impl header: `Vec2 : Mul[F32, Output = Vec2] = _ { ... }`.
+    // Bound in an impl header or constraint: `Vec2 : Mul[Vec2] -> F32`.
+    // Omitted: the default, else an error.
     associated_type: ($) =>
       seq(
         repeat(field("attribute", $.attribute)),
@@ -628,12 +631,9 @@ module.exports = grammar({
     type_argument_list: ($) =>
       seq(
         "[",
-        separated1(choice($.type_expression, $.variadic_type, $.associated_type_binding)),
+        separated1(choice($.type_expression, $.variadic_type)),
         "]",
       ),
-    // `Output = T`: binds an associated type in an impl header or constraint
-    associated_type_binding: ($) =>
-      seq(field("name", $.identifier), "=", field("type", $.type_expression)),
 
     // -> and ->! stay distinct tokens so the effect checker sees which was
     // written. Bare -> on a higher-order type is effect-polymorphic. The
@@ -664,7 +664,11 @@ module.exports = grammar({
       seq(field("type_var", $.identifier), ":", field("constraint", $.constraint_sum)),
     // T : Eq + Into[Int]. Also derive and shape parents.
     constraint_sum: ($) =>
-      prec.left(sep1(field("shape", $.path_or_applied), "+")),
+      prec.left(sep1(field("shape", choice($.path_or_applied, $.shape_output)), "+")),
+    // Add[T] -> O: binds the shape's associated type; binds tighter than +
+    shape_output: ($) =>
+      seq(field("shape", $.path_or_applied), "->", field("output", $._output_type)),
+    _output_type: ($) => choice($.wildcard, $._concrete_type_head),
 
     // --- literals ---
     _literal: ($) =>
