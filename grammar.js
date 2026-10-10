@@ -14,7 +14,7 @@
 // Keywords and punctuation are anonymous, so `named_children` is semantic.
 
 // Always keywords. The rest (record, choice, shape, alias, distinct, tag,
-// intrinsic, test, expect, use, derive) are contextual: names everywhere
+// intrinsic, type, test, expect, use, derive) are contextual: names everywhere
 // except where a declaration or statement can start with them. The resolver
 // rejects them as top-level declaration names.
 const RESERVED = [
@@ -167,12 +167,14 @@ module.exports = grammar({
     choice_constructor: ($) =>
       seq("choice", field("body", braced($.choice_variant))),
 
-    // No `type` members — put the varying type in the parameter list.
+    // Impls are keyed by Self plus the shape's parameters, so a type can
+    // implement Mul[F32] and Mul[Vec2]. Associated types are decided by that
+    // key: one impl per key, so each key has exactly one Output.
     shape_constructor: ($) =>
       seq(
         "shape",
         optional(seq(":", field("parents", $.constraint_sum))),
-        field("members", braced($.shape_method)),
+        field("members", braced(choice($.shape_method, $.associated_type))),
       ),
 
     choice_variant: ($) =>
@@ -200,6 +202,17 @@ module.exports = grammar({
         optional(seq("=", field("default", $.expression))),
       ),
 
+    // type Output   type Item : Eq   type Output = Self
+    // Bound in an impl header: `Vec2 : Mul[F32, Output = Vec2] = _ { ... }`.
+    associated_type: ($) =>
+      seq(
+        repeat(field("attribute", $.attribute)),
+        "type",
+        field("name", $.identifier),
+        optional(seq(":", field("bounds", $.constraint_sum))),
+        optional(seq("=", field("default", $.type_expression))),
+      ),
+
     // derive UserId : Eq + Ord + Hash
     derive_declaration: ($) =>
       seq(
@@ -213,8 +226,7 @@ module.exports = grammar({
 
     // --- attributes ---
     // #opaque pub T : ... exports T but not its constructor or fields;
-    // #opaque without pub is an error. #multi on a shape allows several impls
-    // per Self (default: one). Unknown attributes are errors.
+    // #opaque without pub is an error. Unknown attributes are errors.
     attribute: ($) =>
       seq(
         "#",
@@ -582,8 +594,25 @@ module.exports = grammar({
     rest_pattern: ($) => seq("..", optional(field("binding", $.identifier))),
 
     // --- types ---
+    // `T::Output` is a plain path; the resolver makes it a projection when the
+    // head is a type parameter. Use projection_type when T has several impls
+    // of the shape.
     type_expression: ($) =>
-      choice($.function_type, $.wildcard, $._concrete_type_head),
+      choice($.function_type, $.wildcard, $.projection_type, $._concrete_type_head),
+
+    // T@Mul::Output (last segment is the member, like `x@Shape::method`) or,
+    // with shape arguments, T@Mul[F32]::Output
+    projection_type: ($) =>
+      seq(
+        field("self", $.path_or_applied),
+        "@",
+        field("shape", $.path),
+        optional(seq(
+          field("args", $.type_argument_list),
+          token.immediate("::"),
+          field("name", $.identifier),
+        )),
+      ),
     // `...T`: function parameters and type arguments only
     variadic_type: ($) => seq("...", field("item", $.type_expression)),
 
@@ -597,7 +626,14 @@ module.exports = grammar({
         optional(field("args", $.type_argument_list)),
       ),
     type_argument_list: ($) =>
-      seq("[", separated1(choice($.type_expression, $.variadic_type)), "]"),
+      seq(
+        "[",
+        separated1(choice($.type_expression, $.variadic_type, $.associated_type_binding)),
+        "]",
+      ),
+    // `Output = T`: binds an associated type in an impl header or constraint
+    associated_type_binding: ($) =>
+      seq(field("name", $.identifier), "=", field("type", $.type_expression)),
 
     // -> and ->! stay distinct tokens so the effect checker sees which was
     // written. Bare -> on a higher-order type is effect-polymorphic. The

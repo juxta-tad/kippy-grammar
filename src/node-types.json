@@ -234,6 +234,78 @@
     }
   },
   {
+    "type": "associated_type",
+    "named": true,
+    "fields": {
+      "attribute": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
+      "bounds": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "constraint_sum",
+            "named": true
+          }
+        ]
+      },
+      "default": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "associated_type_binding",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "attribute",
     "named": true,
     "fields": {
@@ -2771,6 +2843,52 @@
     }
   },
   {
+    "type": "projection_type",
+    "named": true,
+    "fields": {
+      "args": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_argument_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "self": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path_or_applied",
+            "named": true
+          }
+        ]
+      },
+      "shape": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "path",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "range_expression",
     "named": true,
     "fields": {
@@ -3270,6 +3388,10 @@
             "named": false
           },
           {
+            "type": "associated_type",
+            "named": true
+          },
+          {
             "type": "shape_method",
             "named": true
           },
@@ -3643,6 +3765,10 @@
       "required": true,
       "types": [
         {
+          "type": "associated_type_binding",
+          "named": true
+        },
+        {
           "type": "type_expression",
           "named": true
         },
@@ -3671,6 +3797,10 @@
         },
         {
           "type": "path_or_applied",
+          "named": true
+        },
+        {
+          "type": "projection_type",
           "named": true
         },
         {
@@ -4354,6 +4484,10 @@
   {
     "type": "tuple_index",
     "named": true
+  },
+  {
+    "type": "type",
+    "named": false
   },
   {
     "type": "use",
