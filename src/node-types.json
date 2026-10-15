@@ -848,6 +848,16 @@
     "type": "binding",
     "named": true,
     "fields": {
+      "associated": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "constraints": {
         "multiple": false,
         "required": false,

@@ -121,6 +121,9 @@ module.exports = grammar({
         field("visibility", optional("pub")),
         field("modifier", optional("rec")),
         field("name", $.identifier),
+        // `Slot::of : fn(U8) -> Option[Slot] = ...`: a function of the type `Slot`,
+        // defined in the type's own module. Exactly two segments.
+        optional(seq(token.immediate("::"), field("associated", $.identifier))),
         optional(field("type_params", $.type_parameter_list)),
         choice(
           seq(":", field("constructor", $.type_constructor)),
