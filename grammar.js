@@ -19,7 +19,7 @@
 // rejects them as top-level declaration names.
 const RESERVED = [
   "pub", "rec", "mut", "if", "then", "else", "case", "where", "module", "fn",
-  "or", "and", "not", "mod", "xor", "as", "in", "self", "Self",
+  "or", "and", "not", "mod", "xor", "as", "in", "self", "Self", "while", "return",
 ];
 
 // digit runs may contain underscores but not start or end with one
@@ -233,37 +233,22 @@ module.exports = grammar({
     // --- attributes ---
     // #opaque pub T : ... exports T but not its constructor or fields;
     // #opaque without pub is an error. Unknown attributes are errors.
+    // A `(` right after the path is its argument list (like a call), so
+    // `#shrinking(x)` before a statement starting with `(` is never split.
     attribute: ($) =>
-      seq(
+      prec.right(seq(
         "#",
         field("path", $.path),
         optional(field("args", $.attribute_arguments)),
-      ),
+      )),
+    // Arguments are ordinary expressions; the compiler reads them as it needs
+    // (`#lang(int)`: a name, `#shrinking(len(xs))`: a measure over the parameters).
     attribute_arguments: ($) => collection("(", ")", $.attribute_argument),
     attribute_argument: ($) =>
       choice(
-        $._attribute_value,
-        seq(field("name", $.identifier), "=", field("value", $._attribute_value)),
+        $.expression,
+        seq(field("name", $.identifier), "=", field("value", $.expression)),
       ),
-    // compile-time metadata, not typed values, so records stay anonymous
-    _attribute_value: ($) =>
-      choice(
-        $.negative_literal,
-        $.percent_literal,
-        $.int_literal,
-        $.float_literal,
-        $.char_literal,
-        $.static_text,
-        $.raw_text,
-        $.path,
-        $.attribute_list,
-        $.attribute_record,
-        seq("(", $._attribute_value, ")"),
-      ),
-    attribute_list: ($) => collection("[", "]", $._attribute_value),
-    attribute_record: ($) => braced($.attribute_record_field),
-    attribute_record_field: ($) =>
-      seq(field("name", $.field_name), "=", field("value", $._attribute_value)),
 
     // --- tests ---
     test_declaration: ($) =>
@@ -276,7 +261,8 @@ module.exports = grammar({
     field_name: ($) => reserved("field", $.identifier),
 
     // --- expressions ---
-    expression: ($) => choice($.lambda_expression, $.if_expression, $._pipe_level),
+    expression: ($) =>
+      choice($.lambda_expression, $.if_expression, $.return_expression, $._pipe_level),
 
     // postfix at pipe level: `xs |> f(__) case { ... } |> g(__)`. Operator
     // subjects need parens: `(total + bonus) case { ... }`.
@@ -436,6 +422,7 @@ module.exports = grammar({
     // `mut`: the name takes successive values, not shared mutable storage.
     local_binding: ($) =>
       seq(
+        optional($._attributes),
         field("modifier", optional(choice("rec", "mut"))),
         field("target", $._postfix_level),
         optional(seq(":", field("type_ann", $.type_expression))),
@@ -462,15 +449,31 @@ module.exports = grammar({
         $.expression,
       ),
 
-    // x in xs => body;  (k, v) in pairs => ...;  same cover as local_binding
+    // x in xs => body             every item
+    // x in xs while c => body     stops before the first item for which c is false
+    // while c => body             the compiler proves it ends; `#shrinking(m)` names the measure
+    // All loops are `()`. `return` leaves the enclosing fn. Same cover as local_binding.
     loop_statement: ($) =>
       seq(
-        field("pattern", $._postfix_level),
-        "in",
-        field("iterable", $.expression),
+        optional($._attributes),
+        choice(
+          seq(
+            field("pattern", $._postfix_level),
+            "in",
+            field("iterable", $._pipe_level),
+            optional(seq("while", field("condition", $._pipe_level))),
+          ),
+          seq("while", field("condition", $._pipe_level)),
+        ),
         "=>",
         field("body", $._statement),
       ),
+
+    // shared prefix, so attributes on a loop and on a binding never conflict
+    _attributes: ($) => repeat1(field("attribute", $.attribute)),
+
+    // leaves the innermost `fn`, like `?`; no value means `()`
+    return_expression: ($) => prec.right(seq("return", optional(field("value", $.expression)))),
 
     // no `else`: then-branch must be `()`
     if_expression: ($) =>
