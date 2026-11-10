@@ -19,7 +19,7 @@
 // rejects them as top-level declaration names.
 const RESERVED = [
   "pub", "rec", "mut", "if", "then", "else", "case", "where", "module", "fn",
-  "or", "and", "not", "mod", "xor", "as", "in", "self", "Self", "while", "return",
+  "or", "and", "not", "mod", "xor", "as", "in", "self", "Self", "while", "return", "is",
 ];
 
 // digit runs may contain underscores but not start or end with one
@@ -130,8 +130,13 @@ module.exports = grammar({
           seq(
             ":",
             field("type", $.type_expression),
-            // impl header output: `Vec2 : Mul[Vec2] -> F32 = _ { ... }`
-            optional(seq("->", field("output", $._output_type))),
+            // impl header output: `Vec2 : Mul[Vec2] -> F32 = _ { ... }` binds the shape's first
+            // associated type; `Bag : Two -> (First = Int, Second = Text) = _ { ... }` names
+            // each one it binds
+            optional(seq("->", choice(
+              field("output", $._output_type),
+              field("bindings", $.associated_bindings),
+            ))),
             optional(field("constraints", $.constraint_clause)),
             optional(seq("=", field("value", $.expression))),
           ),
@@ -173,8 +178,9 @@ module.exports = grammar({
       seq("choice", field("body", braced($.choice_variant))),
 
     // Impls are keyed by Self plus the shape's parameters, so a type can
-    // implement Mul[F32] and Mul[Vec2]. A shape declares at most one
-    // associated type (resolver), decided by that key and bound with `->`.
+    // implement Mul[F32] and Mul[Vec2]. A shape may declare several associated
+    // types, each decided by that key. `-> T` binds the only one a shape has;
+    // with more than one they are bound by name, `-> (Item = T, Key = U)`.
     shape_constructor: ($) =>
       seq(
         "shape",
@@ -300,7 +306,11 @@ module.exports = grammar({
 
     // non-associative: `a < b < c` doesn't parse
     _compare_level: ($) =>
-      choice(alias($.compare_binary, $.binary_expression), $._range_level),
+      choice(alias($.compare_binary, $.binary_expression), $.is_expression, $._range_level),
+    // `stack is [..rest, top]`: true if the pattern matches. Its names are in
+    // scope in the rest of an `and` chain, the `then` branch, a loop body.
+    is_expression: ($) =>
+      seq(field("value", $._range_level), "is", field("pattern", $._pattern)),
     compare_binary: ($) =>
       binary(
         $._range_level,
@@ -350,7 +360,10 @@ module.exports = grammar({
         ),
       ),
 
-    call_suffix: ($) => seq("(", optional(separated1(field("arg", $.expression))), ")"),
+    call_suffix: ($) =>
+      seq("(", optional(separated1(field("arg", choice($.expression, $.inout_argument)))), ")"),
+    // `lru_get(^cache, 1)`: the call may update `cache`
+    inout_argument: ($) => seq("^", field("target", $._postfix_level)),
     // type application if the base has type parameters (`id[Int](x)`, one
     // arg each), otherwise indexing (`xs[i]`, one arg). Resolver decides.
     // Function and variadic types can't be written here; alias them first:
@@ -481,8 +494,8 @@ module.exports = grammar({
         "if",
         field("condition", $._pipe_level),
         "then",
-        field("then_value", $.expression),
-        optional(seq("else", field("else_value", $.expression))),
+        field("then_value", choice($.expression, $.update_statement)),
+        optional(seq("else", field("else_value", choice($.expression, $.update_statement)))),
       )),
 
     // `else =>` is not `_ =>`: the totality checker treats else as deliberate
@@ -505,6 +518,7 @@ module.exports = grammar({
     // Parameter patterns must be irrefutable (resolver).
     lambda_parameter: ($) =>
       seq(
+        optional(field("inout", alias("^", $.inout))),
         field("pattern", $._pattern),
         optional(seq(":", field("type_ann", $.type_expression))),
       ),
@@ -588,7 +602,16 @@ module.exports = grammar({
       ),
     _range_bound: ($) => choice($.int_literal, $.negative_literal, $.char_literal),
 
-    list_pattern: ($) => withRest("[", "]", $._pattern, $.rest_pattern),
+    // `[first, ..mid, last]`: at most one rest, anywhere
+    list_pattern: ($) =>
+      seq(
+        "[",
+        optional(choice(
+          seq(sep1($._pattern), optional(seq(",", $.rest_pattern, repeat(seq(",", $._pattern))))),
+          seq($.rest_pattern, repeat(seq(",", $._pattern))),
+        )),
+        "]",
+      ),
     tuple_pattern: ($) => tuple($._pattern),
     parenthesized_pattern: ($) => seq("(", field("value", $._pattern), ")"),
     // nameless: type from the scrutinee; not against a choice
@@ -634,6 +657,8 @@ module.exports = grammar({
       ),
     // `...T`: function parameters and type arguments only
     variadic_type: ($) => seq("...", field("item", $.type_expression)),
+    // `fn(^Lru, Int) -> Option[Int]`
+    inout_type: ($) => seq("^", field("type", $.type_expression)),
 
     // no record_type here: records are nominal
     _concrete_type_head: ($) =>
@@ -657,7 +682,7 @@ module.exports = grammar({
     function_type: ($) =>
       seq(
         "fn",
-        collection("(", ")", field("param", choice($.type_expression, $.variadic_type))),
+        collection("(", ")", field("param", choice($.type_expression, $.variadic_type, $.inout_type))),
         field("arrow", choice("->", "->!")),
         field("result", $.type_expression),
       ),
@@ -681,9 +706,21 @@ module.exports = grammar({
     // T : Eq + Into[Int]. Also derive and shape parents.
     constraint_sum: ($) =>
       prec.left(sep1(field("shape", choice($.path_or_applied, $.shape_output)), "+")),
+    // The associated types an impl binds by name: `(Item = Int, Key = Text)`.
+    associated_bindings: ($) => seq("(", separated1($.associated_binding), ")"),
+    associated_binding: ($) =>
+      seq(field("name", $.identifier), "=", field("type", $.type_expression)),
+
     // Add[T] -> O: binds the shape's associated type; binds tighter than +
     shape_output: ($) =>
-      seq(field("shape", $.path_or_applied), "->", field("output", $._output_type)),
+      seq(
+        field("shape", $.path_or_applied),
+        "->",
+        choice(
+          field("output", $._output_type),
+          field("bindings", $.associated_bindings),
+        ),
+      ),
     _output_type: ($) => choice($.wildcard, $._concrete_type_head),
 
     // --- literals ---
