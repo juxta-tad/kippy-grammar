@@ -6,7 +6,7 @@
 //
 // Separators: comma between items, semicolon after every statement.
 // Arrows: => body follows, -> return, ->! effectful return.
-// Locals: x = e introduces, ^x = e updates a mut.
+// Locals: x = e introduces, ^x = e updates it.
 // Fields: `name = value` everywhere; `:` always introduces a type.
 // Records are nominal. Nameless patterns take the type from the scrutinee,
 // `_ { ... }` from the expected type.
@@ -18,7 +18,7 @@
 // except where a declaration or statement can start with them. The resolver
 // rejects them as top-level declaration names.
 const RESERVED = [
-  "pub", "rec", "mut", "if", "then", "else", "case", "where", "module", "fn",
+  "pub", "rec", "if", "then", "else", "case", "where", "module", "fn",
   "or", "and", "not", "mod", "xor", "as", "in", "self", "Self", "while", "return", "is",
 ];
 
@@ -428,15 +428,15 @@ module.exports = grammar({
         "}",
       ),
 
-    // x = 10;  mut total : Int = 0;  (a, b) = pair;  User { name, .. } = u;
+    // x = 10;  total : Int = 0;  (a, b) = pair;  User { name, .. } = u;
     // Cover grammar: the target parses as an expression; the resolver checks
     // it's an irrefutable pattern. Targeted errors: `x.y = e` / `xs[i] = e`
     // ("did you mean `^x.y`"), `{ x } = p` ("name the record type").
-    // `mut`: the name takes successive values, not shared mutable storage.
+    // `^x = e` gives the name a successive value; it is not shared mutable storage.
     local_binding: ($) =>
       seq(
         optional($._attributes),
-        field("modifier", optional(choice("rec", "mut"))),
+        field("modifier", optional("rec")),
         field("target", $._postfix_level),
         optional(seq(":", field("type_ann", $.type_expression))),
         "=",

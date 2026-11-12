@@ -2053,10 +2053,6 @@
         "required": false,
         "types": [
           {
-            "type": "mut",
-            "named": false
-          },
-          {
             "type": "rec",
             "named": false
           }
@@ -4864,10 +4860,6 @@
   },
   {
     "type": "module",
-    "named": false
-  },
-  {
-    "type": "mut",
     "named": false
   },
   {
