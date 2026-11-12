@@ -18,7 +18,7 @@
 // except where a declaration or statement can start with them. The resolver
 // rejects them as top-level declaration names.
 const RESERVED = [
-  "pub", "rec", "if", "then", "else", "case", "where", "module", "fn",
+  "pub", "rec", "law", "if", "then", "else", "case", "where", "module", "fn",
   "or", "and", "not", "mod", "xor", "as", "in", "self", "Self", "while", "return", "is",
 ];
 
@@ -445,8 +445,10 @@ module.exports = grammar({
 
     // ^total = total + x;  ^state.tick += 1;  ^xs[i] = v;
     // No expression starts with `^`, so the first token decides.
+    // `#by(reason)` before one says why the old value equals the new, in a proof.
     update_statement: ($) =>
       seq(
+        optional($._attributes),
         "^",
         field("target", $._postfix_level),
         field("op", choice("=", "+=", "-=", "*=", "/=", "&=", "|=", "<<=", ">>=")),
@@ -630,7 +632,21 @@ module.exports = grammar({
     // head is a type parameter. Use projection_type when T has several impls
     // of the shape.
     type_expression: ($) =>
-      choice($.function_type, $.wildcard, $.projection_type, $._concrete_type_head),
+      choice($.law_type, $.function_type, $.wildcard, $.projection_type, $._concrete_type_head),
+
+    // A statement about all values of its parameters, as a type: the value of the name is its
+    // proof. `assoc : law (a: Self, b: Self) => f(a, b) == f(b, a) = auto`. Only a binding or a
+    // shape member may be of this type (the lowering says so elsewhere).
+    law_type: ($) =>
+      seq(
+        "law",
+        field("params", $.law_parameters),
+        "=>",
+        field("body", $.expression),
+      ),
+    law_parameters: ($) => collection("(", ")", field("param", $.law_parameter)),
+    law_parameter: ($) =>
+      seq(field("name", $.identifier), ":", field("type_ann", $.type_expression)),
 
     // T@Mul::Output   T@std::ops::Mul::Output   T@Mul[F32]::Output
     // A member is required. Without shape args the last segment is the

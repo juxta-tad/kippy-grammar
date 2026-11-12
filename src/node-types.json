@@ -1933,6 +1933,74 @@
     }
   },
   {
+    "type": "law_parameter",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type_ann": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "law_parameters",
+    "named": true,
+    "fields": {
+      "param": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "law_parameter",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "law_type",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "params": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "law_parameters",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "list_expression",
     "named": true,
     "fields": {},
@@ -4233,6 +4301,10 @@
           "named": true
         },
         {
+          "type": "law_type",
+          "named": true
+        },
+        {
           "type": "parenthesized_type",
           "named": true
         },
@@ -4389,6 +4461,16 @@
     "type": "update_statement",
     "named": true,
     "fields": {
+      "attribute": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute",
+            "named": true
+          }
+        ]
+      },
       "op": {
         "multiple": false,
         "required": true,
@@ -4847,6 +4929,10 @@
   },
   {
     "type": "is",
+    "named": false
+  },
+  {
+    "type": "law",
     "named": false
   },
   {
