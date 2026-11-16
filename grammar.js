@@ -369,7 +369,9 @@ module.exports = grammar({
     // Function and variadic types can't be written here; alias them first:
     // `IntFn : alias fn(Int) -> Int`, then `id[IntFn](f)`.
     index_suffix: ($) => seq("[", separated1(field("index", $.expression)), "]"),
-    field_suffix: ($) => seq(".", field("field", $.field_name)),
+    // `x.` with nothing after it yet parses, so an editor knows what is being written; the
+    // lowering says a field name is missing
+    field_suffix: ($) => prec.right(seq(".", optional(field("field", $.field_name)))),
 
     // `t.0.1`: float_literal isn't valid after `.`
     tuple_index_suffix: ($) => seq(".", field("index", $.tuple_index)),
@@ -379,7 +381,7 @@ module.exports = grammar({
 
     // @ finds the implementation by type; @Shape::method disambiguates a
     // method name declared by two different shapes.
-    method_suffix: ($) => seq("@", field("method", $.path)),
+    method_suffix: ($) => prec.right(seq("@", optional(field("method", $.path)))),
 
     // --- primary ---
     _primary: ($) =>
