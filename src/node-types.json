@@ -1233,7 +1233,7 @@
     "fields": {
       "field": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "field_name",
@@ -2689,7 +2689,7 @@
     "fields": {
       "method": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "path",
